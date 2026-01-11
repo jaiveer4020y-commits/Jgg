@@ -1,306 +1,277 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Stable ArtPlayer HLS</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<title>Netflix UI - ArtPlayer OG</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- ArtPlayer -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.css">
 
 <style>
-/* ================= GLOBAL ================= */
 html, body {
     margin: 0;
     padding: 0;
     background: #000;
     height: 100%;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    font-family: Helvetica, Arial, sans-serif;
 }
 
-/* ================= PLAYER ================= */
-#player-wrapper {
+.artplayer-app {
     width: 100%;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#player {
-    width: 100%;
-    max-width: 980px;
+    max-width: 1000px;
     height: 560px;
+    margin: auto;
     background: #000;
     position: relative;
 }
 
-/* ================= CENTER CONTROLS ================= */
-.center-controls {
+/* Netflix Header */
+.netflix-header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(to bottom, rgba(0,0,0,.8), transparent);
+    z-index: 50;
+    opacity: 0;
+    transition: opacity .3s;
+}
+.art-state-show .netflix-header {
+    opacity: 1;
+}
+.back-arrow {
+    width: 28px;
+    height: 28px;
+    fill: #fff;
+    cursor: pointer;
+}
+.movie-title {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+/* Spinner */
+.netflix-spinner {
+    width: 64px;
+    height: 64px;
+    border: 4px solid rgba(255,255,255,.2);
+    border-top-color: red;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Center overlay */
+.netflix-overlay {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 120px;
-    opacity: 0;
-    transition: opacity .25s ease;
     pointer-events: none;
-    z-index: 20;
+    opacity: 0;
+    transition: opacity .3s;
 }
-
-.art-state-show .center-controls {
+.art-state-show .netflix-overlay {
     opacity: 1;
+}
+.netflix-btn {
     pointer-events: auto;
+    cursor: pointer;
+}
+.netflix-btn img {
+    width: 56px;
+    height: 56px;
+}
+.netflix-btn.play img {
+    width: 88px;
+    height: 88px;
 }
 
-.center-controls img {
-    width: 64px;
-    height: 64px;
-    opacity: .9;
-}
-
-.center-controls .play img {
-    width: 92px;
-    height: 92px;
-}
-
-/* ================= AUDIO BUTTON ================= */
-.audio-btn {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 30;
-    background: rgba(0,0,0,.55);
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.audio-btn img {
-    width: 24px;
-    height: 24px;
-}
-
-/* ================= SUBTITLES ================= */
+/* Subtitles */
 .art-subtitle {
     font-size: 22px !important;
-    background: rgba(0,0,0,.45);
-    padding: 4px 10px;
+    background: rgba(0,0,0,.55);
+    padding: 6px 12px;
     border-radius: 4px;
-    text-shadow: 2px 2px 6px #000;
 }
 </style>
 </head>
 
 <body>
 
-<div id="player-wrapper">
-    <div id="player"></div>
+<div class="artplayer-app">
+    <div class="netflix-header">
+        <svg class="back-arrow" viewBox="0 0 24 24" onclick="history.back()">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        <div class="movie-title" id="title">Loading…</div>
+    </div>
 </div>
 
-<!-- LIBS -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15"></script>
+<script src="https://cdn.jsdelivr.net/npm/@swarmcloud/hls/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.js"></script>
 
 <script>
-/* =====================================================
-   HARD GUARANTEED EXECUTION (NO SILENT FAIL)
-===================================================== */
-(function () {
-'use strict';
+window.addEventListener('load', async () => {
 
-/* ================= CONFIG ================= */
-const PROXY = 'https://workingg.vercel.app/api/proxy?url=';
-const FALLBACK_TITLE = 'wednesday.s02e05';
+    /* ===== SLUG ===== */
+    const slug = location.pathname.replace('/', '').trim();
+    if (!slug) {
+        document.getElementById('title').innerText = 'No title provided';
+        return;
+    }
+    document.getElementById('title').innerText = slug.replaceAll('.', ' ');
 
-/* ================= TITLE DETECTION ================= */
-const params = new URLSearchParams(window.location.search);
-let title = params.get('title');
+    /* ===== PROXIES ===== */
+    const PROXY = 'https://workingg.vercel.app/api/proxy?url=';
+    const RENDER_API = PROXY + encodeURIComponent(
+        'https://u-1-1azw.onrender.com/api/get-stream?title=' + slug
+    );
 
-if (!title || title.trim() === '') {
-    console.warn('Title missing – using fallback');
-    title = FALLBACK_TITLE;
-}
-
-/* ================= LOG ================= */
-console.log('[PLAYER] title =', title);
-
-/* ================= FETCH STREAM ================= */
-async function getStream() {
-    const apiUrl = 'https://u-1-1azw.onrender.com/api/get-stream?title=' + encodeURIComponent(title);
-    const proxied = PROXY + encodeURIComponent(apiUrl);
-
-    console.log('[PLAYER] Fetch stream:', proxied);
-
-    const res = await fetch(proxied);
-    if (!res.ok) throw new Error('Stream API failed');
-
-    return res.json();
-}
-
-/* ================= FETCH SUBTITLES ================= */
-async function getSubtitle(imdb) {
-    if (!imdb) return null;
-
-    const subApi = 'https://sub.wyzie.ru/search?id=' + imdb;
-    const proxied = PROXY + encodeURIComponent(subApi);
-
-    console.log('[PLAYER] Fetch subtitles:', proxied);
-
-    const res = await fetch(proxied);
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    const vtt = data?.subtitles?.find(s => s.format === 'vtt');
-
-    return vtt ? vtt.url : null;
-}
-
-/* ================= MAIN ================= */
-(async function init() {
-
-    let stream;
+    /* ===== FETCH STREAM ===== */
+    let streamUrl;
     try {
-        stream = await getStream();
+        const res = await fetch(RENDER_API);
+        const json = await res.json();
+        streamUrl = json.m3u8_url || json.streamUrl || json.url;
+        if (!streamUrl) throw 'No m3u8';
     } catch (e) {
-        alert('Stream API error');
-        console.error(e);
+        document.getElementById('title').innerText = 'Stream not found';
         return;
     }
 
-    if (!stream || !stream.m3u8_url) {
-        alert('Invalid stream data');
-        return;
-    }
+    const finalM3U8 = PROXY + encodeURIComponent(streamUrl);
 
-    const m3u8 = PROXY + encodeURIComponent(stream.m3u8_url);
-    console.log('[PLAYER] M3U8:', m3u8);
+    /* ===== ICONS ===== */
+    const icons = {
+        back: 'https://rivestream.org/images/player/backward.svg',
+        forward: 'https://rivestream.org/images/player/forward.svg',
+        play: 'https://rivestream.org/images/player/play.svg',
+    };
 
-    let subtitleUrl = null;
-    try {
-        subtitleUrl = await getSubtitle(stream.imdb);
-    } catch (e) {
-        console.warn('Subtitle error');
-    }
-
-    /* ================= ARTPLAYER ================= */
-    let hls = null;
-
+    /* ===== PLAYER ===== */
     const art = new Artplayer({
-        container: '#player',
-        url: m3u8,
+        container: '.artplayer-app',
+        url: finalM3U8,
         type: 'm3u8',
-
         autoplay: true,
-        muted: true,   // REQUIRED FOR iOS
-        volume: 1,
-
+        autoSize: true,
+        fullscreen: true,
+        fullscreenWeb: true,
+        playsInline: true,
         setting: true,
         playbackRate: true,
         aspectRatio: true,
-        fullscreen: true,
-        fullscreenWeb: true,
-
-        subtitle: subtitleUrl ? {
-            url: subtitleUrl,
-            type: 'vtt',
-            encoding: 'utf-8'
-        } : null,
-
+        pip: true,
+        screenshot: true,
+        mutex: true,
+        backdrop: true,
+        miniProgressBar: true,
+        subtitleOffset: true,
+        fastForward: true,
+        lock: true,
+        theme: '#e50914',
+        icons: {
+            loading: '<div class="netflix-spinner"></div>',
+        },
         layers: [{
-            name: 'center-controls',
+            name: 'center',
             html: `
-            <div class="center-controls">
-                <div class="btn back">
-                    <img src="https://rivestream.org/images/player/backward.svg">
+                <div class="netflix-overlay">
+                    <div class="netflix-btn back"><img src="${icons.back}"></div>
+                    <div class="netflix-btn play"><img src="${icons.play}"></div>
+                    <div class="netflix-btn forward"><img src="${icons.forward}"></div>
                 </div>
-                <div class="btn play">
-                    <img src="https://rivestream.org/images/player/play.svg">
-                </div>
-                <div class="btn forward">
-                    <img src="https://rivestream.org/images/player/forward.svg">
-                </div>
-            </div>`
+            `
         }],
-
         customType: {
-            m3u8(video, url) {
+            m3u8(video, url, art) {
+                const hls = new Hls({ enableWorker: true });
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                art.hls = hls;
 
-                if (hls) {
-                    console.warn('HLS already attached – skip');
-                    return;
-                }
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
 
-                if (Hls.isSupported()) {
-                    hls = new Hls({
-                        enableWorker: true,
-                        maxBufferLength: 30,
-                        maxMaxBufferLength: 60,
-                        fragLoadingMaxRetry: 1,
-                        levelLoadingMaxRetry: 1
+                    /* Quality */
+                    art.setting.add({
+                        name: 'quality',
+                        html: 'Quality',
+                        selector: [
+                            { default: true, html: 'Auto', level: -1 },
+                            ...hls.levels.map((l, i) => ({
+                                html: l.height + 'p',
+                                level: i
+                            }))
+                        ],
+                        onSelect: item => {
+                            hls.currentLevel = item.level;
+                            return item.html;
+                        }
                     });
 
-                    hls.loadSource(url);
-                    hls.attachMedia(video);
-
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        console.log('[PLAYER] Manifest parsed');
-
-                        const levels = hls.levels.map((l, i) => ({
-                            html: l.height + 'p',
-                            level: i
-                        }));
-
+                    /* Audio */
+                    if (hls.audioTracks.length > 1) {
                         art.setting.add({
-                            name: 'quality',
-                            html: 'Quality',
-                            selector: levels,
-                            onSelect(item) {
-                                hls.currentLevel = item.level;
+                            name: 'audio',
+                            html: 'Audio',
+                            selector: hls.audioTracks.map((t, i) => ({
+                                default: i === hls.audioTrack,
+                                html: t.name || t.lang || 'Track ' + i,
+                                index: i
+                            })),
+                            onSelect: item => {
+                                hls.audioTrack = item.index;
                                 return item.html;
                             }
                         });
+                    }
+
+                    /* Subtitles */
+                    art.setting.add({
+                        name: 'subtitle',
+                        html: 'Subtitles',
+                        selector: [
+                            { default: true, html: 'Off', url: '' },
+                            { html: 'Import URL', import: true }
+                        ],
+                        onSelect: item => {
+                            if (item.import) {
+                                const u = prompt('Subtitle URL (.vtt)');
+                                if (u) {
+                                    art.subtitle.url = PROXY + encodeURIComponent(u);
+                                    art.subtitle.type = 'vtt';
+                                    return 'External';
+                                }
+                            } else {
+                                art.subtitle.url = '';
+                            }
+                            return item.html;
+                        }
                     });
-                } else {
-                    video.src = url;
-                }
+                });
             }
         }
     });
 
-    /* ================= AUDIO BUTTON ================= */
-    const audioBtn = document.createElement('div');
-    audioBtn.className = 'audio-btn';
-    audioBtn.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/727/727245.png">`;
-    document.getElementById('player').appendChild(audioBtn);
-
-    audioBtn.onclick = () => {
-        art.muted = !art.muted;
-        audioBtn.style.opacity = art.muted ? 0.5 : 1;
-    };
-
-    /* ================= CENTER CONTROLS ================= */
     art.on('ready', () => {
-        const back = document.querySelector('.btn.back');
-        const play = document.querySelector('.btn.play');
-        const forward = document.querySelector('.btn.forward');
+        const back = document.querySelector('.netflix-btn.back');
+        const play = document.querySelector('.netflix-btn.play');
+        const forward = document.querySelector('.netflix-btn.forward');
 
         back.onclick = () => art.seek = art.currentTime - 10;
-
         forward.onclick = () => art.seek = art.currentTime + 10;
-
-        play.onclick = () => {
-            art.toggle();
-            art.muted = false; // unlock audio
-        };
+        play.onclick = () => art.toggle();
     });
 
-})();
-})();
+});
 </script>
 
 </body>
