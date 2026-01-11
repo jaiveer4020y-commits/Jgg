@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Netflix Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- ArtPlayer 5.3.0 -->
 <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
@@ -14,34 +14,36 @@
 html, body {
     margin: 0;
     padding: 0;
-    background: black;
+    background: #000;
     height: 100%;
     overflow: hidden;
 }
 
+/* Player */
 #player {
     width: 100%;
     height: 100%;
+    position: relative;
 }
 
-/* ===========================
-   ✅ OG NETFLIX SPINNER ONLY
-=========================== */
-.netflix-spinner {
+/* =========================
+   NETFLIX OG SPINNER
+========================= */
+#netflix-spinner {
     position: fixed;
     inset: 0;
+    background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: black;
     z-index: 9999;
 }
-.netflix-spinner::after {
+#netflix-spinner::after {
     content: "";
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    border: 5px solid rgba(255,255,255,0.2);
+    border: 5px solid rgba(255,255,255,.2);
     border-top-color: #e50914;
     animation: spin 1s linear infinite;
 }
@@ -49,30 +51,30 @@ html, body {
     to { transform: rotate(360deg); }
 }
 
-/* ===========================
-   ✅ SUBTITLE FIX (IMPORTANT)
-=========================== */
-.art-subtitle {
-    position: absolute !important;
-    bottom: 10% !important;
-    width: 90% !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
+/* =========================
+   CUSTOM SUBTITLE LAYER
+========================= */
+#subtitle-layer {
+    position: absolute;
+    bottom: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 10000;
+}
 
-    display: flex !important;
-    justify-content: center !important;
-
-    z-index: 10000 !important;
-    pointer-events: none !important;
-
-    font-size: 23px !important;
-    font-weight: 500 !important;
-    line-height: 1.4 !important;
-    color: rgb(252, 244, 244) !important;
-
-    text-align: center !important;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8) !important;
-    background: transparent !important;
+#subtitle-layer p {
+    font-size: 23px;
+    font-weight: 500;
+    color: rgb(252, 244, 244);
+    text-align: center;
+    line-height: 1.4;
+    text-shadow: 0 2px 4px rgba(0,0,0,.8);
+    background: transparent;
+    margin: 0;
 }
 </style>
 </head>
@@ -80,43 +82,45 @@ html, body {
 <body>
 
 <div id="player"></div>
-<div id="spinner" class="netflix-spinner"></div>
+<div id="subtitle-layer"><p></p></div>
+<div id="netflix-spinner"></div>
 
 <script>
-/* ===========================
+/* =========================
    CONFIG
-=========================== */
+========================= */
 const RENDER_API = "https://u-1-1azw.onrender.com/api/get-stream";
 const PROXY = "https://workingg.vercel.app/api/proxy?url=";
 const SUB_API = "https://sub.wyzie.ru/search";
 
-/* ===========================
+/* =========================
    HELPERS
-=========================== */
+========================= */
 const qs = k => new URLSearchParams(location.search).get(k);
-const spinner = document.getElementById("spinner");
+const spinner = document.getElementById("netflix-spinner");
+const subtitleText = document.querySelector("#subtitle-layer p");
 
 function showSpinner(v) {
     spinner.style.display = v ? "flex" : "none";
 }
 
-/* ===========================
-   SLUG DETECTION
-=========================== */
+/* =========================
+   SLUG
+========================= */
 const title = qs("title");
 const imdb = qs("id");
 const season = qs("season");
 const episode = qs("episode");
 
 if (!title) {
-    alert("Missing ?title=");
-    throw new Error("No title");
+    alert("Missing title");
+    throw new Error("Missing title");
 }
 
-/* ===========================
+/* =========================
    FETCH STREAM
-=========================== */
-async function getStream() {
+========================= */
+async function fetchStream() {
     showSpinner(true);
     const api = `${RENDER_API}?title=${encodeURIComponent(title)}`;
     const res = await fetch(PROXY + encodeURIComponent(api));
@@ -125,42 +129,62 @@ async function getStream() {
     return PROXY + encodeURIComponent(json.m3u8_url);
 }
 
-/* ===========================
+/* =========================
    FETCH SUBTITLES
-=========================== */
-async function getSubs() {
+========================= */
+async function fetchSubtitles() {
     if (!imdb) return [];
     let url = `${SUB_API}?id=${imdb}`;
     if (season && episode) url += `&season=${season}&episode=${episode}`;
     const res = await fetch(PROXY + encodeURIComponent(url));
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    return await res.json();
 }
 
-/* ===========================
-   INIT PLAYER
-=========================== */
+/* =========================
+   VTT PARSER (IMPORTANT)
+========================= */
+function parseVTT(vtt) {
+    const cues = [];
+    const blocks = vtt.split("\n\n");
+    for (const b of blocks) {
+        if (!b.includes("-->")) continue;
+        const lines = b.split("\n");
+        const time = lines[0].split(" --> ");
+        const start = toSeconds(time[0]);
+        const end = toSeconds(time[1]);
+        const text = lines.slice(1).join("<br>");
+        cues.push({ start, end, text });
+    }
+    return cues;
+}
+
+function toSeconds(t) {
+    const [h,m,s] = t.replace(",", ".").split(":");
+    return (+h)*3600 + (+m)*60 + parseFloat(s);
+}
+
+/* =========================
+   MAIN
+========================= */
 (async () => {
-    const stream = await getStream();
-    const subs = await getSubs();
+    const streamUrl = await fetchStream();
+    const subs = await fetchSubtitles();
+
+    let subtitleCues = [];
+    let currentSubtitle = null;
 
     const art = new Artplayer({
         container: "#player",
-        url: stream,
+        url: streamUrl,
         type: "m3u8",
         autoplay: true,
-        fullscreen: true,
         setting: true,
         playbackRate: true,
         aspectRatio: true,
+        fullscreen: true,
         hotkey: true,
         mutex: true,
         theme: "#e50914",
-        subtitle: {
-            show: true,
-            url: subs[0]?.url ? PROXY + encodeURIComponent(subs[0].url) : "",
-            type: "vtt",
-        },
         customType: {
             m3u8(video, url) {
                 const hls = new Hls({ enableWorker: true });
@@ -170,7 +194,6 @@ async function getSubs() {
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
                     showSpinner(false);
 
-                    /* QUALITY */
                     art.setting.add({
                         name: "quality",
                         html: "Quality",
@@ -188,7 +211,6 @@ async function getSubs() {
                     });
                 });
 
-                /* AUDIO */
                 hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, d) => {
                     if (d.audioTracks.length > 1) {
                         art.setting.add({
@@ -210,10 +232,10 @@ async function getSubs() {
         }
     });
 
-    /* ===========================
-       SUBTITLE SWITCHER (FIXED)
-    ============================ */
-    if (subs.length > 0) {
+    /* =========================
+       SUBTITLE MENU
+    ========================= */
+    if (subs.length) {
         art.setting.add({
             name: "subtitle",
             html: "Subtitles",
@@ -222,18 +244,36 @@ async function getSubs() {
                 url: PROXY + encodeURIComponent(s.url),
                 default: i === 0
             })),
-            onSelect(item) {
-                art.subtitle.switch(item.url);
-                art.subtitle.show = true;
+            onSelect: async item => {
+                const res = await fetch(item.url);
+                const vtt = await res.text();
+                subtitleCues = parseVTT(vtt);
+                subtitleText.innerHTML = "";
                 return item.html;
             }
         });
+
+        /* Load first subtitle automatically */
+        const res = await fetch(PROXY + encodeURIComponent(subs[0].url));
+        subtitleCues = parseVTT(await res.text());
     }
 
-    art.on("play", () => showSpinner(false));
-    art.on("video:loadeddata", () => showSpinner(false));
+    /* =========================
+       SUBTITLE SYNC LOOP
+    ========================= */
+    art.on("video:timeupdate", () => {
+        const t = art.currentTime;
+        const cue = subtitleCues.find(c => t >= c.start && t <= c.end);
+        if (cue && cue !== currentSubtitle) {
+            subtitleText.innerHTML = cue.text;
+            currentSubtitle = cue;
+        } else if (!cue) {
+            subtitleText.innerHTML = "";
+            currentSubtitle = null;
+        }
+    });
+
 })();
 </script>
-
 </body>
 </html>
