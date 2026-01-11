@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1"
+/>
 
-<title>Art Player</title>
+<title>ArtPlayer Full</title>
 
 <!-- ArtPlayer -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.css" />
-<script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.css">
+<script src="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.js"></script>
 
 <!-- HLS -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
@@ -18,24 +21,26 @@ html, body {
     margin: 0;
     padding: 0;
     background: #000;
+    width: 100%;
     height: 100%;
     overflow: hidden;
 }
 
 #player {
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     background: #000;
 }
 
 /* Netflix spinner */
 .art-loading::after {
     content: '';
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(255,255,255,.2);
-    border-top-color: #fff;
+    position: absolute;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
+    border: 4px solid rgba(255,255,255,.25);
+    border-top-color: #fff;
     animation: spin 1s linear infinite;
 }
 
@@ -43,10 +48,10 @@ html, body {
     to { transform: rotate(360deg); }
 }
 
-/* Jump buttons */
-.jump-btn {
-    width: 28px;
-    height: 28px;
+/* Jump icons */
+.jump-icon {
+    width: 26px;
+    height: 26px;
 }
 </style>
 </head>
@@ -55,76 +60,88 @@ html, body {
 <div id="player"></div>
 
 <script>
-/* -------------------------------
-   URL PARAMS
--------------------------------- */
-const params = new URLSearchParams(location.search);
+/* =========================================================
+   STRICT PARAM PARSING (NO SILENT FAIL)
+========================================================= */
+const params = new URLSearchParams(window.location.search);
 
-const title   = params.get('title');    // REQUIRED
-const imdbId  = params.get('id');       // for subtitles
-const season  = params.get('season');
-const episode = params.get('episode');
+const TITLE   = params.get('title');   // REQUIRED
+const IMDB_ID = params.get('id');
+const SEASON  = params.get('season');
+const EPISODE = params.get('episode');
 
-if (!title) {
-    document.body.innerHTML = '<h2 style="color:white;text-align:center">Missing title</h2>';
-    throw new Error('Title missing');
+if (!TITLE) {
+    document.body.innerHTML =
+        '<h2 style="color:white;text-align:center;margin-top:40vh">Missing ?title</h2>';
+    throw new Error('TITLE missing');
 }
 
-/* -------------------------------
-   API ENDPOINTS
--------------------------------- */
-const STREAM_API = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(title)}`;
-const PROXY = 'https://workingg.vercel.app/api/proxy?url=';
+/* =========================================================
+   ENDPOINTS
+========================================================= */
+const STREAM_API = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(TITLE)}`;
+const PROXY      = 'https://workingg.vercel.app/api/proxy?url=';
 
-/* -------------------------------
-   FETCH STREAM
--------------------------------- */
-async function getStream() {
+/* =========================================================
+   FETCH STREAM URL
+========================================================= */
+async function fetchStreamUrl() {
     const res = await fetch(STREAM_API);
-    const data = await res.json();
-    if (!data?.url) throw new Error('Stream not found');
-    return PROXY + encodeURIComponent(data.url);
+    if (!res.ok) throw new Error('Stream API failed');
+
+    const json = await res.json();
+    if (!json || !json.url) throw new Error('Invalid stream response');
+
+    return PROXY + encodeURIComponent(json.url);
 }
 
-/* -------------------------------
+/* =========================================================
    FETCH SUBTITLES
--------------------------------- */
-async function getSubtitles() {
-    if (!imdbId) return [];
+========================================================= */
+async function fetchSubtitles() {
+    if (!IMDB_ID) return [];
 
-    let subUrl;
-    if (season && episode) {
-        subUrl = `https://sub.wyzie.ru/search?id=${imdbId}&season=${season}&episode=${episode}`;
+    let url;
+    if (SEASON && EPISODE) {
+        url = `https://sub.wyzie.ru/search?id=${IMDB_ID}&season=${SEASON}&episode=${EPISODE}`;
     } else {
-        subUrl = `https://sub.wyzie.ru/search?id=${imdbId}`;
+        url = `https://sub.wyzie.ru/search?id=${IMDB_ID}`;
     }
 
-    const res = await fetch(PROXY + encodeURIComponent(subUrl));
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    const res = await fetch(PROXY + encodeURIComponent(url));
+    if (!res.ok) return [];
+
+    const json = await res.json();
+    return Array.isArray(json) ? json : [];
 }
 
-/* -------------------------------
-   INIT PLAYER
--------------------------------- */
+/* =========================================================
+   INIT
+========================================================= */
 (async () => {
 
-const streamUrl = await getStream();
-const subtitles = await getSubtitles();
+const STREAM_URL = await fetchStreamUrl();
+const SUBS       = await fetchSubtitles();
 
-let hls;
+let hlsInstance = null;
 
-/* ArtPlayer */
+/* =========================================================
+   ARTPLAYER
+========================================================= */
 const art = new Artplayer({
     container: '#player',
-    url: streamUrl,
+    url: STREAM_URL,
     type: 'm3u8',
     autoplay: true,
     autoSize: true,
+    autoPlayback: true,
+    muted: false,
+
     fullscreen: true,
     fullscreenWeb: true,
-    airplay: true,
     pip: true,
+    airplay: true,
+
     setting: true,
     playbackRate: true,
     aspectRatio: true,
@@ -132,93 +149,107 @@ const art = new Artplayer({
     miniProgressBar: true,
     mutex: true,
     fastForward: true,
-    autoOrientation: true,
-    autoPlayback: true,
     lock: true,
+
     controls: [
         {
             name: 'backward',
             position: 'left',
-            html: `<img class="jump-btn" src="https://rivestream.org/images/player/backward.svg">`,
+            html: `<img class="jump-icon" src="https://rivestream.org/images/player/backward.svg">`,
             click: () => art.currentTime -= 10
         },
         {
             name: 'play',
             position: 'left',
-            html: `<img class="jump-btn" src="https://rivestream.org/images/player/play.svg">`,
+            html: `<img class="jump-icon" src="https://rivestream.org/images/player/play.svg">`,
             click: () => art.toggle()
         },
         {
             name: 'forward',
             position: 'left',
-            html: `<img class="jump-btn" src="https://rivestream.org/images/player/forward.svg">`,
+            html: `<img class="jump-icon" src="https://rivestream.org/images/player/forward.svg">`,
             click: () => art.currentTime += 10
         }
     ],
+
     customType: {
         m3u8(video, url) {
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
             if (Hls.isSupported()) {
-                hls = new Hls({
+                hlsInstance = new Hls({
                     enableWorker: true,
+                    lowLatencyMode: false,
                     backBufferLength: 90,
+                    maxBufferLength: 60,
+                    maxMaxBufferLength: 120,
                 });
-                hls.loadSource(url);
-                hls.attachMedia(video);
-            } else {
+
+                hlsInstance.loadSource(url);
+                hlsInstance.attachMedia(video);
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = url;
+            } else {
+                console.error('HLS not supported');
             }
         }
     }
 });
 
-/* -------------------------------
-   SETTINGS: QUALITY / AUDIO / SUBS
--------------------------------- */
+/* =========================================================
+   SETTINGS (QUALITY / AUDIO / SUBS)
+========================================================= */
 art.on('ready', () => {
 
     /* QUALITY */
-    if (hls?.levels?.length) {
+    if (hlsInstance && hlsInstance.levels?.length) {
         art.setting.add({
             name: 'Quality',
+            html: 'Quality',
             selector: [
                 { html: 'Auto', value: -1 },
-                ...hls.levels.map((l, i) => ({
-                    html: `${l.height}p`,
+                ...hlsInstance.levels.map((l, i) => ({
+                    html: l.height ? `${l.height}p` : `Level ${i}`,
                     value: i
                 }))
             ],
             onSelect(item) {
-                hls.currentLevel = item.value;
+                hlsInstance.currentLevel = item.value;
                 return item.html;
             }
         });
     }
 
-    /* AUDIO (NO AUDIO BUTTON, SETTINGS ONLY) */
-    if (hls?.audioTracks?.length > 1) {
+    /* AUDIO (SETTINGS ONLY, NO BUTTON) */
+    if (hlsInstance && hlsInstance.audioTracks?.length > 1) {
         art.setting.add({
             name: 'Audio',
-            selector: hls.audioTracks.map((t, i) => ({
-                html: t.name || `Track ${i+1}`,
+            html: 'Audio',
+            selector: hlsInstance.audioTracks.map((t, i) => ({
+                html: t.name || t.lang || `Track ${i + 1}`,
                 value: i
             })),
             onSelect(item) {
-                hls.audioTrack = item.value;
+                hlsInstance.audioTrack = item.value;
                 return item.html;
             }
         });
     }
 
     /* SUBTITLES */
-    if (subtitles.length) {
+    if (SUBS.length) {
         art.setting.add({
             name: 'Subtitles',
-            selector: subtitles.map((s, i) => ({
-                html: s.lang || s.language || `Sub ${i+1}`,
+            html: 'Subtitles',
+            selector: SUBS.map((s, i) => ({
+                html: s.lang || s.language || `Subtitle ${i + 1}`,
                 value: i
             })),
             onSelect(item) {
-                const s = subtitles[item.value];
+                const s = SUBS[item.value];
                 art.subtitle = {
                     url: s.url,
                     type: s.url.endsWith('.srt') ? 'srt' : 'vtt',
@@ -230,11 +261,11 @@ art.on('ready', () => {
     }
 });
 
-/* -------------------------------
-   ERROR HANDLING
--------------------------------- */
-art.on('error', err => {
-    console.error('Player error', err);
+/* =========================================================
+   ERROR LOGGING
+========================================================= */
+art.on('error', e => {
+    console.error('ART ERROR', e);
 });
 
 })();
