@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Netflix UI - ArtPlayer OG</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<title>Netflix OG ArtPlayer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.css">
 
@@ -18,46 +18,39 @@ html, body {
 
 .artplayer-app {
     width: 100%;
-    max-width: 1000px;
-    height: 560px;
+    max-width: 1100px;
+    height: 620px;
     margin: auto;
     background: #000;
     position: relative;
 }
 
-/* Netflix Header */
+/* Header */
 .netflix-header {
     position: absolute;
     top: 0; left: 0; right: 0;
-    padding: 20px 24px;
+    padding: 24px;
     display: flex;
     align-items: center;
     gap: 16px;
-    background: linear-gradient(to bottom, rgba(0,0,0,.8), transparent);
-    z-index: 50;
+    background: linear-gradient(to bottom, rgba(0,0,0,.85), transparent);
+    z-index: 40;
     opacity: 0;
     transition: opacity .3s;
 }
 .art-state-show .netflix-header {
     opacity: 1;
 }
-.back-arrow {
-    width: 28px;
-    height: 28px;
-    fill: #fff;
-    cursor: pointer;
-}
 .movie-title {
     color: #fff;
     font-size: 18px;
-    font-weight: 500;
 }
 
 /* Spinner */
 .netflix-spinner {
     width: 64px;
     height: 64px;
-    border: 4px solid rgba(255,255,255,.2);
+    border: 4px solid rgba(255,255,255,.25);
     border-top-color: red;
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -66,7 +59,7 @@ html, body {
     to { transform: rotate(360deg); }
 }
 
-/* Center overlay */
+/* Center controls */
 .netflix-overlay {
     position: absolute;
     inset: 0;
@@ -94,7 +87,7 @@ html, body {
     height: 88px;
 }
 
-/* Subtitles */
+/* Subtitle */
 .art-subtitle {
     font-size: 22px !important;
     background: rgba(0,0,0,.55);
@@ -108,9 +101,6 @@ html, body {
 
 <div class="artplayer-app">
     <div class="netflix-header">
-        <svg class="back-arrow" viewBox="0 0 24 24" onclick="history.back()">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
-        </svg>
         <div class="movie-title" id="title">Loading…</div>
     </div>
 </div>
@@ -121,52 +111,75 @@ html, body {
 <script>
 window.addEventListener('load', async () => {
 
-    /* ===== SLUG ===== */
-    const slug = location.pathname.replace('/', '').trim();
+    /* =======================
+       SLUG DETECTION (FIXED)
+    ======================== */
+
+    const params = new URLSearchParams(location.search);
+    let slug = params.get('title');
+
+    if (!slug) {
+        slug = location.pathname.replace('/', '').trim();
+    }
+
     if (!slug) {
         document.getElementById('title').innerText = 'No title provided';
         return;
     }
+
     document.getElementById('title').innerText = slug.replaceAll('.', ' ');
 
-    /* ===== PROXIES ===== */
-    const PROXY = 'https://workingg.vercel.app/api/proxy?url=';
-    const RENDER_API = PROXY + encodeURIComponent(
-        'https://u-1-1azw.onrender.com/api/get-stream?title=' + slug
-    );
+    /* =======================
+       PROXY CONFIG
+    ======================== */
 
-    /* ===== FETCH STREAM ===== */
-    let streamUrl;
+    const PROXY = 'https://workingg.vercel.app/api/proxy?url=';
+
+    const RENDER_API =
+        PROXY +
+        encodeURIComponent(
+            'https://u-1-1azw.onrender.com/api/get-stream?title=' + slug
+        );
+
+    /* =======================
+       FETCH STREAM
+    ======================== */
+
+    let m3u8;
     try {
         const res = await fetch(RENDER_API);
         const json = await res.json();
-        streamUrl = json.m3u8_url || json.streamUrl || json.url;
-        if (!streamUrl) throw 'No m3u8';
+        m3u8 = json.m3u8_url || json.streamUrl || json.url;
+        if (!m3u8) throw 'No stream';
     } catch (e) {
         document.getElementById('title').innerText = 'Stream not found';
         return;
     }
 
-    const finalM3U8 = PROXY + encodeURIComponent(streamUrl);
+    const finalM3U8 = PROXY + encodeURIComponent(m3u8);
 
-    /* ===== ICONS ===== */
+    /* =======================
+       ICONS
+    ======================== */
+
     const icons = {
         back: 'https://rivestream.org/images/player/backward.svg',
         forward: 'https://rivestream.org/images/player/forward.svg',
         play: 'https://rivestream.org/images/player/play.svg',
     };
 
-    /* ===== PLAYER ===== */
+    /* =======================
+       ARTPLAYER INIT
+    ======================== */
+
     const art = new Artplayer({
         container: '.artplayer-app',
         url: finalM3U8,
         type: 'm3u8',
         autoplay: true,
-        autoSize: true,
+        setting: true,
         fullscreen: true,
         fullscreenWeb: true,
-        playsInline: true,
-        setting: true,
         playbackRate: true,
         aspectRatio: true,
         pip: true,
@@ -182,7 +195,7 @@ window.addEventListener('load', async () => {
             loading: '<div class="netflix-spinner"></div>',
         },
         layers: [{
-            name: 'center',
+            name: 'center-ui',
             html: `
                 <div class="netflix-overlay">
                     <div class="netflix-btn back"><img src="${icons.back}"></div>
@@ -198,9 +211,9 @@ window.addEventListener('load', async () => {
                 hls.attachMedia(video);
                 art.hls = hls;
 
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                hls.on(Hls.Events.MANIFEST_PARSED, async () => {
 
-                    /* Quality */
+                    /* QUALITY */
                     art.setting.add({
                         name: 'quality',
                         html: 'Quality',
@@ -217,7 +230,7 @@ window.addEventListener('load', async () => {
                         }
                     });
 
-                    /* Audio */
+                    /* AUDIO */
                     if (hls.audioTracks.length > 1) {
                         art.setting.add({
                             name: 'audio',
@@ -234,25 +247,40 @@ window.addEventListener('load', async () => {
                         });
                     }
 
-                    /* Subtitles */
+                    /* =======================
+                       SUBTITLE SCRAPING
+                    ======================== */
+
+                    let subtitleItems = [
+                        { default: true, html: 'Off', url: '' }
+                    ];
+
+                    try {
+                        const wyzieUrl =
+                            slug.includes('s') && slug.includes('e')
+                                ? `https://sub.wyzie.ru/search?id=${slug}`
+                                : `https://sub.wyzie.ru/search?id=${slug}`;
+
+                        const subRes = await fetch(
+                            PROXY + encodeURIComponent(wyzieUrl)
+                        );
+                        const subs = await subRes.json();
+
+                        subs.forEach(s => {
+                            subtitleItems.push({
+                                html: s.lang || 'Subtitle',
+                                url: PROXY + encodeURIComponent(s.url)
+                            });
+                        });
+                    } catch (e) {}
+
                     art.setting.add({
                         name: 'subtitle',
                         html: 'Subtitles',
-                        selector: [
-                            { default: true, html: 'Off', url: '' },
-                            { html: 'Import URL', import: true }
-                        ],
+                        selector: subtitleItems,
                         onSelect: item => {
-                            if (item.import) {
-                                const u = prompt('Subtitle URL (.vtt)');
-                                if (u) {
-                                    art.subtitle.url = PROXY + encodeURIComponent(u);
-                                    art.subtitle.type = 'vtt';
-                                    return 'External';
-                                }
-                            } else {
-                                art.subtitle.url = '';
-                            }
+                            art.subtitle.url = item.url;
+                            art.subtitle.type = 'vtt';
                             return item.html;
                         }
                     });
@@ -262,13 +290,12 @@ window.addEventListener('load', async () => {
     });
 
     art.on('ready', () => {
-        const back = document.querySelector('.netflix-btn.back');
-        const play = document.querySelector('.netflix-btn.play');
-        const forward = document.querySelector('.netflix-btn.forward');
-
-        back.onclick = () => art.seek = art.currentTime - 10;
-        forward.onclick = () => art.seek = art.currentTime + 10;
-        play.onclick = () => art.toggle();
+        document.querySelector('.netflix-btn.back').onclick =
+            () => art.seek = art.currentTime - 10;
+        document.querySelector('.netflix-btn.forward').onclick =
+            () => art.seek = art.currentTime + 10;
+        document.querySelector('.netflix-btn.play').onclick =
+            () => art.toggle();
     });
 
 });
