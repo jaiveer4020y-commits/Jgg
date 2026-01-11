@@ -2,30 +2,41 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Final Stable Player</title>
+<title>Stable ArtPlayer HLS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- ArtPlayer -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.css">
 
 <style>
+/* ================= GLOBAL ================= */
 html, body {
     margin: 0;
     padding: 0;
     background: #000;
     height: 100%;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+}
+
+/* ================= PLAYER ================= */
+#player-wrapper {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #player {
     width: 100%;
-    max-width: 960px;
-    height: 540px;
-    margin: auto;
+    max-width: 980px;
+    height: 560px;
     background: #000;
     position: relative;
 }
 
-/* ===== Center Controls ===== */
-.center-ui {
+/* ================= CENTER CONTROLS ================= */
+.center-controls {
     position: absolute;
     inset: 0;
     display: flex;
@@ -34,27 +45,47 @@ html, body {
     gap: 120px;
     opacity: 0;
     transition: opacity .25s ease;
-    z-index: 20;
     pointer-events: none;
+    z-index: 20;
 }
 
-.art-state-show .center-ui {
+.art-state-show .center-controls {
     opacity: 1;
     pointer-events: auto;
 }
 
-.center-ui img {
+.center-controls img {
     width: 64px;
     height: 64px;
     opacity: .9;
 }
 
-.center-ui .play img {
-    width: 90px;
-    height: 90px;
+.center-controls .play img {
+    width: 92px;
+    height: 92px;
 }
 
-/* ===== Subtitle ===== */
+/* ================= AUDIO BUTTON ================= */
+.audio-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 30;
+    background: rgba(0,0,0,.55);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.audio-btn img {
+    width: 24px;
+    height: 24px;
+}
+
+/* ================= SUBTITLES ================= */
 .art-subtitle {
     font-size: 22px !important;
     background: rgba(0,0,0,.45);
@@ -67,75 +98,105 @@ html, body {
 
 <body>
 
-<div id="player"></div>
+<div id="player-wrapper">
+    <div id="player"></div>
+</div>
 
+<!-- LIBS -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15"></script>
 <script src="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.js"></script>
 
 <script>
-(async () => {
+/* =====================================================
+   HARD GUARANTEED EXECUTION (NO SILENT FAIL)
+===================================================== */
+(function () {
+'use strict';
 
-    /* =========================
-       CONFIG
-    ========================= */
-    const PROXY = 'https://workingg.vercel.app/api/proxy?url=';
+/* ================= CONFIG ================= */
+const PROXY = 'https://workingg.vercel.app/api/proxy?url=';
+const FALLBACK_TITLE = 'wednesday.s02e05';
 
-    const params = new URLSearchParams(location.search);
-    const title = params.get('title');
+/* ================= TITLE DETECTION ================= */
+const params = new URLSearchParams(window.location.search);
+let title = params.get('title');
 
-    if (!title) {
-        document.body.innerHTML = '<h2 style="color:white;text-align:center">Missing title</h2>';
+if (!title || title.trim() === '') {
+    console.warn('Title missing – using fallback');
+    title = FALLBACK_TITLE;
+}
+
+/* ================= LOG ================= */
+console.log('[PLAYER] title =', title);
+
+/* ================= FETCH STREAM ================= */
+async function getStream() {
+    const apiUrl = 'https://u-1-1azw.onrender.com/api/get-stream?title=' + encodeURIComponent(title);
+    const proxied = PROXY + encodeURIComponent(apiUrl);
+
+    console.log('[PLAYER] Fetch stream:', proxied);
+
+    const res = await fetch(proxied);
+    if (!res.ok) throw new Error('Stream API failed');
+
+    return res.json();
+}
+
+/* ================= FETCH SUBTITLES ================= */
+async function getSubtitle(imdb) {
+    if (!imdb) return null;
+
+    const subApi = 'https://sub.wyzie.ru/search?id=' + imdb;
+    const proxied = PROXY + encodeURIComponent(subApi);
+
+    console.log('[PLAYER] Fetch subtitles:', proxied);
+
+    const res = await fetch(proxied);
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const vtt = data?.subtitles?.find(s => s.format === 'vtt');
+
+    return vtt ? vtt.url : null;
+}
+
+/* ================= MAIN ================= */
+(async function init() {
+
+    let stream;
+    try {
+        stream = await getStream();
+    } catch (e) {
+        alert('Stream API error');
+        console.error(e);
         return;
     }
 
-    /* =========================
-       FETCH STREAM
-    ========================= */
-    const streamRes = await fetch(
-        PROXY + encodeURIComponent(
-            'https://u-1-1azw.onrender.com/api/get-stream?title=' + title
-        )
-    );
-
-    const stream = await streamRes.json();
-    if (!stream?.m3u8_url) {
-        alert('Stream error');
+    if (!stream || !stream.m3u8_url) {
+        alert('Invalid stream data');
         return;
     }
 
-    const M3U8 = PROXY + encodeURIComponent(stream.m3u8_url);
+    const m3u8 = PROXY + encodeURIComponent(stream.m3u8_url);
+    console.log('[PLAYER] M3U8:', m3u8);
 
-    /* =========================
-       FETCH SUBTITLE (VTT)
-    ========================= */
-    let subtitleVtt = null;
-
-    if (stream.imdb) {
-        try {
-            const subRes = await fetch(
-                PROXY + encodeURIComponent(
-                    'https://sub.wyzie.ru/search?id=' + stream.imdb
-                )
-            );
-            const sub = await subRes.json();
-
-            // MUST BE VTT
-            subtitleVtt = sub?.subtitles?.find(s => s.format === 'vtt')?.url || null;
-        } catch {}
+    let subtitleUrl = null;
+    try {
+        subtitleUrl = await getSubtitle(stream.imdb);
+    } catch (e) {
+        console.warn('Subtitle error');
     }
 
-    /* =========================
-       INIT PLAYER
-    ========================= */
-    let hlsInstance;
+    /* ================= ARTPLAYER ================= */
+    let hls = null;
 
     const art = new Artplayer({
         container: '#player',
-        url: M3U8,
+        url: m3u8,
         type: 'm3u8',
 
         autoplay: true,
-        muted: true,   // iOS REQUIRED
+        muted: true,   // REQUIRED FOR iOS
         volume: 1,
 
         setting: true,
@@ -144,41 +205,52 @@ html, body {
         fullscreen: true,
         fullscreenWeb: true,
 
-        subtitle: subtitleVtt ? {
-            url: subtitleVtt,
+        subtitle: subtitleUrl ? {
+            url: subtitleUrl,
             type: 'vtt',
-            encoding: 'utf-8',
-            style: true
+            encoding: 'utf-8'
         } : null,
 
         layers: [{
-            name: 'center-ui',
+            name: 'center-controls',
             html: `
-            <div class="center-ui">
-                <div class="btn back"><img src="https://rivestream.org/images/player/backward.svg"></div>
-                <div class="btn play"><img src="https://rivestream.org/images/player/play.svg"></div>
-                <div class="btn forward"><img src="https://rivestream.org/images/player/forward.svg"></div>
+            <div class="center-controls">
+                <div class="btn back">
+                    <img src="https://rivestream.org/images/player/backward.svg">
+                </div>
+                <div class="btn play">
+                    <img src="https://rivestream.org/images/player/play.svg">
+                </div>
+                <div class="btn forward">
+                    <img src="https://rivestream.org/images/player/forward.svg">
+                </div>
             </div>`
         }],
 
         customType: {
             m3u8(video, url) {
-                if (hlsInstance) return; // PREVENT RECONNECT LOOP
+
+                if (hls) {
+                    console.warn('HLS already attached – skip');
+                    return;
+                }
 
                 if (Hls.isSupported()) {
-                    hlsInstance = new Hls({
+                    hls = new Hls({
                         enableWorker: true,
                         maxBufferLength: 30,
                         maxMaxBufferLength: 60,
-                        fragLoadingMaxRetry: 2,
-                        levelLoadingMaxRetry: 2
+                        fragLoadingMaxRetry: 1,
+                        levelLoadingMaxRetry: 1
                     });
 
-                    hlsInstance.loadSource(url);
-                    hlsInstance.attachMedia(video);
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
 
-                    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-                        const qualities = hlsInstance.levels.map((l, i) => ({
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        console.log('[PLAYER] Manifest parsed');
+
+                        const levels = hls.levels.map((l, i) => ({
                             html: l.height + 'p',
                             level: i
                         }));
@@ -186,9 +258,9 @@ html, body {
                         art.setting.add({
                             name: 'quality',
                             html: 'Quality',
-                            selector: qualities,
+                            selector: levels,
                             onSelect(item) {
-                                hlsInstance.currentLevel = item.level;
+                                hls.currentLevel = item.level;
                                 return item.html;
                             }
                         });
@@ -200,23 +272,34 @@ html, body {
         }
     });
 
-    /* =========================
-       CENTER CONTROLS
-    ========================= */
+    /* ================= AUDIO BUTTON ================= */
+    const audioBtn = document.createElement('div');
+    audioBtn.className = 'audio-btn';
+    audioBtn.innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/727/727245.png">`;
+    document.getElementById('player').appendChild(audioBtn);
+
+    audioBtn.onclick = () => {
+        art.muted = !art.muted;
+        audioBtn.style.opacity = art.muted ? 0.5 : 1;
+    };
+
+    /* ================= CENTER CONTROLS ================= */
     art.on('ready', () => {
-        const play = document.querySelector('.btn.play');
         const back = document.querySelector('.btn.back');
+        const play = document.querySelector('.btn.play');
         const forward = document.querySelector('.btn.forward');
+
+        back.onclick = () => art.seek = art.currentTime - 10;
+
+        forward.onclick = () => art.seek = art.currentTime + 10;
 
         play.onclick = () => {
             art.toggle();
-            art.muted = false; // AUDIO UNLOCK
+            art.muted = false; // unlock audio
         };
-
-        back.onclick = () => art.seek = art.currentTime - 10;
-        forward.onclick = () => art.seek = art.currentTime + 10;
     });
 
+})();
 })();
 </script>
 
