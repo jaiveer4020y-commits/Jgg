@@ -1,274 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <meta
   name="viewport"
-  content="width=device-width, initial-scale=1, maximum-scale=1"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
 />
 
-<title>ArtPlayer Full</title>
+<title>Player</title>
 
 <!-- ArtPlayer -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.css">
-<script src="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.css">
+<script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
 
 <!-- HLS -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
 
 <style>
 html, body {
-    margin: 0;
-    padding: 0;
-    background: #000;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background: black;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 #player {
-    width: 100%;
-    height: 100%;
-    background: #000;
+  width: 100vw;
+  height: 100vh;
+  background: black;
 }
 
 /* Netflix spinner */
-.art-loading::after {
-    content: '';
-    position: absolute;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: 4px solid rgba(255,255,255,.25);
-    border-top-color: #fff;
-    animation: spin 1s linear infinite;
+.netflix-spinner {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border: 6px solid rgba(255,255,255,.2);
+  border-top-color: red;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+  to { transform: rotate(360deg) translate(-50%, -50%); }
 }
 
-/* Jump icons */
-.jump-icon {
-    width: 26px;
-    height: 26px;
+/* Jump buttons */
+.jump-btn {
+  position: absolute;
+  top: 50%;
+  width: 70px;
+  height: 70px;
+  transform: translateY(-50%);
+  z-index: 20;
+  opacity: 0.85;
+}
+
+.jump-left { left: 10%; }
+.jump-right { right: 10%; }
+
+.jump-btn img {
+  width: 100%;
+  height: 100%;
 }
 </style>
 </head>
 
 <body>
+
 <div id="player"></div>
+<div id="spinner" class="netflix-spinner"></div>
+
+<!-- Jump Buttons -->
+<div class="jump-btn jump-left" id="backward">
+  <img src="https://rivestream.org/images/player/backward.svg">
+</div>
+
+<div class="jump-btn jump-right" id="forward">
+  <img src="https://rivestream.org/images/player/forward.svg">
+</div>
 
 <script>
-/* =========================================================
-   STRICT PARAM PARSING (NO SILENT FAIL)
-========================================================= */
-const params = new URLSearchParams(window.location.search);
+/* --------------------------------------------------
+   PARAMS (title / tittle FIX)
+-------------------------------------------------- */
 
-const TITLE   = params.get('title');   // REQUIRED
-const IMDB_ID = params.get('id');
-const SEASON  = params.get('season');
-const EPISODE = params.get('episode');
+const params = new URLSearchParams(location.search);
 
-if (!TITLE) {
-    document.body.innerHTML =
-        '<h2 style="color:white;text-align:center;margin-top:40vh">Missing ?title</h2>';
-    throw new Error('TITLE missing');
+const title =
+  params.get('title') ||
+  params.get('tittle') ||
+  '';
+
+const imdbId = params.get('id') || '';
+const season = params.get('season');
+const episode = params.get('episode');
+
+if (!title || !imdbId) {
+  alert('Missing title or IMDB id');
+  throw new Error('Missing parameters');
 }
 
-/* =========================================================
-   ENDPOINTS
-========================================================= */
-const STREAM_API = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(TITLE)}`;
-const PROXY      = 'https://workingg.vercel.app/api/proxy?url=';
+/* --------------------------------------------------
+   API ENDPOINTS
+-------------------------------------------------- */
 
-/* =========================================================
-   FETCH STREAM URL
-========================================================= */
-async function fetchStreamUrl() {
-    const res = await fetch(STREAM_API);
-    if (!res.ok) throw new Error('Stream API failed');
+const RENDER_API = 'https://u-1-1azw.onrender.com/api/get-stream';
+const PROXY = 'https://workingg.vercel.app/api/proxy?url=';
 
-    const json = await res.json();
-    if (!json || !json.url) throw new Error('Invalid stream response');
+/* --------------------------------------------------
+   FETCH STREAM
+-------------------------------------------------- */
 
-    return PROXY + encodeURIComponent(json.url);
+async function fetchStream() {
+  const url = `${RENDER_API}?title=${encodeURIComponent(title)}`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (!data || !data.url) {
+    throw new Error('Stream not found');
+  }
+
+  return data.url;
 }
 
-/* =========================================================
+/* --------------------------------------------------
    FETCH SUBTITLES
-========================================================= */
+-------------------------------------------------- */
+
 async function fetchSubtitles() {
-    if (!IMDB_ID) return [];
+  let url = `https://sub.wyzie.ru/search?id=${imdbId}`;
+  if (season && episode) {
+    url += `&season=${season}&episode=${episode}`;
+  }
 
-    let url;
-    if (SEASON && EPISODE) {
-        url = `https://sub.wyzie.ru/search?id=${IMDB_ID}&season=${SEASON}&episode=${EPISODE}`;
-    } else {
-        url = `https://sub.wyzie.ru/search?id=${IMDB_ID}`;
-    }
+  const res = await fetch(PROXY + encodeURIComponent(url));
+  const data = await res.json();
 
-    const res = await fetch(PROXY + encodeURIComponent(url));
-    if (!res.ok) return [];
+  if (!Array.isArray(data)) return [];
 
-    const json = await res.json();
-    return Array.isArray(json) ? json : [];
+  return data.map(s => ({
+    html: s.lang,
+    url: PROXY + encodeURIComponent(s.url),
+    default: s.lang.toLowerCase().includes('english'),
+  }));
 }
 
-/* =========================================================
-   INIT
-========================================================= */
+/* --------------------------------------------------
+   INIT PLAYER
+-------------------------------------------------- */
+
 (async () => {
+  const streamUrl = await fetchStream();
+  const subtitles = await fetchSubtitles();
 
-const STREAM_URL = await fetchStreamUrl();
-const SUBS       = await fetchSubtitles();
-
-let hlsInstance = null;
-
-/* =========================================================
-   ARTPLAYER
-========================================================= */
-const art = new Artplayer({
+  const art = new Artplayer({
     container: '#player',
-    url: STREAM_URL,
+    url: streamUrl,
     type: 'm3u8',
     autoplay: true,
-    autoSize: true,
-    autoPlayback: true,
     muted: false,
-
+    autoSize: true,
+    autoMini: false,
+    loop: false,
+    flip: true,
+    playbackRate: true,
+    aspectRatio: true,
     fullscreen: true,
     fullscreenWeb: true,
     pip: true,
-    airplay: true,
-
-    setting: true,
-    playbackRate: true,
-    aspectRatio: true,
-    subtitleOffset: true,
-    miniProgressBar: true,
     mutex: true,
+    backdrop: true,
+    hotkey: true,
+    setting: true,
+    airplay: true,
     fastForward: true,
-    lock: true,
 
-    controls: [
-        {
-            name: 'backward',
-            position: 'left',
-            html: `<img class="jump-icon" src="https://rivestream.org/images/player/backward.svg">`,
-            click: () => art.currentTime -= 10
-        },
-        {
-            name: 'play',
-            position: 'left',
-            html: `<img class="jump-icon" src="https://rivestream.org/images/player/play.svg">`,
-            click: () => art.toggle()
-        },
-        {
-            name: 'forward',
-            position: 'left',
-            html: `<img class="jump-icon" src="https://rivestream.org/images/player/forward.svg">`,
-            click: () => art.currentTime += 10
+    subtitle: {
+      url: subtitles.find(s => s.default)?.url || '',
+      type: 'vtt',
+      style: {
+        color: '#fff',
+        fontSize: '20px',
+        textShadow: '0 0 4px #000',
+      },
+    },
+
+    settings: [
+      {
+        name: 'Subtitles',
+        selector: subtitles,
+        onSelect: item => {
+          art.subtitle.switch(item.url);
+          return item.html;
         }
+      }
     ],
 
     customType: {
-        m3u8(video, url) {
-            if (hlsInstance) {
-                hlsInstance.destroy();
-                hlsInstance = null;
-            }
+      m3u8(video, url) {
+        if (window.hls) window.hls.destroy();
 
-            if (Hls.isSupported()) {
-                hlsInstance = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: false,
-                    backBufferLength: 90,
-                    maxBufferLength: 60,
-                    maxMaxBufferLength: 120,
-                });
+        if (Hls.isSupported()) {
+          const hls = new Hls({
+            enableWorker: true,
+            backBufferLength: 90,
+            xhrSetup(xhr, requestUrl) {
+              if (!requestUrl.startsWith(PROXY)) {
+                xhr.open(
+                  'GET',
+                  PROXY + encodeURIComponent(requestUrl),
+                  true
+                );
+              }
+            },
+          });
 
-                hlsInstance.loadSource(url);
-                hlsInstance.attachMedia(video);
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
-            } else {
-                console.error('HLS not supported');
-            }
+          window.hls = hls;
+          hls.loadSource(url);
+          hls.attachMedia(video);
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = PROXY + encodeURIComponent(url);
         }
-    }
-});
+      }
+    },
+  });
 
-/* =========================================================
-   SETTINGS (QUALITY / AUDIO / SUBS)
-========================================================= */
-art.on('ready', () => {
+  art.on('ready', () => {
+    document.getElementById('spinner').style.display = 'none';
+  });
 
-    /* QUALITY */
-    if (hlsInstance && hlsInstance.levels?.length) {
-        art.setting.add({
-            name: 'Quality',
-            html: 'Quality',
-            selector: [
-                { html: 'Auto', value: -1 },
-                ...hlsInstance.levels.map((l, i) => ({
-                    html: l.height ? `${l.height}p` : `Level ${i}`,
-                    value: i
-                }))
-            ],
-            onSelect(item) {
-                hlsInstance.currentLevel = item.value;
-                return item.html;
-            }
-        });
-    }
-
-    /* AUDIO (SETTINGS ONLY, NO BUTTON) */
-    if (hlsInstance && hlsInstance.audioTracks?.length > 1) {
-        art.setting.add({
-            name: 'Audio',
-            html: 'Audio',
-            selector: hlsInstance.audioTracks.map((t, i) => ({
-                html: t.name || t.lang || `Track ${i + 1}`,
-                value: i
-            })),
-            onSelect(item) {
-                hlsInstance.audioTrack = item.value;
-                return item.html;
-            }
-        });
-    }
-
-    /* SUBTITLES */
-    if (SUBS.length) {
-        art.setting.add({
-            name: 'Subtitles',
-            html: 'Subtitles',
-            selector: SUBS.map((s, i) => ({
-                html: s.lang || s.language || `Subtitle ${i + 1}`,
-                value: i
-            })),
-            onSelect(item) {
-                const s = SUBS[item.value];
-                art.subtitle = {
-                    url: s.url,
-                    type: s.url.endsWith('.srt') ? 'srt' : 'vtt',
-                    encoding: 'utf-8'
-                };
-                return item.html;
-            }
-        });
-    }
-});
-
-/* =========================================================
-   ERROR LOGGING
-========================================================= */
-art.on('error', e => {
-    console.error('ART ERROR', e);
-});
-
+  // Jump buttons
+  backward.onclick = () => art.currentTime -= 10;
+  forward.onclick = () => art.currentTime += 10;
 })();
 </script>
+
 </body>
 </html>
