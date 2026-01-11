@@ -21,49 +21,44 @@ body {
     position: relative;
 }
 
-.netflix-header {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 16px;
-    z-index: 20;
-    color: #fff;
-    pointer-events: none;
-}
-
+/* Overlay buttons */
 .netflix-overlay {
     position: absolute;
     inset: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 90px;
-    z-index: 15;
-    opacity: 0;
-    transition: opacity .3s;
-}
-
-.art-state-show .netflix-overlay {
+    gap: 80px;
+    z-index: 50;
     opacity: 1;
+    pointer-events: none;
 }
 
 .netflix-btn {
-    cursor: pointer;
     pointer-events: auto;
+    cursor: pointer;
 }
 
 .netflix-btn img {
     width: 60px;
     height: 60px;
-    filter: drop-shadow(0 0 6px rgba(0,0,0,.7));
+    filter: drop-shadow(0 0 8px rgba(0,0,0,.8));
 }
 
 .netflix-btn.play img {
-    width: 95px;
-    height: 95px;
+    width: 96px;
+    height: 96px;
 }
 
+/* Subtitle style */
+.art-subtitle {
+    font-size: 22px !important;
+    background: rgba(0,0,0,.6) !important;
+    padding: 4px 10px;
+    border-radius: 3px;
+}
+
+/* Netflix spinner */
 .netflix-spinner {
     width: 60px;
     height: 60px;
@@ -71,24 +66,15 @@ body {
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
+    from { transform: rotate(0); }
     to { transform: rotate(360deg); }
-}
-
-.art-subtitle {
-    font-size: 22px !important;
-    background: rgba(0,0,0,.55) !important;
-    padding: 4px 10px;
-    border-radius: 3px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="artplayer-app">
-    <div class="netflix-header" id="title">Loading…</div>
-</div>
+<div class="artplayer-app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@swarmcloud/hls/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/artplayer@5.0.9/dist/artplayer.js"></script>
@@ -98,164 +84,145 @@ body {
 
 const qs = new URLSearchParams(location.search);
 const title = qs.get('title');
-const imdb = qs.get('imdb');      // optional
-const season = qs.get('season'); // optional
+const imdb = qs.get('imdb');
+const season = qs.get('season');
 const episode = qs.get('episode');
 
-if (!title) {
-    document.getElementById('title').innerText = 'No title';
-    return;
-}
+if (!title) return;
 
-document.getElementById('title').innerText = title;
+const proxy = u =>
+ 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(u);
 
-// 🔹 PROXY HELPER
-const proxy = url =>
-  'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(url);
-
-// 🔹 FETCH STREAM (RENDER API via PROXY)
+/* 🔹 FETCH STREAM */
 const streamRes = await fetch(
-    proxy(`https://u-1-1azw.onrender.com/api/get-stream?title=${title}`)
+ proxy(`https://u-1-1azw.onrender.com/api/get-stream?title=${title}`)
 );
-const streamJson = await streamRes.json();
-if (!streamJson.m3u8_url) return;
+const stream = await streamRes.json();
+if (!stream.m3u8_url) return;
 
-const m3u8 = proxy(streamJson.m3u8_url);
+const m3u8 = proxy(stream.m3u8_url);
 
-// 🔹 FETCH SUBTITLES (MOVIE OR EPISODE)
-let subtitleList = [];
+/* 🔹 FETCH SUBS */
+let subs = [];
 if (imdb) {
-    let subUrl = season && episode
-        ? `https://sub.wyzie.ru/search?id=${imdb}&season=${season}&episode=${episode}`
-        : `https://sub.wyzie.ru/search?id=${imdb}`;
+    const subApi = season && episode
+      ? `https://sub.wyzie.ru/search?id=${imdb}&season=${season}&episode=${episode}`
+      : `https://sub.wyzie.ru/search?id=${imdb}`;
 
     try {
-        const subRes = await fetch(proxy(subUrl));
-        subtitleList = await subRes.json();
+        const s = await fetch(proxy(subApi));
+        subs = await s.json();
     } catch {}
 }
 
-// 🔹 ICONS
-const ICONS = {
-    back: 'https://rivestream.org/images/player/backward.svg',
-    play: 'https://rivestream.org/images/player/play.svg',
-    forward: 'https://rivestream.org/images/player/forward.svg'
+/* 🔹 ICONS */
+const ICON = {
+ back: 'https://rivestream.org/images/player/backward.svg',
+ play: 'https://rivestream.org/images/player/play.svg',
+ forward: 'https://rivestream.org/images/player/forward.svg'
 };
 
-// 🔹 INIT PLAYER
+/* 🔹 PLAYER */
 const art = new Artplayer({
-    container: '.artplayer-app',
-    url: m3u8,
-    type: 'm3u8',
-    autoplay: true,
-    setting: true,
-    playbackRate: true,
-    aspectRatio: true,
-    fullscreen: true,
-    fullscreenWeb: true,
-    pip: true,
-    airplay: true,
-    miniProgressBar: true,
-    mutex: true,
-    playsInline: true,
-    backdrop: true,
-    theme: '#e50914',
+ container: '.artplayer-app',
+ url: m3u8,
+ type: 'm3u8',
+ autoplay: true,
+ fullscreen: true,
+ fullscreenWeb: true,
+ setting: true,
+ playbackRate: true,
+ aspectRatio: true,
+ pip: true,
+ airplay: true,
+ playsInline: true,
+ theme: '#e50914',
 
-    icons: {
-        loading:
-          '<img class="netflix-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">'
-    },
+ subtitle: {
+     visible: true,
+     style: { fontSize: '22px' }
+ },
 
-    layers: [{
-        name: 'controls',
-        html: `
-        <div class="netflix-overlay">
-            <div class="netflix-btn back"><img src="${ICONS.back}"></div>
-            <div class="netflix-btn play"><img src="${ICONS.play}"></div>
-            <div class="netflix-btn forward"><img src="${ICONS.forward}"></div>
-        </div>`
-    }],
+ icons: {
+   loading:
+    '<img class="netflix-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">'
+ },
 
-    customType: {
-        m3u8(video, url, art) {
-            if (Hls.isSupported()) {
-                const hls = new Hls({
-                    maxBufferLength: 60,
-                    maxMaxBufferLength: 120,
-                    enableWorker: true
-                });
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                art.hls = hls;
+ layers: [{
+   name: 'netflix-ui',
+   html: `
+   <div class="netflix-overlay">
+     <div class="netflix-btn back"><img src="${ICON.back}"></div>
+     <div class="netflix-btn play"><img src="${ICON.play}"></div>
+     <div class="netflix-btn forward"><img src="${ICON.forward}"></div>
+   </div>`
+ }],
 
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    art.setting.add({
-                        name: 'quality',
-                        html: 'Quality',
-                        selector: [
-                            { html: 'Auto', level: -1, default: true },
-                            ...hls.levels.map((l, i) => ({
-                                html: l.height + 'p',
-                                level: i
-                            }))
-                        ],
-                        onSelect: item => {
-                            hls.currentLevel = item.level;
-                            return item.html;
-                        }
-                    });
-                });
+ customType: {
+  m3u8(video, url, art) {
+   if (Hls.isSupported()) {
+    const hls = new Hls({
+      enableWorker: true,
+      maxBufferLength: 40,
+      fragLoadingMaxRetry: 3,
+      levelLoadingMaxRetry: 3,
+      manifestLoadingMaxRetry: 2
+    });
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    art.hls = hls;
 
-                hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, d) => {
-                    if (d.audioTracks.length > 1) {
-                        art.setting.add({
-                            name: 'audio',
-                            html: 'Audio',
-                            selector: d.audioTracks.map((t, i) => ({
-                                html: t.name || t.lang || `Track ${i}`,
-                                index: i,
-                                default: i === hls.audioTrack
-                            })),
-                            onSelect: i => {
-                                hls.audioTrack = i.index;
-                                return i.html;
-                            }
-                        });
-                    }
-                });
-            }
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      art.setting.add({
+        name: 'quality',
+        html: 'Quality',
+        selector: [
+          { html: 'Auto', level: -1, default: true },
+          ...hls.levels.map((l, i) => ({
+            html: l.height + 'p',
+            level: i
+          }))
+        ],
+        onSelect: i => {
+          hls.currentLevel = i.level;
+          return i.html;
         }
-    }
+      });
+    });
+   }
+  }
+ }
 });
 
-// 🔹 SUBTITLE SETTING
-if (subtitleList.length) {
-    art.setting.add({
-        name: 'subtitle',
-        html: 'Subtitles',
-        selector: [
-            { html: 'Off', url: '', default: true },
-            ...subtitleList.map(s => ({
-                html: s.lang || s.language || 'Subtitle',
-                url: proxy(s.url)
-            }))
-        ],
-        onSelect(item) {
-            art.subtitle.url = item.url;
-            return item.html;
-        }
-    });
+/* 🔹 SUBTITLE MENU */
+if (subs.length) {
+ art.setting.add({
+   name: 'subtitle',
+   html: 'Subtitles',
+   selector: [
+     { html: 'Off', url: '', default: true },
+     ...subs.map(s => ({
+       html: s.lang || s.language || 'Subtitle',
+       url: proxy(s.url)
+     }))
+   ],
+   onSelect: i => {
+     art.subtitle.url = i.url;
+     art.subtitle.visible = !!i.url;
+     return i.html;
+   }
+ });
 }
 
-// 🔹 CONTROLS
+/* 🔹 BUTTON ACTIONS */
 art.on('ready', () => {
-    const play = document.querySelector('.netflix-btn.play');
-    const back = document.querySelector('.netflix-btn.back');
-    const forward = document.querySelector('.netflix-btn.forward');
+ const play = document.querySelector('.netflix-btn.play');
+ const back = document.querySelector('.netflix-btn.back');
+ const forward = document.querySelector('.netflix-btn.forward');
 
-    play.onclick = () => art.toggle();
-    back.onclick = () => art.seek = art.currentTime - 10;
-    forward.onclick = () => art.seek = art.currentTime + 10;
+ play.onclick = () => art.toggle();
+ back.onclick = () => art.seek = art.currentTime - 10;
+ forward.onclick = () => art.seek = art.currentTime + 10;
 });
 
 })();
