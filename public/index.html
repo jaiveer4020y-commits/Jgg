@@ -3,7 +3,7 @@
 <head>
     <title>Netflix UI - Pro Advanced Features</title>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <style>
         body {
@@ -28,16 +28,17 @@
             left: 0;
             right: 0;
             padding: 20px;
-            z-index: 10;
+            z-index: 20;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             pointer-events: none;
         }
 
         .movie-title {
             color: #fff;
             font-size: 18px;
+            font-weight: 500;
         }
 
         .netflix-overlay {
@@ -47,9 +48,10 @@
             align-items: center;
             justify-content: center;
             gap: 100px;
-            z-index: 9;
+            z-index: 10;
             pointer-events: none;
             opacity: 0;
+            transition: opacity .3s;
         }
 
         .art-state-show .netflix-overlay {
@@ -62,9 +64,9 @@
         }
 
         .netflix-btn svg {
-            width: 60px;
-            height: 60px;
-            fill: white;
+            width: 55px;
+            height: 55px;
+            fill: #fff;
         }
 
         .netflix-btn.play-center svg {
@@ -74,14 +76,15 @@
 
         .art-subtitle {
             font-size: 22px !important;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,.6) !important;
             padding: 4px 10px;
+            border-radius: 2px;
         }
 
-        .debug {
+        .status {
             color: #0f0;
-            font-size: 14px;
             text-align: center;
+            font-size: 13px;
             margin-top: 10px;
         }
     </style>
@@ -95,15 +98,15 @@
     </div>
 </div>
 
-<div class="debug" id="debug">JS loaded</div>
+<div class="status" id="status">Initializing…</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@swarmcloud/hls/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/artplayer@5.0.9/dist/artplayer.js"></script>
 
 <script>
-window.addEventListener('load', async () => {
-    const debug = (msg) => {
-        document.getElementById('debug').innerText = msg;
+(async () => {
+    const status = msg => {
+        document.getElementById('status').innerText = msg;
         console.log(msg);
     };
 
@@ -111,34 +114,41 @@ window.addEventListener('load', async () => {
     const title = params.get('title');
 
     if (!title) {
-        debug('No title provided in URL');
+        status('No title in URL');
         return;
     }
 
     document.getElementById('movieTitle').innerText = title;
-    debug('Fetching stream info…');
 
-    let data;
-    try {
-        const res = await fetch(
-            `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(title)}`
-        );
-        data = await res.json();
-    } catch (e) {
-        debug('Render API failed');
-        return;
-    }
-
-    if (!data.m3u8_url) {
-        debug('No m3u8_url in response');
-        return;
-    }
-
-    const finalUrl =
+    // 🔥 USE PROXY FOR RENDER API (CORS FIX)
+    const renderApi =
         'https://workingg.vercel.app/api/proxy?url=' +
-        encodeURIComponent(data.m3u8_url);
+        encodeURIComponent(
+            `https://u-1-1azw.onrender.com/api/get-stream?title=${title}`
+        );
 
-    debug('Stream ready');
+    status('Fetching stream info…');
+
+    let json;
+    try {
+        const res = await fetch(renderApi);
+        json = await res.json();
+    } catch (e) {
+        status('Render API failed');
+        return;
+    }
+
+    if (!json.m3u8_url) {
+        status('Stream not found');
+        return;
+    }
+
+    // 🔥 USE PROXY FOR M3U8
+    const finalM3U8 =
+        'https://workingg.vercel.app/api/proxy?url=' +
+        encodeURIComponent(json.m3u8_url);
+
+    status('Starting player…');
 
     const iconPlay = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
     const iconPause = `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></svg>`;
@@ -147,7 +157,7 @@ window.addEventListener('load', async () => {
 
     const art = new Artplayer({
         container: '.artplayer-app',
-        url: finalUrl,
+        url: finalM3U8,
         type: 'm3u8',
         setting: true,
         playbackRate: true,
@@ -161,11 +171,12 @@ window.addEventListener('load', async () => {
         subtitleOffset: true,
         miniProgressBar: true,
         mutex: true,
+        backdrop: true,
         playsInline: true,
         theme: '#e50914',
 
         layers: [{
-            name: 'netflix',
+            name: 'netflix-overlay',
             html: `
                 <div class="netflix-overlay">
                     <div class="netflix-btn back-10">${iconBack}</div>
@@ -200,18 +211,44 @@ window.addEventListener('load', async () => {
                             }
                         });
                     });
+
+                    hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, data) => {
+                        if (data.audioTracks.length > 1) {
+                            art.setting.add({
+                                name: 'audio',
+                                html: 'Audio',
+                                selector: data.audioTracks.map((t, i) => ({
+                                    html: t.name || t.lang || `Track ${i}`,
+                                    index: i,
+                                    default: i === hls.audioTrack
+                                })),
+                                onSelect: item => {
+                                    hls.audioTrack = item.index;
+                                    return item.html;
+                                }
+                            });
+                        }
+                    });
                 }
             }
         }
     });
 
     art.on('ready', () => {
+        status('Ready');
+
         const playBtn = document.querySelector('.play-center');
+        const backBtn = document.querySelector('.back-10');
+        const forwardBtn = document.querySelector('.forward-10');
+
         playBtn.onclick = () => art.toggle();
+        backBtn.onclick = () => art.seek = art.currentTime - 10;
+        forwardBtn.onclick = () => art.seek = art.currentTime + 10;
+
         art.on('play', () => playBtn.innerHTML = iconPause);
         art.on('pause', () => playBtn.innerHTML = iconPlay);
     });
-});
+})();
 </script>
 
 </body>
