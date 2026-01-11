@@ -11,19 +11,14 @@
             background: #000;
             margin: 0;
             padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
         }
 
         .artplayer-app {
             width: 100%;
             max-width: 900px;
             height: 506px;
+            margin: 40px auto;
             background: #000;
-            border-radius: 6px;
-            overflow: hidden;
             position: relative;
         }
 
@@ -33,23 +28,16 @@
             left: 0;
             right: 0;
             padding: 20px;
-            background: linear-gradient(to bottom, rgba(0,0,0,.8), transparent);
-            z-index: 100;
+            z-index: 10;
             display: flex;
             align-items: center;
-            gap: 12px;
-            opacity: 0;
-            transition: opacity .3s;
-        }
-
-        .art-state-show .netflix-header {
-            opacity: 1;
+            gap: 15px;
+            pointer-events: none;
         }
 
         .movie-title {
             color: #fff;
             font-size: 18px;
-            font-weight: 500;
         }
 
         .netflix-overlay {
@@ -58,11 +46,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 80px;
+            gap: 100px;
+            z-index: 9;
             pointer-events: none;
-            z-index: 50;
             opacity: 0;
-            transition: opacity .3s;
         }
 
         .art-state-show .netflix-overlay {
@@ -77,7 +64,7 @@
         .netflix-btn svg {
             width: 60px;
             height: 60px;
-            fill: #fff;
+            fill: white;
         }
 
         .netflix-btn.play-center svg {
@@ -85,51 +72,65 @@
             height: 90px;
         }
 
-        .art-loading .netflix-spinner {
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
+        .art-subtitle {
+            font-size: 22px !important;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 10px;
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .debug {
+            color: #0f0;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
         }
     </style>
 </head>
+
 <body>
 
 <div class="artplayer-app">
     <div class="netflix-header">
-        <div class="movie-title" id="titleText">Loading…</div>
+        <div class="movie-title" id="movieTitle">Loading…</div>
     </div>
 </div>
+
+<div class="debug" id="debug">JS loaded</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@swarmcloud/hls/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/artplayer@5.0.9/dist/artplayer.js"></script>
 
 <script>
-(async () => {
-    const params = new URLSearchParams(location.search);
+window.addEventListener('load', async () => {
+    const debug = (msg) => {
+        document.getElementById('debug').innerText = msg;
+        console.log(msg);
+    };
+
+    const params = new URLSearchParams(window.location.search);
     const title = params.get('title');
 
     if (!title) {
-        document.getElementById('titleText').textContent = 'No title provided';
+        debug('No title provided in URL');
         return;
     }
 
-    document.getElementById('titleText').textContent = title;
+    document.getElementById('movieTitle').innerText = title;
+    debug('Fetching stream info…');
 
-    console.log('Fetching stream for:', title);
-
-    const res = await fetch(
-        `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(title)}`
-    );
-
-    const data = await res.json();
+    let data;
+    try {
+        const res = await fetch(
+            `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(title)}`
+        );
+        data = await res.json();
+    } catch (e) {
+        debug('Render API failed');
+        return;
+    }
 
     if (!data.m3u8_url) {
-        document.getElementById('titleText').textContent = 'Stream not found';
+        debug('No m3u8_url in response');
         return;
     }
 
@@ -137,41 +138,43 @@
         'https://workingg.vercel.app/api/proxy?url=' +
         encodeURIComponent(data.m3u8_url);
 
-    console.log('Final M3U8:', finalUrl);
+    debug('Stream ready');
 
     const iconPlay = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
-    const iconPause = `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+    const iconPause = `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></svg>`;
+    const iconBack = `<svg viewBox="0 0 24 24"><path d="M12 5v14l-8-7z"/></svg>`;
+    const iconForward = `<svg viewBox="0 0 24 24"><path d="M12 5l8 7-8 7z"/></svg>`;
 
     const art = new Artplayer({
         container: '.artplayer-app',
         url: finalUrl,
         type: 'm3u8',
-        autoplay: false,
-        muted: true,            // REQUIRED for iOS
         setting: true,
+        playbackRate: true,
+        aspectRatio: true,
         fullscreen: true,
         fullscreenWeb: true,
         autoSize: true,
-        playbackRate: true,
-        aspectRatio: true,
-        screenshot: true,
-        pip: true,
-        mutex: true,
-        backdrop: true,
-        playsInline: true,
         airplay: true,
+        pip: true,
+        screenshot: true,
+        subtitleOffset: true,
+        miniProgressBar: true,
+        mutex: true,
+        playsInline: true,
         theme: '#e50914',
-        icons: {
-            loading:
-                '<img class="netflix-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">'
-        },
+
         layers: [{
-            name: 'netflix-center',
+            name: 'netflix',
             html: `
-            <div class="netflix-overlay">
-                <div class="netflix-btn play-center">${iconPlay}</div>
-            </div>`
+                <div class="netflix-overlay">
+                    <div class="netflix-btn back-10">${iconBack}</div>
+                    <div class="netflix-btn play-center">${iconPlay}</div>
+                    <div class="netflix-btn forward-10">${iconForward}</div>
+                </div>
+            `
         }],
+
         customType: {
             m3u8(video, url, art) {
                 if (Hls.isSupported()) {
@@ -179,6 +182,24 @@
                     hls.loadSource(url);
                     hls.attachMedia(video);
                     art.hls = hls;
+
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        art.setting.add({
+                            name: 'quality',
+                            html: 'Quality',
+                            selector: [
+                                { html: 'Auto', level: -1, default: true },
+                                ...hls.levels.map((l, i) => ({
+                                    html: l.height + 'p',
+                                    level: i
+                                }))
+                            ],
+                            onSelect: item => {
+                                hls.currentLevel = item.level;
+                                return item.html;
+                            }
+                        });
+                    });
                 }
             }
         }
@@ -190,8 +211,7 @@
         art.on('play', () => playBtn.innerHTML = iconPause);
         art.on('pause', () => playBtn.innerHTML = iconPlay);
     });
-
-})();
+});
 </script>
 
 </body>
