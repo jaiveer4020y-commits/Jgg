@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ArtPlayer Full Working</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Stable Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.css">
 
@@ -14,230 +13,208 @@ html, body {
     padding: 0;
     background: #000;
     height: 100%;
-    overflow: hidden;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
-#player-wrap {
+#player {
     width: 100%;
     max-width: 960px;
     height: 540px;
-    margin: 40px auto;
+    margin: auto;
     background: #000;
     position: relative;
 }
 
-/* Center controls */
-.center-controls {
+/* ===== Center Controls ===== */
+.center-ui {
     position: absolute;
     inset: 0;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     gap: 120px;
     opacity: 0;
-    transition: opacity .25s;
+    transition: opacity .25s ease;
     z-index: 20;
     pointer-events: none;
 }
 
-.art-state-show .center-controls {
+.art-state-show .center-ui {
     opacity: 1;
     pointer-events: auto;
 }
 
-.center-btn img {
+.center-ui img {
     width: 64px;
     height: 64px;
-    opacity: 0.9;
+    opacity: .9;
 }
 
-.center-btn.play img {
-    width: 96px;
-    height: 96px;
+.center-ui .play img {
+    width: 90px;
+    height: 90px;
 }
 
-/* Subtitle style */
+/* ===== Subtitle ===== */
 .art-subtitle {
     font-size: 22px !important;
-    color: #fff !important;
-    text-shadow: 2px 2px 6px #000;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0,0,0,.45);
     padding: 4px 10px;
     border-radius: 4px;
+    text-shadow: 2px 2px 6px #000;
 }
 </style>
 </head>
 
 <body>
 
-<div id="player-wrap"></div>
+<div id="player"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@swarmcloud/hls/hls.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15"></script>
 <script src="https://cdn.jsdelivr.net/npm/artplayer@5/dist/artplayer.js"></script>
 
 <script>
-(async function () {
+(async () => {
 
-    /* ===============================
-       1. READ QUERY
-    =============================== */
-    const qs = new URLSearchParams(location.search);
-    const title = qs.get('title');
+    /* =========================
+       CONFIG
+    ========================= */
+    const PROXY = 'https://workingg.vercel.app/api/proxy?url=';
+
+    const params = new URLSearchParams(location.search);
+    const title = params.get('title');
 
     if (!title) {
-        document.body.innerHTML = '<h2 style="color:white;text-align:center">Missing ?title=</h2>';
+        document.body.innerHTML = '<h2 style="color:white;text-align:center">Missing title</h2>';
         return;
     }
 
-    /* ===============================
-       2. FETCH STREAM FROM RENDER
-    =============================== */
-    const streamApi =
-        'https://workingg.vercel.app/api/proxy?url=' +
-        encodeURIComponent(
+    /* =========================
+       FETCH STREAM
+    ========================= */
+    const streamRes = await fetch(
+        PROXY + encodeURIComponent(
             'https://u-1-1azw.onrender.com/api/get-stream?title=' + title
-        );
+        )
+    );
 
-    let streamData;
-    try {
-        const res = await fetch(streamApi);
-        streamData = await res.json();
-    } catch (e) {
-        alert('Stream API failed');
+    const stream = await streamRes.json();
+    if (!stream?.m3u8_url) {
+        alert('Stream error');
         return;
     }
 
-    if (!streamData || !streamData.m3u8_url) {
-        alert('Stream not found');
-        return;
-    }
+    const M3U8 = PROXY + encodeURIComponent(stream.m3u8_url);
 
-    const proxiedM3u8 =
-        'https://workingg.vercel.app/api/proxy?url=' +
-        encodeURIComponent(streamData.m3u8_url);
+    /* =========================
+       FETCH SUBTITLE (VTT)
+    ========================= */
+    let subtitleVtt = null;
 
-    /* ===============================
-       3. FETCH SUBTITLES
-    =============================== */
-    let subtitleUrl = null;
-
-    if (streamData.imdb) {
+    if (stream.imdb) {
         try {
-            const subApi =
-                'https://workingg.vercel.app/api/proxy?url=' +
-                encodeURIComponent(
-                    'https://sub.wyzie.ru/search?id=' + streamData.imdb
-                );
-            const subRes = await fetch(subApi);
-            const subJson = await subRes.json();
-            subtitleUrl = subJson?.subtitles?.[0]?.url || null;
+            const subRes = await fetch(
+                PROXY + encodeURIComponent(
+                    'https://sub.wyzie.ru/search?id=' + stream.imdb
+                )
+            );
+            const sub = await subRes.json();
+
+            // MUST BE VTT
+            subtitleVtt = sub?.subtitles?.find(s => s.format === 'vtt')?.url || null;
         } catch {}
     }
 
-    /* ===============================
-       4. INIT ARTPLAYER (FULL)
-    =============================== */
+    /* =========================
+       INIT PLAYER
+    ========================= */
+    let hlsInstance;
+
     const art = new Artplayer({
-        container: '#player-wrap',
-        url: proxiedM3u8,
+        container: '#player',
+        url: M3U8,
         type: 'm3u8',
 
         autoplay: true,
-        muted: true,          // REQUIRED FOR iOS
-        autoSize: true,
-        autoMini: false,
+        muted: true,   // iOS REQUIRED
+        volume: 1,
 
         setting: true,
         playbackRate: true,
         aspectRatio: true,
         fullscreen: true,
         fullscreenWeb: true,
-        pip: true,
-        airplay: true,
-        lock: true,
 
-        theme: '#e50914',
-
-        subtitle: subtitleUrl ? {
-            url: subtitleUrl,
+        subtitle: subtitleVtt ? {
+            url: subtitleVtt,
             type: 'vtt',
             encoding: 'utf-8',
             style: true
         } : null,
 
         layers: [{
-            name: 'center-controls',
+            name: 'center-ui',
             html: `
-            <div class="center-controls">
-                <div class="center-btn back">
-                    <img src="https://rivestream.org/images/player/backward.svg">
-                </div>
-                <div class="center-btn play">
-                    <img src="https://rivestream.org/images/player/play.svg">
-                </div>
-                <div class="center-btn forward">
-                    <img src="https://rivestream.org/images/player/forward.svg">
-                </div>
+            <div class="center-ui">
+                <div class="btn back"><img src="https://rivestream.org/images/player/backward.svg"></div>
+                <div class="btn play"><img src="https://rivestream.org/images/player/play.svg"></div>
+                <div class="btn forward"><img src="https://rivestream.org/images/player/forward.svg"></div>
             </div>`
         }],
 
         customType: {
-            m3u8(video, url, art) {
-                if (!Hls.isSupported()) {
-                    video.src = url;
-                    return;
-                }
+            m3u8(video, url) {
+                if (hlsInstance) return; // PREVENT RECONNECT LOOP
 
-                const hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: false,
-                    fragLoadingMaxRetry: 3,
-                    manifestLoadingMaxRetry: 2,
-                    levelLoadingMaxRetry: 3
-                });
-
-                hls.loadSource(url);
-                hls.attachMedia(video);
-
-                art.hls = hls;
-
-                hls.once(Hls.Events.MANIFEST_PARSED, () => {
-                    const levels = hls.levels.map((l, i) => ({
-                        html: l.height + 'p',
-                        level: i
-                    }));
-
-                    art.setting.add({
-                        name: 'quality',
-                        html: 'Quality',
-                        selector: levels,
-                        onSelect(item) {
-                            hls.currentLevel = item.level;
-                            return item.html;
-                        }
+                if (Hls.isSupported()) {
+                    hlsInstance = new Hls({
+                        enableWorker: true,
+                        maxBufferLength: 30,
+                        maxMaxBufferLength: 60,
+                        fragLoadingMaxRetry: 2,
+                        levelLoadingMaxRetry: 2
                     });
-                });
+
+                    hlsInstance.loadSource(url);
+                    hlsInstance.attachMedia(video);
+
+                    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                        const qualities = hlsInstance.levels.map((l, i) => ({
+                            html: l.height + 'p',
+                            level: i
+                        }));
+
+                        art.setting.add({
+                            name: 'quality',
+                            html: 'Quality',
+                            selector: qualities,
+                            onSelect(item) {
+                                hlsInstance.currentLevel = item.level;
+                                return item.html;
+                            }
+                        });
+                    });
+                } else {
+                    video.src = url;
+                }
             }
         }
     });
 
-    /* ===============================
-       5. CENTER CONTROL EVENTS
-    =============================== */
+    /* =========================
+       CENTER CONTROLS
+    ========================= */
     art.on('ready', () => {
-        const play = document.querySelector('.center-btn.play');
-        const back = document.querySelector('.center-btn.back');
-        const forward = document.querySelector('.center-btn.forward');
+        const play = document.querySelector('.btn.play');
+        const back = document.querySelector('.btn.back');
+        const forward = document.querySelector('.btn.forward');
 
-        play.onclick = () => art.toggle();
+        play.onclick = () => {
+            art.toggle();
+            art.muted = false; // AUDIO UNLOCK
+        };
+
         back.onclick = () => art.seek = art.currentTime - 10;
         forward.onclick = () => art.seek = art.currentTime + 10;
-
-        // Unmute after user gesture
-        play.addEventListener('click', () => {
-            art.muted = false;
-        });
     });
 
 })();
