@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>ArtPlayer Netflix</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<title>Netflix ArtPlayer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
+<link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css" />
 <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
 <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
 
@@ -18,6 +18,7 @@ html,body{
     background:#000;
 }
 
+/* PLAYER */
 #player{
     position:relative;
     width:100%;
@@ -30,44 +31,37 @@ html,body{
 .netflix-spinner{
     position:absolute;
     inset:0;
-    display:flex;
+    display:none;
     align-items:center;
     justify-content:center;
     background:#000;
-    z-index:9999999;
+    z-index:999999;
 }
-
 .netflix-spinner img{
     width:64px;
     height:64px;
 }
 
-/* ================= SUBTITLE CONTAINER ================= */
+/* ================= SUBTITLE RENDER ================= */
 .subtitle-container{
     position:absolute;
     width:90%;
     left:50%;
-    bottom:12%;
+    bottom:14%;
     transform:translateX(-50%);
     display:flex;
-    align-items:center;
     justify-content:center;
-    z-index:9999998;
+    z-index:999998;
     pointer-events:none;
-    transition:all .3s ease;
 }
-
 .subtitle-container p{
-    font-weight:500;
-    text-align:center;
-    color:rgb(252,244,244);
     font-size:23px;
-    background:rgba(0,0,0,0);
+    color:#f5f5f5;
+    text-align:center;
+    white-space:pre-wrap;
     text-shadow:
         0 2px 4px rgba(0,0,0,.9),
         0 0 2px rgba(0,0,0,.9);
-    white-space:pre-wrap;
-    line-height:1.4;
 }
 </style>
 </head>
@@ -75,24 +69,22 @@ html,body{
 <body>
 
 <div id="player">
-
     <!-- NETFLIX SPINNER -->
     <div class="netflix-spinner" id="spinner">
-        <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
+        <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" />
     </div>
 
     <!-- SUBTITLE -->
-    <div class="subtitle-container SubtitleVideoCaption_mobileSubtitleContainer__vo_7_">
+    <div class="subtitle-container">
         <p id="subtitleText"></p>
     </div>
-
 </div>
 
 <script>
 /* ================= CONFIG ================= */
-const RENDER_API = "https://u-1-1azw.onrender.com/api/get-stream";
-const SUB_API = "https://sub.wyzie.ru/search";
 const PROXY = "https://workingg.vercel.app/api/proxy?url=";
+const STREAM_API = "https://u-1-1azw.onrender.com/api/get-stream";
+const SUB_API = "https://sub.wyzie.ru/search";
 
 /* ================= HELPERS ================= */
 const qs = k => new URLSearchParams(location.search).get(k);
@@ -104,23 +96,17 @@ function showSpinner(v){
 }
 
 function toSec(t){
-    const p = t.replace(",",".").split(":");
-    return (+p[0])*3600 + (+p[1])*60 + parseFloat(p[2]);
+    const p=t.replace(",",".").split(":");
+    return (+p[0])*3600+(+p[1])*60+parseFloat(p[2]);
 }
 
 function parseVTT(vtt){
-    const cues=[];
-    vtt.split("\n\n").forEach(b=>{
-        if(!b.includes("-->")) return;
+    return vtt.split("\n\n").map(b=>{
+        if(!b.includes("-->")) return null;
         const l=b.split("\n");
         const [s,e]=l[0].split(" --> ");
-        cues.push({
-            start:toSec(s),
-            end:toSec(e),
-            text:l.slice(1).join("\n")
-        });
-    });
-    return cues;
+        return {start:toSec(s),end:toSec(e),text:l.slice(1).join("\n")};
+    }).filter(Boolean);
 }
 
 /* ================= SLUG ================= */
@@ -135,30 +121,28 @@ if(!TITLE){
 }
 
 /* ================= FETCH STREAM ================= */
-async function fetchStream(){
+async function getStream(){
     showSpinner(true);
-    const api = `${RENDER_API}?title=${encodeURIComponent(TITLE)}`;
-    const r = await fetch(PROXY + encodeURIComponent(api));
+    const r = await fetch(PROXY + encodeURIComponent(`${STREAM_API}?title=${TITLE}`));
     const j = await r.json();
     return PROXY + encodeURIComponent(j.m3u8_url);
 }
 
 /* ================= FETCH SUBS ================= */
-async function fetchSubs(){
+async function getSubs(){
     if(!IMDB) return [];
-    let url = `${SUB_API}?id=${IMDB}`;
-    if(SEASON && EPISODE) url += `&season=${SEASON}&episode=${EPISODE}`;
-    const r = await fetch(PROXY + encodeURIComponent(url));
-    return await r.json();
+    let u = `${SUB_API}?id=${IMDB}`;
+    if(SEASON && EPISODE) u+=`&season=${SEASON}&episode=${EPISODE}`;
+    return await (await fetch(PROXY + encodeURIComponent(u))).json();
 }
 
-/* ================= MAIN ================= */
+/* ================= INIT ================= */
 (async()=>{
-const streamUrl = await fetchStream();
-const subs = await fetchSubs();
+const streamUrl = await getStream();
+const subs = await getSubs();
 
 let cues=[];
-let active=null;
+let activeHls=null;
 
 const art = new Artplayer({
     container:"#player",
@@ -178,58 +162,88 @@ const art = new Artplayer({
 
     customType:{
         m3u8(video,url){
-            const hls=new Hls({enableWorker:true});
+            if(activeHls) activeHls.destroy();
+
+            const hls=new Hls({
+                maxBufferLength:30,
+                maxMaxBufferLength:60
+            });
+            activeHls=hls;
             hls.loadSource(url);
             hls.attachMedia(video);
 
+            /* QUALITY */
             hls.on(Hls.Events.MANIFEST_PARSED,()=>{
                 showSpinner(false);
+                art.setting.add({
+                    name:"quality",
+                    html:"Quality",
+                    selector:[
+                        {html:"Auto",level:-1,default:true},
+                        ...hls.levels.map((l,i)=>({html:l.height+"p",level:i}))
+                    ],
+                    onSelect:i=>{
+                        hls.currentLevel=i.level;
+                        return i.html;
+                    }
+                });
             });
 
-            hls.on(Hls.Events.ERROR,()=>{
-                showSpinner(true);
+            /* AUDIO */
+            hls.on(Hls.Events.AUDIO_TRACKS_UPDATED,(_,d)=>{
+                if(d.audioTracks.length>1){
+                    art.setting.add({
+                        name:"audio",
+                        html:"Audio",
+                        selector:d.audioTracks.map((t,i)=>({
+                            html:t.name||t.lang||"Track "+(i+1),
+                            index:i,
+                            default:i===hls.audioTrack
+                        })),
+                        onSelect:i=>{
+                            hls.audioTrack=i.index;
+                            return i.html;
+                        }
+                    });
+                }
             });
         }
     }
 });
 
-/* ===== SPINNER EVENTS ===== */
+/* SPINNER EVENTS */
 art.on("video:loadstart",()=>showSpinner(true));
 art.on("video:waiting",()=>showSpinner(true));
 art.on("video:stalled",()=>showSpinner(true));
 art.on("video:playing",()=>showSpinner(false));
 
-/* ===== SUBTITLES ===== */
+/* SUBTITLES */
 if(subs.length){
     art.setting.add({
         name:"subtitle",
         html:"Subtitles",
         selector:subs.map((s,i)=>({
-            html:s.language || s.lang || s.name || "Subtitle",
+            html:s.language || s.lang || "Subtitle "+(i+1),
             url:PROXY + encodeURIComponent(s.url),
             default:i===0
         })),
-        onSelect:async item=>{
-            const r = await fetch(item.url);
-            cues = parseVTT(await r.text());
+        onSelect:async i=>{
+            const t=await (await fetch(i.url)).text();
+            cues=parseVTT(t);
             subtitleEl.textContent="";
-            return item.html;
+            return i.html;
         }
     });
 
-    const r = await fetch(PROXY + encodeURIComponent(subs[0].url));
-    cues = parseVTT(await r.text());
+    const t=await (await fetch(PROXY + encodeURIComponent(subs[0].url))).text();
+    cues=parseVTT(t);
 }
 
-/* ===== SUBTITLE RENDER ===== */
+/* SUBTITLE RENDER LOOP */
 art.on("video:timeupdate",()=>{
-    const t = art.currentTime;
-    const c = cues.find(x=>t>=x.start && t<=x.end);
-    if(c){
-        subtitleEl.textContent = c.text;
-    }else{
-        subtitleEl.textContent = "";
-    }
+    const t=art.currentTime;
+    const c=cues.find(x=>t>=x.start && t<=x.end);
+    subtitleEl.textContent = c ? c.text : "";
 });
 })();
 </script>
