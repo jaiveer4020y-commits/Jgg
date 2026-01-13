@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Netflix Player</title>
 
-<!-- ArtPlayer 5.3.0 -->
 <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
 
 <style>
@@ -14,11 +13,9 @@ html, body {
     padding: 0;
     background: #000;
     height: 100%;
-    width: 100%;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Player container */
+/* PLAYER */
 #player {
     width: 100%;
     max-width: 980px;
@@ -28,7 +25,7 @@ html, body {
     position: relative;
 }
 
-/* ===== NETFLIX SPINNER ===== */
+/* NETFLIX SPINNER */
 .loading-spinner-container {
     display: flex;
     align-items: center;
@@ -39,28 +36,38 @@ html, body {
 .loading-spinner-container img {
     width: 64px;
     height: 64px;
-    animation: netflix-spin 1.1s linear infinite;
+    animation: spin 1.1s linear infinite;
 }
-@keyframes netflix-spin {
+@keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
 
-/* ===== SUBTITLES (VISIBLE FIX) ===== */
+/* ===== SUBTITLE FIX (CRITICAL) ===== */
 .art-subtitle {
     position: absolute !important;
-    bottom: 12% !important;
     left: 50% !important;
+    bottom: 12% !important;
     transform: translateX(-50%);
     width: 90%;
     text-align: center;
+    z-index: 9999999 !important;
+    pointer-events: none;
+}
+
+.art-subtitle-line {
+    display: block !important;
+}
+
+.art-subtitle-line div {
+    display: inline-block;
+    padding: 4px 10px;
     font-size: 23px !important;
     line-height: 1.4;
     color: rgb(252, 244, 244) !important;
-    background-color: rgba(0,0,0,0);
+    background: rgba(0, 0, 0, 0.15);
     text-shadow: 0 2px 6px rgba(0,0,0,0.9);
-    white-space: pre-wrap;
-    z-index: 999999;
+    border-radius: 3px;
 }
 </style>
 </head>
@@ -69,114 +76,114 @@ html, body {
 
 <div id="player"></div>
 
-<!-- Scripts -->
 <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
 <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
 
 <script>
-/* =======================
+/* =========================
    URL PARAMS (SLUG)
-======================= */
-const params = new URLSearchParams(location.search);
-const TITLE   = params.get('title');
-const IMDB_ID = params.get('id');
-const SEASON  = params.get('season');
-const EPISODE = params.get('episode');
+========================= */
+const q = new URLSearchParams(location.search);
+const TITLE   = q.get('title');
+const IMDB_ID = q.get('id');
+const SEASON  = q.get('season');
+const EPISODE = q.get('episode');
 
 if (!TITLE) {
-    alert("Missing title in URL");
+    alert("Missing title param");
     throw new Error("Title missing");
 }
 
-/* =======================
-   PROXY HELPERS
-======================= */
+/* =========================
+   PROXY
+========================= */
 const proxy = url =>
-    'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(url);
+  'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(url);
 
-/* =======================
-   FETCH STREAM
-======================= */
-async function fetchStream() {
-    const res = await fetch(
+/* =========================
+   STREAM
+========================= */
+async function getStream() {
+    const r = await fetch(
         proxy(`https://u-1-1azw.onrender.com/api/get-stream?title=${TITLE}`)
     );
-    const json = await res.json();
-    if (!json || !json.m3u8_url) throw new Error("Stream not found");
-    return proxy(json.m3u8_url);
+    const j = await r.json();
+    if (!j.m3u8_url) throw new Error("No stream");
+    return proxy(j.m3u8_url);
 }
 
-/* =======================
-   FETCH SUBTITLES
-======================= */
-async function fetchSubtitles() {
+/* =========================
+   SUBTITLES
+========================= */
+async function getSubs() {
     if (!IMDB_ID) return [];
     let url = `https://sub.wyzie.ru/search?id=${IMDB_ID}`;
     if (SEASON && EPISODE) {
         url += `&season=${SEASON}&episode=${EPISODE}`;
     }
-
-    const res = await fetch(proxy(url));
-    const subs = await res.json();
-
-    return subs.map(s => ({
-        html: s.lang || s.language || "Subtitle",
-        url: proxy(s.url)
+    const r = await fetch(proxy(url));
+    const s = await r.json();
+    return s.map(x => ({
+        html: x.lang || x.language || 'Subtitle',
+        url: proxy(x.url),
+        type: x.url.endsWith('.srt') ? 'srt' : 'vtt'
     }));
 }
 
-/* =======================
-   INIT PLAYER
-======================= */
+/* =========================
+   INIT
+========================= */
 (async () => {
 
-const m3u8 = await fetchStream();
-const subtitles = await fetchSubtitles();
+const m3u8 = await getStream();
+const subtitles = await getSubs();
 
 const art = new Artplayer({
     container: '#player',
     url: m3u8,
     type: 'm3u8',
     autoplay: true,
-    autoSize: true,
+    setting: true,
     fullscreen: true,
     fullscreenWeb: true,
     pip: true,
-    screenshot: true,
     playbackRate: true,
     aspectRatio: true,
+    screenshot: true,
     miniProgressBar: true,
     mutex: true,
     backdrop: true,
     playsInline: true,
+    resume: true,
     lock: true,
     fastForward: true,
     subtitleOffset: true,
-    resume: true,
-    setting: true,
     theme: '#e50914',
+
+    subtitle: {
+        show: true,
+        type: 'vtt',
+        style: {
+            fontSize: '23px',
+            color: '#fcf4f4'
+        }
+    },
 
     icons: {
         loading: `
         <div class="loading-spinner-container">
-            <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png"
-                 onerror="this.onerror=null;
-                 this.src='https://placehold.co/64x64/cccccc/333333?text=Loading';">
+            <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
         </div>`
     },
 
     customType: {
         m3u8(video, url) {
             if (Hls.isSupported()) {
-                const hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: false
-                });
+                const hls = new Hls({ enableWorker: true });
                 hls.loadSource(url);
                 hls.attachMedia(video);
                 art.hls = hls;
 
-                /* QUALITY */
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
                     art.setting.add({
                         name: 'quality',
@@ -188,27 +195,26 @@ const art = new Artplayer({
                                 level: i
                             }))
                         ],
-                        onSelect: item => {
-                            hls.currentLevel = item.level;
-                            return item.html;
+                        onSelect: i => {
+                            hls.currentLevel = i.level;
+                            return i.html;
                         }
                     });
                 });
 
-                /* AUDIO */
-                hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, data) => {
-                    if (data.audioTracks.length > 1) {
+                hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, d) => {
+                    if (d.audioTracks.length > 1) {
                         art.setting.add({
                             name: 'audio',
                             html: 'Audio',
-                            selector: data.audioTracks.map((t, i) => ({
+                            selector: d.audioTracks.map((t, i) => ({
                                 html: t.name || t.lang || `Track ${i}`,
                                 index: i,
                                 default: i === hls.audioTrack
                             })),
-                            onSelect: item => {
-                                hls.audioTrack = item.index;
-                                return item.html;
+                            onSelect: s => {
+                                hls.audioTrack = s.index;
+                                return s.html;
                             }
                         });
                     }
@@ -218,9 +224,7 @@ const art = new Artplayer({
     }
 });
 
-/* =======================
-   SUBTITLE SETTINGS
-======================= */
+/* ===== SUBTITLE MENU ===== */
 if (subtitles.length) {
     art.setting.add({
         name: 'subtitle',
@@ -230,8 +234,14 @@ if (subtitles.length) {
             ...subtitles
         ],
         onSelect: item => {
-            art.subtitle.url = item.url || '';
-            art.subtitle.show = !!item.url;
+            if (!item.url) {
+                art.subtitle.show = false;
+                art.subtitle.url = '';
+                return 'Off';
+            }
+            art.subtitle.type = item.type;
+            art.subtitle.url = item.url;
+            art.subtitle.show = true;
             return item.html;
         }
     });
