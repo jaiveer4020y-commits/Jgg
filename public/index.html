@@ -45,12 +45,12 @@ html,body{
 /* ===== MANUAL SUBTITLE OVERLAY ===== */
 #subtitle-overlay{
     position:absolute;
-    bottom:12%;
+    bottom:15%; /* Lifted slightly to clear progress bar */
     left:50%;
     transform:translateX(-50%);
     width:90%;
     text-align:center;
-    z-index:999999;
+    z-index:100; /* High z-index inside Artplayer */
     pointer-events:none;
 }
 
@@ -59,10 +59,11 @@ html,body{
     padding:4px 12px;
     font-size:23px;
     color:rgb(252,244,244);
-    background:rgba(0,0,0,0.15);
-    text-shadow:0 2px 6px rgba(0,0,0,0.9);
+    background:rgba(0,0,0,0.6); /* Slightly darker for better readability */
+    text-shadow:0 2px 4px rgba(0,0,0,0.9);
     border-radius:3px;
     white-space:pre-wrap;
+    margin:0;
 }
 </style>
 </head>
@@ -124,19 +125,34 @@ async function getSubtitles(){
 ================================ */
 function parseSub(text){
     const cues=[];
-    const blocks=text.replace(/\r/g,'').split('\n\n');
+    // Clean text and handle WEBVTT header
+    const cleanText = text.replace('WEBVTT', '').trim();
+    const blocks=cleanText.replace(/\r/g,'').split('\n\n');
+    
     for(const b of blocks){
         const lines=b.split('\n');
         if(lines.length<2) continue;
-        const time=lines[1].includes('-->')?lines[1]:lines[0];
-        const content=lines.slice(lines[1].includes('-->')?2:1).join('\n');
-        const [s,e]=time.split('-->').map(t=>{
-            const p=t.trim().replace(',','.');
-            const [h,m,rest]=p.split(':');
-            const [sec,ms]=rest.split('.');
-            return (+h)*3600+(+m)*60+(+sec)+(+ms||0)/1000;
-        });
-        cues.push({s,e,t:content});
+        
+        const timeIndex = lines[0].includes('-->') ? 0 : (lines[1].includes('-->') ? 1 : -1);
+        if(timeIndex === -1) continue;
+
+        const time=lines[timeIndex];
+        const content=lines.slice(timeIndex + 1).join('\n');
+        
+        try {
+            const [s,e]=time.split('-->').map(t=>{
+                const p=t.trim().replace(',','.');
+                const parts = p.split(':');
+                let h=0, m=0, rest='';
+                
+                if(parts.length === 3) [h, m, rest] = parts;
+                else [m, rest] = parts;
+
+                const [sec,ms]=rest.split('.');
+                return (+h)*3600+(+m)*60+(+sec)+(+ms||0)/1000;
+            });
+            cues.push({s,e,t:content});
+        } catch(e) { continue; }
     }
     return cues;
 }
@@ -224,6 +240,12 @@ const art=new Artplayer({
     }
 });
 
+// CRITICAL: Move the subtitle overlay inside Artplayer's UI layers
+art.on('ready', () => {
+    const layers = art.template.$layers;
+    layers.appendChild(subtitleOverlay);
+});
+
 /* ===== SUBTITLE MENU ===== */
 if(subs.length){
     art.setting.add({
@@ -242,27 +264,36 @@ if(subs.length){
                 subtitleCues=[];
                 return 'Off';
             }
-            const t=await fetch(i.url).then(r=>r.text());
-            subtitleCues=parseSub(t);
-            subtitleOverlay.style.display='block';
-            return i.html;
+            try {
+                const t=await fetch(i.url).then(r=>r.text());
+                subtitleCues=parseSub(t);
+                subtitleOverlay.style.display='block';
+                return i.html;
+            } catch (err) {
+                console.error("Failed to load subtitle", err);
+                return 'Error';
+            }
         }
     });
 }
 
-/* ===== SYNC SUBTITLES ===== */
-setInterval(()=>{
+/* ===== SYNC SUBTITLES (Using Video TimeUpdate for better sync) ===== */
+art.on('video:timeupdate', () => {
     if(!subtitleCues.length) return;
     const t=art.currentTime;
     const cue=subtitleCues.find(c=>t>=c.s && t<=c.e);
-    if(cue && cue!==activeSub){
-        subtitleText.textContent=cue.t;
-        activeSub=cue;
-    }else if(!cue){
-        subtitleText.textContent='';
+    
+    if(cue){
+        if(cue !== activeSub) {
+            // Replace <br> tags or other formatting if necessary
+            subtitleText.innerHTML = cue.t.replace(/\n/g, '<br>');
+            activeSub=cue;
+        }
+    } else {
+        subtitleText.innerHTML='';
         activeSub=null;
     }
-},200);
+});
 
 })();
 </script>
