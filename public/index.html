@@ -42,14 +42,28 @@ html,body{
     to{transform:rotate(360deg)}
 }
 
-/* STYLING THE NATIVE SUBTITLE DIV */
-.art-subtitle {
-    font-size: 26px !important;
+/* ===== SUBTITLE STYLE ===== */
+.custom-subtitle-container {
+    position: absolute;
+    bottom: 50px; /* Adjust based on control bar height */
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.custom-subtitle-text {
+    padding: 5px 15px;
+    font-size: 24px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.5);
     text-shadow: 0 2px 4px rgba(0,0,0,0.9);
-    background: rgba(0, 0, 0, 0.4) !important;
-    padding: 5px 15px !important;
-    border-radius: 5px;
-    bottom: 10% !important;
+    border-radius: 4px;
+    text-align: center;
+    white-space: pre-wrap;
+    max-width: 80%;
 }
 </style>
 </head>
@@ -103,11 +117,53 @@ async function getSubtitles(){
 }
 
 /* ===============================
+   PARSE VTT / SRT
+================================ */
+function parseSub(text){
+    const cues=[];
+    // Clean WEBVTT header if it exists
+    const cleanText = text.replace(/^WEBVTT\s+/i, '').trim();
+    const blocks=cleanText.replace(/\r/g,'').split('\n\n');
+    
+    for(const b of blocks){
+        const lines=b.split('\n');
+        if(lines.length < 2) continue;
+
+        // Find the line containing the arrow
+        const timeLineIndex = lines.findIndex(l => l.includes('-->'));
+        if(timeLineIndex === -1) continue;
+
+        const timeLine = lines[timeLineIndex];
+        const content = lines.slice(timeLineIndex + 1).join('\n');
+
+        const [s,e] = timeLine.split('-->').map(t=>{
+            const p = t.trim().replace(',','.');
+            const parts = p.split(':');
+            let h=0, m=0, s_ms=0;
+            
+            if(parts.length === 3) {
+                [h, m, s_ms] = parts;
+            } else {
+                [m, s_ms] = parts;
+            }
+            
+            const [sec, ms] = s_ms.split('.');
+            return (+h)*3600 + (+m)*60 + (+sec) + (+ms||0)/1000;
+        });
+        cues.push({s, e, t: content});
+    }
+    return cues;
+}
+
+/* ===============================
    INIT PLAYER
 ================================ */
 (async()=>{
 const m3u8=await getStream();
 const subs=await getSubtitles();
+
+let subtitleCues=[];
+let activeSub=null;
 
 const art=new Artplayer({
     container:'#player',
@@ -129,14 +185,16 @@ const art=new Artplayer({
     lock:true,
     fastForward:true,
     theme:'#e50914',
-    // NATIVE SUBTITLE CONFIG
-    subtitle: {
-        url: '',
-        style: {
-            color: '#fff',
-            fontSize: '24px',
+    // INJECT THE SUBTITLE CONTAINER AS A LAYER
+    layers: [
+        {
+            name: 'subtitle-layer',
+            html: '<div class="custom-subtitle-container"><div id="sub-text" class="custom-subtitle-text"></div></div>',
+            style: {
+                display: 'none',
+            },
         },
-    },
+    ],
     icons:{
         loading:`
         <div class="loading-spinner-container">
@@ -165,30 +223,15 @@ const art=new Artplayer({
                         }
                     });
                 });
-
-                hls.on(Hls.Events.AUDIO_TRACKS_UPDATED,(_,d)=>{
-                    if(d.audioTracks.length>1){
-                        art.setting.add({
-                            name:'audio',
-                            html:'Audio',
-                            selector:d.audioTracks.map((t,i)=>({
-                                html:t.name||t.lang||`Track ${i}`,
-                                index:i,
-                                default:i===hls.audioTrack
-                            })),
-                            onSelect:s=>{
-                                hls.audioTrack=s.index;
-                                return s.html;
-                            }
-                        });
-                    }
-                });
             }
         }
     }
 });
 
-/* ===== NATIVE SUBTITLE MENU ===== */
+const subLayer = art.layers['subtitle-layer'];
+const subText = document.getElementById('sub-text');
+
+/* ===== SUBTITLE MENU ===== */
 if(subs.length){
     art.setting.add({
         name:'subtitle',
@@ -200,18 +243,41 @@ if(subs.length){
                 url:proxy(s.url)
             }))
         ],
-        onSelect: i => {
+        onSelect:async i=>{
             if(!i.url){
-                art.subtitle.show = false;
+                subLayer.style.display='none';
+                subtitleCues=[];
                 return 'Off';
             }
-            // Use Artplayer's native subtitle loader
-            art.subtitle.url = i.url;
-            art.subtitle.show = true;
+            const t=await fetch(i.url).then(r=>r.text());
+            subtitleCues=parseSub(t);
+            subLayer.style.display='flex';
             return i.html;
         }
     });
 }
+
+/* ===== SYNC SUBTITLES ===== */
+art.on('video:timeupdate', () => {
+    if(!subtitleCues.length) return;
+    const t = art.currentTime;
+    const cue = subtitleCues.find(c => t >= c.s && t <= c.e);
+
+    if(cue) {
+        if(cue !== activeSub) {
+            subText.innerHTML = cue.t.replace(/\n/g, '<br>');
+            activeSub = cue;
+        }
+    } else {
+        subText.innerHTML = '';
+        activeSub = null;
+    }
+});
+
+// Hide subtitles when control bar is visible if you prefer, or adjust position
+art.on('control', (state) => {
+    subLayer.style.bottom = state ? '80px' : '40px';
+});
 
 })();
 </script>
