@@ -45,7 +45,7 @@ html,body{
 /* ===== SUBTITLE STYLE ===== */
 .custom-subtitle-container {
     position: absolute;
-    bottom: 50px; /* Adjust based on control bar height */
+    bottom: 50px;
     left: 0;
     right: 0;
     display: flex;
@@ -56,14 +56,15 @@ html,body{
 
 .custom-subtitle-text {
     padding: 5px 15px;
-    font-size: 24px;
+    font-size: 26px;
+    font-weight: 500;
     color: #fff;
     background: rgba(0, 0, 0, 0.5);
     text-shadow: 0 2px 4px rgba(0,0,0,0.9);
     border-radius: 4px;
     text-align: center;
     white-space: pre-wrap;
-    max-width: 80%;
+    max-width: 85%;
 }
 </style>
 </head>
@@ -121,7 +122,6 @@ async function getSubtitles(){
 ================================ */
 function parseSub(text){
     const cues=[];
-    // Clean WEBVTT header if it exists
     const cleanText = text.replace(/^WEBVTT\s+/i, '').trim();
     const blocks=cleanText.replace(/\r/g,'').split('\n\n');
     
@@ -129,28 +129,26 @@ function parseSub(text){
         const lines=b.split('\n');
         if(lines.length < 2) continue;
 
-        // Find the line containing the arrow
         const timeLineIndex = lines.findIndex(l => l.includes('-->'));
         if(timeLineIndex === -1) continue;
 
         const timeLine = lines[timeLineIndex];
         const content = lines.slice(timeLineIndex + 1).join('\n');
 
-        const [s,e] = timeLine.split('-->').map(t=>{
-            const p = t.trim().replace(',','.');
-            const parts = p.split(':');
-            let h=0, m=0, s_ms=0;
-            
-            if(parts.length === 3) {
-                [h, m, s_ms] = parts;
-            } else {
-                [m, s_ms] = parts;
-            }
-            
-            const [sec, ms] = s_ms.split('.');
-            return (+h)*3600 + (+m)*60 + (+sec) + (+ms||0)/1000;
-        });
-        cues.push({s, e, t: content});
+        try {
+            const [s,e] = timeLine.split('-->').map(t=>{
+                const p = t.trim().replace(',','.');
+                const parts = p.split(':');
+                let h=0, m=0, s_ms=0;
+                
+                if(parts.length === 3) [h, m, s_ms] = parts;
+                else [m, s_ms] = parts;
+                
+                const [sec, ms] = s_ms.split('.');
+                return (+h)*3600 + (+m)*60 + (+sec) + (+ms||0)/1000;
+            });
+            cues.push({s, e, t: content});
+        } catch(e) {}
     }
     return cues;
 }
@@ -164,6 +162,7 @@ const subs=await getSubtitles();
 
 let subtitleCues=[];
 let activeSub=null;
+let subOffset = 0; // Manual sync adjustment
 
 const art=new Artplayer({
     container:'#player',
@@ -181,25 +180,20 @@ const art=new Artplayer({
     mutex:true,
     backdrop:true,
     playsInline:true,
-    resume:true,
-    lock:true,
-    fastForward:true,
     theme:'#e50914',
-    // INJECT THE SUBTITLE CONTAINER AS A LAYER
+    // RESUME FEATURE
+    autoPlayback: true,
+    resume: true, 
+    storage: true,
     layers: [
         {
             name: 'subtitle-layer',
             html: '<div class="custom-subtitle-container"><div id="sub-text" class="custom-subtitle-text"></div></div>',
-            style: {
-                display: 'none',
-            },
+            style: { display: 'none' },
         },
     ],
     icons:{
-        loading:`
-        <div class="loading-spinner-container">
-            <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
-        </div>`
+        loading:`<div class="loading-spinner-container"><img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png"></div>`
     },
     customType:{
         m3u8(video,url){
@@ -222,6 +216,25 @@ const art=new Artplayer({
                             return i.html;
                         }
                     });
+                });
+
+                // RESTORED AUDIO SETTINGS
+                hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, d) => {
+                    if (d.audioTracks.length > 1) {
+                        art.setting.add({
+                            name: 'audio',
+                            html: 'Audio',
+                            selector: d.audioTracks.map((t, i) => ({
+                                html: t.name || t.lang || `Track ${i}`,
+                                index: i,
+                                default: i === hls.audioTrack
+                            })),
+                            onSelect: s => {
+                                hls.audioTrack = s.index;
+                                return s.html;
+                            }
+                        });
+                    }
                 });
             }
         }
@@ -255,12 +268,33 @@ if(subs.length){
             return i.html;
         }
     });
+
+    // ADD SUBTITLE DELAY SETTING
+    art.setting.add({
+        name: 'sub-delay',
+        html: 'Subtitle Delay',
+        selector: [
+            {html: '-5s', value: -5},
+            {html: '-2s', value: -2},
+            {html: '-1s', value: -1},
+            {html: 'Original', value: 0, default: true},
+            {html: '+1s', value: 1},
+            {html: '+2s', value: 2},
+            {html: '+5s', value: 5},
+        ],
+        onSelect: i => {
+            subOffset = i.value;
+            return i.html;
+        }
+    });
 }
 
-/* ===== SYNC SUBTITLES ===== */
+/* ===== SYNC SUBTITLES (Fixed Sync Logic) ===== */
 art.on('video:timeupdate', () => {
     if(!subtitleCues.length) return;
-    const t = art.currentTime;
+    
+    // Apply offset to current video time to find the cue
+    const t = art.currentTime + subOffset;
     const cue = subtitleCues.find(c => t >= c.s && t <= c.e);
 
     if(cue) {
@@ -274,9 +308,17 @@ art.on('video:timeupdate', () => {
     }
 });
 
-// Hide subtitles when control bar is visible if you prefer, or adjust position
+/* ===== RESUME PLAYBACK NOTIFICATION ===== */
+art.on('ready', () => {
+    const lastTime = art.storage.get(art.options.url);
+    if (lastTime > 10) {
+        console.log(`Resuming from ${lastTime}s`);
+    }
+});
+
+// UI: Move subs up when controls appear
 art.on('control', (state) => {
-    subLayer.style.bottom = state ? '80px' : '40px';
+    subLayer.style.bottom = state ? '90px' : '40px';
 });
 
 })();
