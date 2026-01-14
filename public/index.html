@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Netflix Player</title>
+<title>Netflix Player Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
@@ -14,7 +14,7 @@ html,body{
     background:#000;
 }
 
-/* PLAYER */
+/* PLAYER CONTAINER */
 #player{
     width:100%;
     max-width:980px;
@@ -42,10 +42,64 @@ html,body{
     to{transform:rotate(360deg)}
 }
 
+/* REMOVE DEFAULT BOTTOM PLAY/PAUSE BUTTON */
+.art-control-playAndPause {
+    display: none !important;
+}
+
+/* ===== CENTER CONTROLS STYLE ===== */
+.custom-center-controls {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 60px; /* Space between icons */
+    z-index: 20;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Sync visibility with Artplayer UI state */
+.art-state-hide .custom-center-controls {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.art-state-show .custom-center-controls {
+    opacity: 1;
+    visibility: visible;
+}
+
+.center-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s ease;
+    padding: 0;
+}
+
+.center-btn:active {
+    transform: scale(0.85);
+}
+
+.center-btn svg {
+    width: 42px; /* Made smaller as requested */
+    height: 42px;
+    filter: drop-shadow(0 0 8px rgba(0,0,0,0.6));
+}
+
 /* ===== SUBTITLE STYLE ===== */
 .custom-subtitle-container {
     position: absolute;
-    bottom: 50px;
+    bottom: 60px;
     left: 0;
     right: 0;
     display: flex;
@@ -55,62 +109,16 @@ html,body{
 }
 
 .custom-subtitle-text {
-    padding: 5px 15px;
-    font-size: 26px;
+    padding: 4px 12px;
+    font-size: 24px;
     font-weight: 500;
     color: #fff;
-    background: rgba(0, 0, 0, 0.5);
-    text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+    background: rgba(0, 0, 0, 0.6);
+    text-shadow: 0 2px 4px rgba(0,0,0,1);
     border-radius: 4px;
     text-align: center;
     white-space: pre-wrap;
-    max-width: 85%;
-}
-
-/* ===== CENTER CONTROLS STYLE ===== */
-.mobileCenterControls_playerControlsInnerContainer__6MCmU {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 40px; /* Space between icons */
-    width: 100%;
-    height: 100%;
-    pointer-events: none; /* Let clicks pass to buttons specifically */
-}
-
-.videasy-scale {
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    pointer-events: auto; /* Buttons are clickable */
-    transition: transform 0.2s ease;
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.videasy-scale:active {
-    transform: scale(0.9);
-}
-
-.videasy-icon-lg {
-    width: 54px;
-    height: 54px;
-    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
-}
-
-/* Hide center controls when player UI is hidden */
-.art-state-hide .mobileCenterControls_playerControlsInnerContainer__6MCmU {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.5s ease;
-}
-
-.art-state-show .mobileCenterControls_playerControlsInnerContainer__6MCmU {
-    opacity: 1;
-    visibility: visible;
+    max-width: 80%;
 }
 </style>
 </head>
@@ -124,7 +132,7 @@ html,body{
 
 <script>
 /* ===============================
-   URL PARAMS
+   URL PARAMS & PROXY
 ================================ */
 const q = new URLSearchParams(location.search);
 const TITLE   = q.get('title');
@@ -137,13 +145,10 @@ if(!TITLE){
     throw new Error("No title");
 }
 
-/* ===============================
-   PROXY
-================================ */
 const proxy = u => 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(u);
 
 /* ===============================
-   FETCH STREAM
+   DATA FETCHING
 ================================ */
 async function getStream(){
     const r = await fetch(proxy(`https://u-1-1azw.onrender.com/api/get-stream?title=${TITLE}`));
@@ -152,9 +157,6 @@ async function getStream(){
     return proxy(j.m3u8_url);
 }
 
-/* ===============================
-   FETCH SUBTITLES
-================================ */
 async function getSubtitles(){
     if(!IMDB_ID) return [];
     let u = `https://sub.wyzie.ru/search?id=${IMDB_ID}`;
@@ -164,7 +166,7 @@ async function getSubtitles(){
 }
 
 /* ===============================
-   PARSE VTT / SRT
+   PARSER (Precise Sync)
 ================================ */
 function parseSub(text){
     const cues=[];
@@ -174,22 +176,17 @@ function parseSub(text){
     for(const b of blocks){
         const lines=b.split('\n');
         if(lines.length < 2) continue;
-
         const timeLineIndex = lines.findIndex(l => l.includes('-->'));
         if(timeLineIndex === -1) continue;
-
         const timeLine = lines[timeLineIndex];
         const content = lines.slice(timeLineIndex + 1).join('\n');
-
         try {
             const [s,e] = timeLine.split('-->').map(t=>{
                 const p = t.trim().replace(',','.');
                 const parts = p.split(':');
                 let h=0, m=0, s_ms=0;
-                
                 if(parts.length === 3) [h, m, s_ms] = parts;
                 else [m, s_ms] = parts;
-                
                 const [sec, ms] = s_ms.split('.');
                 return (+h)*3600 + (+m)*60 + (+sec) + (+ms||0)/1000;
             });
@@ -227,33 +224,31 @@ const art=new Artplayer({
     backdrop:true,
     playsInline:true,
     theme:'#e50914',
+    // RESUME SETTINGS
     autoPlayback: true,
-    resume: true, 
+    resume: true,
     storage: true,
     layers: [
-        // LAYER 1: SUBTITLES
         {
             name: 'subtitle-layer',
             html: '<div class="custom-subtitle-container"><div id="sub-text" class="custom-subtitle-text"></div></div>',
-            style: { display: 'none' },
         },
-        // LAYER 2: CENTER CONTROLS
         {
             name: 'center-controls',
             html: `
-            <div class="mobileCenterControls_playerControlsInnerContainer__6MCmU">
-                <button id="btn-backward" class="videasy-scale" title="Backward 10 seconds">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="videasy-icon-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.02 2.048A10 10 0 1 1 2 12H0a12 12 0 1 0 5-9.747V1H3v4a1 1 0 0 0 1 1h4V4H6a10 10 0 0 1 5.02-1.952ZM2 4v3h3v2H1a1 1 0 0 1-1-1V4h2Zm12.125 12c-.578 0-1.086-.141-1.523-.424-.43-.29-.764-.694-.999-1.215-.235-.527-.353-1.148-.353-1.861 0-.707.118-1.324.353-1.851.236-.527.568-.932.999-1.215.437-.29.945-.434 1.523-.434s1.083.145 1.513.434c.437.283.774.688 1.009 1.215.235.527.353 1.144.353 1.851 0 .713-.118 1.334-.353 1.86-.235.522-.572.927-1.009 1.216-.43.283-.935.424-1.513.424Zm0-1.35c.39 0 .696-.186.918-.56.222-.378.333-.909.333-1.59s-.111-1.208-.333-1.581c-.222-.38-.528-.57-.918-.57s-.696.19-.918.57c-.222.373-.333.9-.333 1.581 0 .681.111 1.212.333 1.59.222.374.528.56.918.56Zm-5.521 1.205v-5.139L7 11.141V9.82l3.198-.8v6.835H8.604Z" fill="currentColor"></path></svg>
+            <div class="custom-center-controls">
+                <button id="btn-backward" class="center-btn">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.02 2.048A10 10 0 1 1 2 12H0a12 12 0 1 0 5-9.747V1H3v4a1 1 0 0 0 1 1h4V4H6a10 10 0 0 1 5.02-1.952ZM2 4v3h3v2H1a1 1 0 0 1-1-1V4h2Zm12.125 12c-.578 0-1.086-.141-1.523-.424-.43-.29-.764-.694-.999-1.215-.235-.527-.353-1.148-.353-1.861 0-.707.118-1.324.353-1.851.236-.527.568-.932.999-1.215.437-.29.945-.434 1.523-.434s1.083.145 1.513.434c.437.283.774.688 1.009 1.215.235.527.353 1.144.353 1.851 0 .713-.118 1.334-.353 1.86-.235.522-.572.927-1.009 1.216-.43.283-.935.424-1.513.424Zm0-1.35c.39 0 .696-.186.918-.56.222-.378.333-.909.333-1.59s-.111-1.208-.333-1.581c-.222-.38-.528-.57-.918-.57s-.696.19-.918.57c-.222.373-.333.9-.333 1.581 0 .681.111 1.212.333 1.59.222.374.528.56.918.56Zm-5.521 1.205v-5.139L7 11.141V9.82l3.198-.8v6.835H8.604Z" fill="currentColor"></path></svg>
                 </button>
-                <button id="btn-play-pause" class="videasy-scale" title="Play/Pause">
-                    <svg id="svg-play" style="display:none" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="videasy-icon-lg"><path d="M8 5v14l11-7z" fill="currentColor"></path></svg>
-                    <svg id="svg-pause" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="videasy-icon-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.5 3a.5.5 0 0 0-.5.5v17a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-17a.5.5 0 0 0-.5-.5h-5Zm10 0a.5.5 0 0 0-.5.5v17a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-17a.5.5 0 0 0-.5-.5h-5Z" fill="currentColor"></path></svg>
+                <button id="btn-play-pause" class="center-btn">
+                    <svg id="svg-play" style="display:none" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z" fill="currentColor"></path></svg>
+                    <svg id="svg-pause" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.5 3a.5.5 0 0 0-.5.5v17a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-17a.5.5 0 0 0-.5-.5h-5Zm10 0a.5.5 0 0 0-.5.5v17a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-17a.5.5 0 0 0-.5-.5h-5Z" fill="currentColor"></path></svg>
                 </button>
-                <button id="btn-forward" class="videasy-scale" title="Forward 10 seconds">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="videasy-icon-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707-.118-1.324-.353-1.851-.235-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
+                <button id="btn-forward" class="center-btn">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707.118-1.324-.353-1.851-.235-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
                 </button>
             </div>
-            `
+            `,
         }
     ],
     icons:{
@@ -304,7 +299,7 @@ const art=new Artplayer({
     }
 });
 
-/* ===== HANDLE CENTER CONTROLS CLICKS ===== */
+/* ===== HANDLE CENTER CONTROLS ===== */
 art.on('ready', () => {
     const btnBackward = document.getElementById('btn-backward');
     const btnPlayPause = document.getElementById('btn-play-pause');
@@ -314,12 +309,8 @@ art.on('ready', () => {
 
     btnBackward.onclick = (e) => { e.stopPropagation(); art.backward = 10; };
     btnForward.onclick = (e) => { e.stopPropagation(); art.forward = 10; };
-    btnPlayPause.onclick = (e) => { 
-        e.stopPropagation(); 
-        art.toggle(); 
-    };
+    btnPlayPause.onclick = (e) => { e.stopPropagation(); art.toggle(); };
 
-    // Update play/pause icon automatically
     art.on('play', () => {
         svgPlay.style.display = 'none';
         svgPause.style.display = 'block';
@@ -330,10 +321,9 @@ art.on('ready', () => {
     });
 });
 
-const subLayer = art.layers['subtitle-layer'];
+/* ===== SUBTITLE LOGIC ===== */
 const subText = document.getElementById('sub-text');
 
-/* ===== SUBTITLE MENU ===== */
 if(subs.length){
     art.setting.add({
         name:'subtitle',
@@ -347,13 +337,12 @@ if(subs.length){
         ],
         onSelect:async i=>{
             if(!i.url){
-                subLayer.style.display='none';
                 subtitleCues=[];
+                subText.innerHTML = '';
                 return 'Off';
             }
             const t=await fetch(i.url).then(r=>r.text());
             subtitleCues=parseSub(t);
-            subLayer.style.display='flex';
             return i.html;
         }
     });
@@ -363,21 +352,13 @@ if(subs.length){
         html: 'Subtitle Delay',
         selector: [
             {html: '-5s', value: -5},
-            {html: '-2s', value: -2},
-            {html: '-1s', value: -1},
             {html: 'Original', value: 0, default: true},
-            {html: '+1s', value: 1},
-            {html: '+2s', value: 2},
             {html: '+5s', value: 5},
         ],
-        onSelect: i => {
-            subOffset = i.value;
-            return i.html;
-        }
+        onSelect: i => { subOffset = i.value; return i.html; }
     });
 }
 
-/* ===== SYNC SUBTITLES ===== */
 art.on('video:timeupdate', () => {
     if(!subtitleCues.length) return;
     const t = art.currentTime + subOffset;
@@ -391,10 +372,6 @@ art.on('video:timeupdate', () => {
         subText.innerHTML = '';
         activeSub = null;
     }
-});
-
-art.on('control', (state) => {
-    subLayer.style.bottom = state ? '90px' : '40px';
 });
 
 })();
