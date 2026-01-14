@@ -42,39 +42,21 @@ html,body{
     to{transform:rotate(360deg)}
 }
 
-/* ===== MANUAL SUBTITLE OVERLAY ===== */
-#subtitle-overlay{
-    position:absolute;
-    bottom:15%; /* Lifted slightly to clear progress bar */
-    left:50%;
-    transform:translateX(-50%);
-    width:90%;
-    text-align:center;
-    z-index:100; /* High z-index inside Artplayer */
-    pointer-events:none;
-}
-
-#subtitle-overlay p{
-    display:inline-block;
-    padding:4px 12px;
-    font-size:23px;
-    color:rgb(252,244,244);
-    background:rgba(0,0,0,0.6); /* Slightly darker for better readability */
-    text-shadow:0 2px 4px rgba(0,0,0,0.9);
-    border-radius:3px;
-    white-space:pre-wrap;
-    margin:0;
+/* STYLING THE NATIVE SUBTITLE DIV */
+.art-subtitle {
+    font-size: 26px !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+    background: rgba(0, 0, 0, 0.4) !important;
+    padding: 5px 15px !important;
+    border-radius: 5px;
+    bottom: 10% !important;
 }
 </style>
 </head>
 
 <body>
 
-<div id="player">
-    <div id="subtitle-overlay" style="display:none">
-        <p id="subtitle-text"></p>
-    </div>
-</div>
+<div id="player"></div>
 
 <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
 <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
@@ -121,53 +103,11 @@ async function getSubtitles(){
 }
 
 /* ===============================
-   PARSE VTT / SRT
-================================ */
-function parseSub(text){
-    const cues=[];
-    // Clean text and handle WEBVTT header
-    const cleanText = text.replace('WEBVTT', '').trim();
-    const blocks=cleanText.replace(/\r/g,'').split('\n\n');
-    
-    for(const b of blocks){
-        const lines=b.split('\n');
-        if(lines.length<2) continue;
-        
-        const timeIndex = lines[0].includes('-->') ? 0 : (lines[1].includes('-->') ? 1 : -1);
-        if(timeIndex === -1) continue;
-
-        const time=lines[timeIndex];
-        const content=lines.slice(timeIndex + 1).join('\n');
-        
-        try {
-            const [s,e]=time.split('-->').map(t=>{
-                const p=t.trim().replace(',','.');
-                const parts = p.split(':');
-                let h=0, m=0, rest='';
-                
-                if(parts.length === 3) [h, m, rest] = parts;
-                else [m, rest] = parts;
-
-                const [sec,ms]=rest.split('.');
-                return (+h)*3600+(+m)*60+(+sec)+(+ms||0)/1000;
-            });
-            cues.push({s,e,t:content});
-        } catch(e) { continue; }
-    }
-    return cues;
-}
-
-/* ===============================
    INIT PLAYER
 ================================ */
 (async()=>{
 const m3u8=await getStream();
 const subs=await getSubtitles();
-
-const subtitleOverlay=document.getElementById('subtitle-overlay');
-const subtitleText=document.getElementById('subtitle-text');
-let subtitleCues=[];
-let activeSub=null;
 
 const art=new Artplayer({
     container:'#player',
@@ -189,6 +129,14 @@ const art=new Artplayer({
     lock:true,
     fastForward:true,
     theme:'#e50914',
+    // NATIVE SUBTITLE CONFIG
+    subtitle: {
+        url: '',
+        style: {
+            color: '#fff',
+            fontSize: '24px',
+        },
+    },
     icons:{
         loading:`
         <div class="loading-spinner-container">
@@ -240,13 +188,7 @@ const art=new Artplayer({
     }
 });
 
-// CRITICAL: Move the subtitle overlay inside Artplayer's UI layers
-art.on('ready', () => {
-    const layers = art.template.$layers;
-    layers.appendChild(subtitleOverlay);
-});
-
-/* ===== SUBTITLE MENU ===== */
+/* ===== NATIVE SUBTITLE MENU ===== */
 if(subs.length){
     art.setting.add({
         name:'subtitle',
@@ -258,42 +200,18 @@ if(subs.length){
                 url:proxy(s.url)
             }))
         ],
-        onSelect:async i=>{
+        onSelect: i => {
             if(!i.url){
-                subtitleOverlay.style.display='none';
-                subtitleCues=[];
+                art.subtitle.show = false;
                 return 'Off';
             }
-            try {
-                const t=await fetch(i.url).then(r=>r.text());
-                subtitleCues=parseSub(t);
-                subtitleOverlay.style.display='block';
-                return i.html;
-            } catch (err) {
-                console.error("Failed to load subtitle", err);
-                return 'Error';
-            }
+            // Use Artplayer's native subtitle loader
+            art.subtitle.url = i.url;
+            art.subtitle.show = true;
+            return i.html;
         }
     });
 }
-
-/* ===== SYNC SUBTITLES (Using Video TimeUpdate for better sync) ===== */
-art.on('video:timeupdate', () => {
-    if(!subtitleCues.length) return;
-    const t=art.currentTime;
-    const cue=subtitleCues.find(c=>t>=c.s && t<=c.e);
-    
-    if(cue){
-        if(cue !== activeSub) {
-            // Replace <br> tags or other formatting if necessary
-            subtitleText.innerHTML = cue.t.replace(/\n/g, '<br>');
-            activeSub=cue;
-        }
-    } else {
-        subtitleText.innerHTML='';
-        activeSub=null;
-    }
-});
 
 })();
 </script>
