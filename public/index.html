@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Netflix Player Pro</title>
+<title>Netflix Player</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
@@ -42,27 +42,23 @@ html,body{
     to{transform:rotate(360deg)}
 }
 
-/* REMOVE DEFAULT BOTTOM PLAY/PAUSE BUTTON */
-.art-control-playAndPause {
-    display: none !important;
-}
-
-/* ===== CENTER CONTROLS STYLE ===== */
+/* ===== CENTER CONTROLS STYLE (With Fade) ===== */
 .custom-center-controls {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 60px; /* Space between icons */
+    gap: 60px;
     z-index: 20;
-    pointer-events: none;
+    pointer-events: none; /* Let clicks through to the video */
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-/* Sync visibility with Artplayer UI state */
+/* Auto-hide logic tied to Artplayer UI state */
 .art-state-hide .custom-center-controls {
     opacity: 0;
     visibility: hidden;
@@ -78,7 +74,7 @@ html,body{
     border: none;
     color: white;
     cursor: pointer;
-    pointer-events: auto;
+    pointer-events: auto; /* Buttons themselves ARE clickable */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -87,19 +83,19 @@ html,body{
 }
 
 .center-btn:active {
-    transform: scale(0.85);
+    transform: scale(0.9);
 }
 
 .center-btn svg {
-    width: 42px; /* Made smaller as requested */
-    height: 42px;
-    filter: drop-shadow(0 0 8px rgba(0,0,0,0.6));
+    width: 48px; /* Balanced size */
+    height: 48px;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.7));
 }
 
 /* ===== SUBTITLE STYLE ===== */
 .custom-subtitle-container {
     position: absolute;
-    bottom: 60px;
+    bottom: 70px; /* Above control bar */
     left: 0;
     right: 0;
     display: flex;
@@ -109,7 +105,7 @@ html,body{
 }
 
 .custom-subtitle-text {
-    padding: 4px 12px;
+    padding: 5px 15px;
     font-size: 24px;
     font-weight: 500;
     color: #fff;
@@ -166,7 +162,7 @@ async function getSubtitles(){
 }
 
 /* ===============================
-   PARSER (Precise Sync)
+   SUBTITLE PARSER
 ================================ */
 function parseSub(text){
     const cues=[];
@@ -224,7 +220,6 @@ const art=new Artplayer({
     backdrop:true,
     playsInline:true,
     theme:'#e50914',
-    // RESUME SETTINGS
     autoPlayback: true,
     resume: true,
     storage: true,
@@ -245,7 +240,7 @@ const art=new Artplayer({
                     <svg id="svg-pause" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.5 3a.5.5 0 0 0-.5.5v17a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-17a.5.5 0 0 0-.5-.5h-5Zm10 0a.5.5 0 0 0-.5.5v17a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-17a.5.5 0 0 0-.5-.5h-5Z" fill="currentColor"></path></svg>
                 </button>
                 <button id="btn-forward" class="center-btn">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707.118-1.324-.353-1.851-.235-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707-.118-1.324-.353-1.851-.235-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
                 </button>
             </div>
             `,
