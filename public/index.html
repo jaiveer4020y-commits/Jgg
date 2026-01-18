@@ -1,345 +1,317 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Netflix Pro Player</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NextGen Video Player | Netflix Pro</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
+    <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
+    <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
 
-<link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
+    <style>
+        :root { --primary: #e50914; --bg: #000000; --card: #141414; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; height: 100%; overflow-x: hidden; }
 
-<style>
-html,body{
-    margin:0;
-    padding:0;
-    background:#000;
-}
+        /* ===== HOME PAGE UI ===== */
+        #home-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; transition: 0.5s; background: linear-gradient(to top, #000, #141414); }
+        .search-box { background: var(--card); padding: 40px; border-radius: 8px; box-shadow: 0 15px 50px rgba(0,0,0,0.8); width: 90%; max-width: 400px; text-align: center; }
+        .search-box h1 { color: var(--primary); font-size: 2.5rem; margin-bottom: 30px; letter-spacing: 2px; font-weight: 900; }
+        input, select { width: 100%; padding: 14px; margin: 10px 0; border-radius: 4px; border: 1px solid #333; background: #000; color: white; font-size: 1rem; box-sizing: border-box; }
+        input:focus { border-color: var(--primary); outline: none; }
+        .watch-btn { width: 100%; padding: 16px; background: var(--primary); border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 1.1rem; margin-top: 15px; transition: 0.3s; }
+        .watch-btn:hover { background: #b20710; transform: scale(1.02); }
 
-/* PLAYER BOX */
-#player{
-    width:100%;
-    max-width:980px;
-    height:560px;
-    margin:40px auto;
-    position:relative;
-    background:#000;
-}
+        /* ===== TMDB LOADING OVERLAY ===== */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000 no-repeat center center; background-size: cover;
+            display: none; align-items: center; justify-content: center; z-index: 2000;
+        }
+        #loading-overlay::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); /* Darken poster */
+        }
+        .net-spinner { width: 85px; height: 85px; z-index: 2001; animation: spin 1.1s linear infinite; }
+        @keyframes spin { from {transform:rotate(0deg)} to {transform:rotate(360deg)} }
 
-/* NETFLIX SPINNER */
-.loading-spinner-container{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    width:64px;
-    height:64px;
-}
-.loading-spinner-container img{
-    width:64px;
-    height:64px;
-    animation:spin 1.1s linear infinite;
-}
-@keyframes spin{
-    from{transform:rotate(0deg)}
-    to{transform:rotate(360deg)}
-}
+        /* ===== PLAYER BOX ===== */
+        #player-container { display: none; width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; }
+        #artplayer { width: 100%; height: 100%; }
 
-/* ===== CENTER CONTROLS (LOCK ICON LOGIC) ===== */
-.custom-center-wrapper {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 60px;
-    z-index: 50; /* Higher priority */
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
+        /* ===== CENTER ACTION ICONS (SMART FADE) ===== */
+        .custom-center-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 60px;
+            z-index: 1500; pointer-events: none; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        /* Sync with Artplayer UI visibility */
+        .art-state-show .custom-center-wrapper { opacity: 1; visibility: visible; }
 
-/* Shows icons ONLY when the player UI is active (like the lock icon) */
-.art-state-show .custom-center-wrapper {
-    opacity: 1;
-    visibility: visible;
-}
+        .c-btn {
+            background: rgba(0,0,0,0.3); border: none; color: white; cursor: pointer;
+            pointer-events: auto; width: 75px; height: 75px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .c-btn:active { transform: scale(0.85); }
+        .c-btn svg { width: 44px; height: 44px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.9)); }
 
-.center-btn {
-    background: none;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    pointer-events: auto; /* Buttons are clickable */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.1s ease;
-}
+        /* ===== RESUME TOAST ===== */
+        .resume-toast {
+            position: absolute; bottom: 100px; left: 30px; background: #1a1a1a;
+            border-left: 4px solid var(--primary); padding: 15px 25px; border-radius: 4px;
+            display: none; z-index: 1600; cursor: pointer; box-shadow: 0 10px 30px #000;
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn { from {transform: translateX(-100%);} to {transform: translateX(0);} }
 
-.center-btn:active {
-    transform: scale(0.85);
-}
-
-.center-btn svg {
-    width: 44px;
-    height: 44px;
-    filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
-}
-
-/* ===== SUBTITLE STYLE ===== */
-.custom-subtitle-container {
-    position: absolute;
-    bottom: 60px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-    z-index: 100;
-}
-
-.custom-subtitle-text {
-    padding: 6px 14px;
-    font-size: 24px;
-    font-weight: 500;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.7);
-    text-shadow: 0 2px 4px rgba(0,0,0,1);
-    border-radius: 4px;
-    text-align: center;
-    white-space: pre-wrap;
-    max-width: 85%;
-}
-</style>
+        /* ===== SUBTITLE STYLING ===== */
+        .custom-subtitle-container {
+            position: absolute; bottom: 80px; left: 0; right: 0;
+            display: flex; justify-content: center; pointer-events: none; z-index: 100;
+        }
+        .custom-subtitle-text {
+            padding: 8px 16px; font-size: 26px; font-weight: 500; color: #fff;
+            background: rgba(0, 0, 0, 0.75); text-shadow: 0 2px 4px #000;
+            border-radius: 5px; text-align: center; white-space: pre-wrap; max-width: 85%;
+        }
+    </style>
 </head>
-
 <body>
 
-<div id="player"></div>
+    <div id="home-page">
+        <div class="search-box">
+            <h1>NEXTGEN TV</h1>
+            <input type="text" id="tmdb-id" placeholder="TMDB ID (e.g. 1396)">
+            <select id="media-type" onchange="toggleTV()">
+                <option value="movie">Movie</option>
+                <option value="tv">TV Series</option>
+            </select>
+            <div id="tv-fields" style="display:none">
+                <input type="number" id="season" placeholder="Season Number">
+                <input type="number" id="episode" placeholder="Episode Number">
+            </div>
+            <button class="watch-btn" onclick="startApp()">WATCH NOW</button>
+        </div>
+    </div>
 
-<script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
-<script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
+    <div id="loading-overlay">
+        <img class="net-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
+    </div>
+
+    <div id="player-container">
+        <div id="artplayer"></div>
+        
+        <div class="custom-center-wrapper">
+            <button class="c-btn" onclick="art.backward = 10">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+            </button>
+            <button class="c-btn" onclick="art.toggle()">
+                <svg id="c-play" style="display:none" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="c-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button class="c-btn" onclick="art.forward = 10">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+            </button>
+        </div>
+
+        <div id="resume-toast" class="resume-toast" onclick="jumpToSavedTime()">
+            <span style="color: #aaa; font-size: 12px; display: block;">RESUME PLAYBACK</span>
+            <span id="resume-msg" style="font-weight: bold;">Jump to 0:00?</span>
+        </div>
+    </div>
 
 <script>
-/* ===============================
-   CONFIG & UTILS
-================================ */
-const q = new URLSearchParams(location.search);
-const TITLE   = q.get('title');
-const IMDB_ID = q.get('id');
-const SEASON  = q.get('season');
-const EPISODE = q.get('episode');
+    /** SETTINGS **/
+    const API_KEY = '463dcd7993ab31d92eb586802fdeee6a';
+    const PROXY = u => 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(u);
+    
+    let art;
+    let savedProgress = 0;
+    let subtitleCues = [];
+    let activeSub = null;
+    let subOffset = 0;
 
-if(!TITLE) { alert("Missing title"); throw "Err"; }
-
-const proxy = u => 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(u);
-
-/* ===============================
-   FETCH DATA
-================================ */
-async function getStream(){
-    const r = await fetch(proxy(`https://u-1-1azw.onrender.com/api/get-stream?title=${TITLE}`));
-    const j = await r.json();
-    if(!j.m3u8_url) throw "No stream";
-    return proxy(j.m3u8_url);
-}
-
-async function getSubtitles(){
-    if(!IMDB_ID) return [];
-    let u = `https://sub.wyzie.ru/search?id=${IMDB_ID}`;
-    if(SEASON && EPISODE) u += `&season=${SEASON}&episode=${EPISODE}`;
-    const r = await fetch(proxy(u));
-    return await r.json();
-}
-
-/* ===============================
-   SUBTITLE PARSER (Precise)
-================================ */
-function parseSub(text){
-    const cues=[];
-    const cleanText = text.replace(/^WEBVTT\s+/i, '').trim();
-    const blocks=cleanText.replace(/\r/g,'').split('\n\n');
-    for(const b of blocks){
-        const lines=b.split('\n');
-        const tIndex = lines.findIndex(l => l.includes('-->'));
-        if(tIndex === -1) continue;
-        const content = lines.slice(tIndex + 1).join('\n');
-        try {
-            const [s,e] = lines[tIndex].split('-->').map(t=>{
-                const p = t.trim().replace(',','.');
-                const pts = p.split(':');
-                let h=0, m=0, sm=0;
-                if(pts.length === 3) [h, m, sm] = pts;
-                else [m, sm] = pts;
-                const [sec, ms] = sm.split('.');
-                return (+h)*3600 + (+m)*60 + (+sec) + (+ms||0)/1000;
-            });
-            cues.push({s, e, t: content});
-        } catch(e) {}
+    function toggleTV() {
+        document.getElementById('tv-fields').style.display = 
+            document.getElementById('media-type').value === 'tv' ? 'block' : 'none';
     }
-    return cues;
-}
 
-/* ===============================
-   PLAYER CORE
-================================ */
-(async()=>{
-const m3u8=await getStream();
-const subs=await getSubtitles();
+    async function startApp() {
+        const id = document.getElementById('tmdb-id').value;
+        const type = document.getElementById('media-type').value;
+        const s = document.getElementById('season').value;
+        const e = document.getElementById('episode').value;
+        if (!id) return alert("Enter TMDB ID");
 
-let subtitleCues=[];
-let activeSub=null;
-let subOffset = 0;
+        document.getElementById('home-page').style.opacity = '0';
+        const loader = document.getElementById('loading-overlay');
+        loader.style.display = 'flex';
 
-const art=new Artplayer({
-    container:'#player',
-    url:m3u8,
-    type:'m3u8',
-    autoplay:true,
-    setting:true,
-    fullscreen:true,
-    fullscreenWeb:true,
-    playbackRate:true,
-    aspectRatio:true,
-    miniProgressBar:true,
-    theme:'#e50914',
-    autoPlayback: true,
-    resume: true,
-    storage: true,
-    layers: [
-        // 1. SUBTITLES
-        {
-            name: 'subtitle-layer',
-            html: '<div class="custom-subtitle-container"><div id="sub-text" class="custom-subtitle-text"></div></div>',
-        },
-        // 2. CENTER CONTROLS (FADE-READY)
-        {
-            name: 'center-controls',
-            html: `
-            <div class="custom-center-wrapper">
-                <button id="btn-backward" class="center-btn">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.02 2.048A10 10 0 1 1 2 12H0a12 12 0 1 0 5-9.747V1H3v4a1 1 0 0 0 1 1h4V4H6a10 10 0 0 1 5.02-1.952ZM2 4v3h3v2H1a1 1 0 0 1-1-1V4h2Zm12.125 12c-.578 0-1.086-.141-1.523-.424-.43-.29-.764-.694-.999-1.215-.235-.527-.353-1.148-.353-1.861 0-.707.118-1.324.353-1.851.236-.527.568-.932.999-1.215.437-.29.945-.434 1.523-.434s1.083.145 1.513.434c.437.283.774.688 1.009 1.215.235.527.353 1.144.353 1.851 0 .713-.118 1.334-.353 1.86-.235.522-.572.927-1.009 1.216-.43.283-.935.424-1.513.424Zm0-1.35c.39 0 .696-.186.918-.56.222-.378.333-.909.333-1.59s-.111-1.208-.333-1.581c-.222-.38-.528-.57-.918-.57s-.696.19-.918.57c-.222.373-.333.9-.333 1.581 0 .681.111 1.212.333 1.59.222.374.528.56.918.56Zm-5.521 1.205v-5.139L7 11.141V9.82l3.198-.8v6.835H8.604Z" fill="currentColor"></path></svg>
-                </button>
-                <button id="btn-play-pause" class="center-btn">
-                    <svg id="svg-play" style="display:none" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z" fill="currentColor"></path></svg>
-                    <svg id="svg-pause" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.5 3a.5.5 0 0 0-.5.5v17a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-17a.5.5 0 0 0-.5-.5h-5Zm10 0a.5.5 0 0 0-.5.5v17a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-17a.5.5 0 0 0-.5-.5h-5Z" fill="currentColor"></path></svg>
-                </button>
-                <button id="btn-forward" class="center-btn">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707.118-1.324-.353-1.851-.236-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
-                </button>
-            </div>
-            `
+        try {
+            // 1. Fetch TMDB Details (Backdrop/Title)
+            const metaRes = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}`);
+            const meta = await metaRes.json();
+            const title = meta.title || meta.name;
+
+            if (meta.backdrop_path) {
+                loader.style.backgroundImage = `url(https://image.tmdb.org/t/p/original${meta.backdrop_path})`;
+            }
+
+            // 2. Fetch Stream
+            const streamRes = await fetch(PROXY(`https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(title)}`));
+            const streamData = await streamRes.json();
+            if (!streamData.m3u8_url) throw "No stream found";
+
+            // 3. Fetch Subtitles
+            let subUrl = `https://sub.wyzie.ru/search?id=${meta.imdb_id || id}`;
+            if(type === 'tv' && s && e) subUrl += `&season=${s}&episode=${e}`;
+            const subData = await fetch(PROXY(subUrl)).then(r => r.json()).catch(() => []);
+
+            initPlayer(PROXY(streamData.m3u8_url), id, subData);
+
+        } catch (err) {
+            alert("Error: " + err);
+            location.reload();
         }
-    ],
-    icons:{
-        loading:`<div class="loading-spinner-container"><img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png"></div>`
-    },
-    customType:{
-        m3u8(video,url){
-            if(Hls.isSupported()){
-                const hls=new Hls();
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                art.hls=hls;
+    }
 
-                hls.on(Hls.Events.MANIFEST_PARSED,()=>{
-                    art.setting.add({
-                        name:'quality',
-                        html:'Quality',
-                        selector:[
-                            {html:'Auto',level:-1,default:true},
-                            ...hls.levels.map((l,i)=>({html:l.height+'p',level:i}))
-                        ],
-                        onSelect:i=>{ hls.currentLevel=i.level; return i.html; }
-                    });
+    function parseSub(text){
+        const cues=[];
+        const cleanText = text.replace(/^WEBVTT\s+/i, '').trim();
+        const blocks = cleanText.replace(/\r/g,'').split('\n\n');
+        for(const b of blocks){
+            const lines=b.split('\n');
+            const tIndex = lines.findIndex(l => l.includes('-->'));
+            if(tIndex === -1) continue;
+            const content = lines.slice(tIndex + 1).join('\n');
+            try {
+                const [start, end] = lines[tIndex].split('-->').map(t => {
+                    const pts = t.trim().replace(',','.').split(':');
+                    let h=0, m=0, s=0;
+                    if(pts.length === 3) [h, m, s] = pts; else [m, s] = pts;
+                    return (+h)*3600 + (+m)*60 + parseFloat(s);
                 });
+                cues.push({s: start, e: end, t: content});
+            } catch(e){}
+        }
+        return cues;
+    }
 
-                hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, d) => {
-                    if (d.audioTracks.length > 1) {
-                        art.setting.add({
-                            name: 'audio',
-                            html: 'Audio',
-                            selector: d.audioTracks.map((t, i) => ({
-                                html: t.name || t.lang || `Track ${i}`,
-                                index: i,
-                                default: i === hls.audioTrack
-                            })),
-                            onSelect: s => { hls.audioTrack = s.index; return s.html; }
-                        });
+    function initPlayer(m3u8, videoId, subs) {
+        document.getElementById('home-page').style.display = 'none';
+        document.getElementById('player-container').style.display = 'block';
+
+        art = new Artplayer({
+            container: '#artplayer',
+            url: m3u8,
+            type: 'm3u8',
+            autoplay: true,
+            fullscreen: true,
+            fullscreenWeb: true,
+            theme: '#e50914',
+            setting: true,
+            playbackRate: true,
+            aspectRatio: true,
+            miniProgressBar: true,
+            autoPlayback: true,
+            storage: true,
+            layers: [
+                {
+                    name: 'subtitle-layer',
+                    html: '<div class="custom-subtitle-container"><div id="sub-text" class="custom-subtitle-text"></div></div>',
+                }
+            ],
+            customType: {
+                m3u8: function(video, url) {
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(url);
+                        hls.attachMedia(video);
+                    }
+                }
+            }
+        });
+
+        art.on('ready', () => {
+            document.getElementById('loading-overlay').style.display = 'none';
+            
+            // Icon Play/Pause Sync
+            const iconPlay = document.getElementById('c-play');
+            const iconPause = document.getElementById('c-pause');
+            art.on('play', () => { iconPlay.style.display='none'; iconPause.style.display='block'; });
+            art.on('pause', () => { iconPlay.style.display='block'; iconPause.style.display='none'; });
+
+            // Resume Progress Logic
+            savedProgress = localStorage.getItem('progress_' + videoId);
+            if (savedProgress > 15) {
+                const mins = Math.floor(savedProgress / 60);
+                document.getElementById('resume-msg').innerText = `Resume at ${mins}m?`;
+                document.getElementById('resume-toast').style.display = 'block';
+                setTimeout(() => { document.getElementById('resume-toast').style.display='none'; }, 8000);
+            }
+
+            // Populate Subtitles Menu
+            if(subs.length) {
+                art.setting.add({
+                    name: 'subtitle',
+                    html: 'Subtitles',
+                    selector: [
+                        {html: 'Off', url: null, default: true},
+                        ...subs.map(s => ({ html: s.lang || s.language, url: PROXY(s.url) }))
+                    ],
+                    onSelect: async item => {
+                        if(!item.url) { subtitleCues = []; document.getElementById('sub-text').innerHTML = ''; return 'Off'; }
+                        const txt = await fetch(item.url).then(r => r.text());
+                        subtitleCues = parseSub(txt);
+                        return item.html;
                     }
                 });
+
+                art.setting.add({
+                    name: 'sub-delay',
+                    html: 'Subtitle Sync',
+                    selector: [
+                        {html: '-5s', value: -5}, {html: '-4s', value: -4}, {html: '-3s', value: -3},
+                        {html: '-2s', value: -2}, {html: '-1s', value: -1},
+                        {html: 'Original', value: 0, default: true},
+                        {html: '+1s', value: 1}, {html: '+2s', value: 2}, {html: '+3s', value: 3},
+                        {html: '+4s', value: 4}, {html: '+5s', value: 5},
+                    ],
+                    onSelect: i => { subOffset = i.value; return i.html; }
+                });
             }
+        });
+
+        // Save progress & Render Subtitles
+        art.on('video:timeupdate', () => {
+            if(art.currentTime > 10) localStorage.setItem('progress_' + videoId, Math.floor(art.currentTime));
+
+            // Subtitle Engine
+            if(subtitleCues.length) {
+                const t = art.currentTime + subOffset;
+                const cue = subtitleCues.find(c => t >= c.s && t <= c.e);
+                const el = document.getElementById('sub-text');
+                if(cue) {
+                    if(cue !== activeSub) {
+                        el.innerHTML = cue.t.replace(/\n/g, '<br>');
+                        activeSub = cue;
+                    }
+                } else {
+                    el.innerHTML = '';
+                    activeSub = null;
+                }
+            }
+        });
+    }
+
+    function jumpToSavedTime() {
+        if(art && savedProgress) {
+            art.currentTime = parseFloat(savedProgress);
+            document.getElementById('resume-toast').style.display = 'none';
         }
     }
-});
-
-/* ===== BIND CENTER CONTROLS ===== */
-art.on('ready', () => {
-    const bwd = document.getElementById('btn-backward');
-    const fwd = document.getElementById('btn-forward');
-    const pps = document.getElementById('btn-play-pause');
-    const sP = document.getElementById('svg-play');
-    const sS = document.getElementById('svg-pause');
-
-    bwd.onclick = (e) => { e.stopPropagation(); art.backward = 10; };
-    fwd.onclick = (e) => { e.stopPropagation(); art.forward = 10; };
-    pps.onclick = (e) => { e.stopPropagation(); art.toggle(); };
-
-    art.on('play', () => { sP.style.display='none'; sS.style.display='block'; });
-    art.on('pause', () => { sP.style.display='block'; sS.style.display='none'; });
-});
-
-/* ===== SUBTITLE LOGIC ===== */
-const subText = document.getElementById('sub-text');
-if(subs.length){
-    art.setting.add({
-        name:'subtitle',
-        html:'Subtitles',
-        selector:[
-            {html:'Off',url:null,default:true},
-            ...subs.map(s=>({ html:s.lang||s.language||'Subtitle', url:proxy(s.url) }))
-        ],
-        onSelect:async i=>{
-            if(!i.url){ subtitleCues=[]; subText.innerHTML=''; return 'Off'; }
-            const t = await fetch(i.url).then(r=>r.text());
-            subtitleCues = parseSub(t);
-            return i.html;
-        }
-    });
-
-    // ADDED: Every second from 1 to 5
-    art.setting.add({
-        name: 'sub-delay',
-        html: 'Subtitle Sync',
-        selector: [
-            {html: '-5s', value: -5}, {html: '-4s', value: -4}, {html: '-3s', value: -3},
-            {html: '-2s', value: -2}, {html: '-1s', value: -1},
-            {html: 'Original', value: 0, default: true},
-            {html: '+1s', value: 1}, {html: '+2s', value: 2}, {html: '+3s', value: 3},
-            {html: '+4s', value: 4}, {html: '+5s', value: 5},
-        ],
-        onSelect: i => { subOffset = i.value; return i.html; }
-    });
-}
-
-art.on('video:timeupdate', () => {
-    if(!subtitleCues.length) return;
-    const t = art.currentTime + subOffset;
-    const cue = subtitleCues.find(c => t >= c.s && t <= c.e);
-    if(cue) {
-        if(cue !== activeSub) {
-            subText.innerHTML = cue.t.replace(/\n/g, '<br>');
-            activeSub = cue;
-        }
-    } else {
-        subText.innerHTML = '';
-        activeSub = null;
-    }
-});
-
-})();
 </script>
 </body>
 </html>
