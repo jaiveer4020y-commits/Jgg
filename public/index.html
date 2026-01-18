@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Netflix Pro Elite | Dot-Slug Engine v12.0</title>
+    <title>Netflix Pro Max | Enterprise Engine v15.0</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
@@ -10,239 +10,272 @@
     <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
 
     <style>
-        :root { --n-red: #e50914; --n-black: #000; --n-card: #141414; }
-        body, html { margin: 0; padding: 0; background: var(--n-black); color: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; height: 100%; overflow-x: hidden; }
+        :root { --n-red: #e50914; --n-black: #000; --n-dark: #141414; }
+        body, html { margin: 0; padding: 0; background: var(--n-black); color: #fff; font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, sans-serif; height: 100%; overflow-x: hidden; }
 
-        /* DASHBOARD */
+        /* DASHBOARD SECTION */
         #dashboard { padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
         .logo { font-size: 3.5rem; font-weight: 900; color: var(--n-red); margin-bottom: 30px; letter-spacing: -3px; }
         
-        .search-box { 
-            width: 100%; max-width: 900px; background: var(--n-card); padding: 15px; border-radius: 12px; 
-            display: flex; gap: 10px; flex-wrap: wrap; border: 1px solid #333;
+        .search-area { 
+            width: 100%; max-width: 900px; background: var(--n-dark); padding: 15px; border-radius: 12px; 
+            display: flex; gap: 10px; flex-wrap: wrap; border: 1px solid #333; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
         }
-        .search-box select, .search-box input { background: #000; color: #fff; border: 1px solid #444; padding: 12px; border-radius: 6px; }
-        .search-box input { flex: 1; min-width: 200px; }
-        .search-box button { background: var(--n-red); color: #fff; border: none; padding: 0 25px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .search-area select, .search-area input { background: #000; color: #fff; border: 1px solid #444; padding: 14px; border-radius: 6px; outline: none; }
+        .search-area input { flex: 1; min-width: 200px; font-size: 1rem; }
+        .search-area button { background: var(--n-red); color: #fff; border: none; padding: 0 30px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .search-area button:hover { background: #ff0a16; }
 
-        /* GRID */
-        #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; width: 100%; max-width: 1200px; margin-top: 40px; }
-        .m-card { background: var(--n-card); border-radius: 8px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 2px solid transparent; position: relative; }
-        .m-card:hover { transform: scale(1.06); border-color: var(--n-red); }
-        .m-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
-        .m-card .meta { padding: 10px; font-size: 0.85rem; text-align: center; }
+        /* RESULTS GRID */
+        #results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; width: 100%; max-width: 1300px; margin-top: 40px; }
+        .movie-card { background: var(--n-dark); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.3s; border: 2px solid transparent; }
+        .movie-card:hover { transform: translateY(-10px); border-color: var(--n-red); }
+        .movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
+        .movie-card .info { padding: 12px; font-size: 0.9rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* MODAL */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 10000; }
-        .modal-ui { background: var(--n-card); padding: 30px; border-radius: 12px; width: 340px; text-align: center; border: 1px solid #333; }
-        .input-group { display: flex; justify-content: center; gap: 15px; margin: 20px 0; }
-        .input-group input { width: 60px; padding: 10px; background: #000; border: 1px solid #444; color: #fff; text-align: center; }
+        /* EPISODE MODAL */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 10000; }
+        .modal-box { background: var(--n-dark); padding: 40px; border-radius: 15px; width: 360px; text-align: center; border: 1px solid #333; }
+        .modal-box h2 { color: var(--n-red); margin-bottom: 25px; }
+        .modal-inputs { display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; }
+        .modal-inputs input { width: 80px; padding: 15px; background: #000; border: 1px solid #444; color: #fff; text-align: center; font-size: 1.5rem; border-radius: 8px; }
+        .play-btn { background: var(--n-red); color: #fff; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
 
-        /* OG LOADING LAYER */
-        #loading-screen { position: fixed; inset: 0; background: #000; display: none; align-items: center; justify-content: center; z-index: 20000; }
-        .og-spinner { width: 100px; height: 100px; animation: n-spin 1.1s linear infinite; }
-        @keyframes n-spin { from {transform:rotate(0deg)} to {transform:rotate(360deg)} }
+        /* LOADING ENGINE */
+        #loader { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 50000; }
+        .n-spinner { width: 110px; height: 110px; animation: rotate 1.1s linear infinite; }
+        @keyframes rotate { from {transform:rotate(0deg)} to {transform:rotate(360deg)} }
 
-        /* PLAYER */
-        #player-view { position: fixed; inset: 0; background: #000; display: none; z-index: 30000; }
+        /* PLAYER VIEWPORT */
+        #player-wrap { position: fixed; inset: 0; background: #000; display: none; z-index: 100000; }
         #artplayer { width: 100%; height: 100%; }
 
-        /* CENTER ICONS */
-        .center-controls {
-            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            gap: 80px; pointer-events: none; z-index: 100; opacity: 0; transition: 0.3s;
+        /* LAYERED ICONS (CENTER UI) */
+        .art-layer-center-ui {
+            display: flex; align-items: center; justify-content: center;
+            gap: 100px; pointer-events: none; width: 100%; height: 100%;
+            opacity: 0; transition: opacity 0.3s ease;
         }
-        .art-state-show .center-controls { opacity: 1; }
-        .ctrl-icon { background: rgba(0,0,0,0.5); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: auto; cursor: pointer; }
-        .ctrl-icon svg { width: 40px; height: 40px; fill: #fff; }
+        .art-state-show .art-layer-center-ui { opacity: 1; }
+        .icon-circle { 
+            background: rgba(0,0,0,0.5); width: 90px; height: 90px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            pointer-events: auto; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .icon-circle svg { width: 45px; height: 45px; fill: #fff; }
 
-        /* SUBTITLES */
-        .sub-layer { position: absolute; bottom: 10%; width: 100%; display: flex; justify-content: center; pointer-events: none; z-index: 200; }
-        #sub-render { background: rgba(0,0,0,0.8); padding: 6px 20px; border-radius: 5px; color: #fff; font-size: 26px; text-align: center; display: none; }
+        /* SUBTITLE LAYER */
+        .art-layer-subs {
+            position: absolute; bottom: 12%; width: 100%; display: flex; 
+            justify-content: center; pointer-events: none; text-align: center;
+        }
+        #sub-display { 
+            background: rgba(0,0,0,0.8); padding: 8px 25px; border-radius: 5px; 
+            color: #fff; font-size: 30px; max-width: 80%; line-height: 1.3;
+            text-shadow: 2px 2px 5px #000; display: none;
+        }
     </style>
 </head>
 <body>
 
 <div id="dashboard">
     <div class="logo">NETFLIX</div>
-    <div class="search-box">
-        <select id="search-type">
-            <option value="name">By Name</option>
-            <option value="tmdb">By TMDB ID</option>
-            <option value="imdb">By IMDB ID</option>
+    <div class="search-area">
+        <select id="mode">
+            <option value="name">Search Name</option>
+            <option value="tmdb">TMDB ID</option>
+            <option value="imdb">IMDB ID</option>
         </select>
-        <input type="text" id="main-query" placeholder="Search or paste ID...">
-        <button onclick="executeSearch()">EXPLORE</button>
+        <input type="text" id="query" placeholder="Enter Title or ID...">
+        <button onclick="handleSearch()">EXPLORE</button>
     </div>
-    <div id="results"></div>
+    <div id="results-grid"></div>
 </div>
 
-<div class="modal-overlay" id="tv-modal">
-    <div class="modal-ui">
-        <h2 id="tv-display-title" style="color:var(--n-red)">TV Series</h2>
-        <div class="input-group">
-            <div><label>S</label><input type="number" id="s-input" value="1"></div>
-            <div><label>E</label><input type="number" id="e-input" value="1"></div>
+<div class="modal" id="tv-modal">
+    <div class="modal-box">
+        <h2 id="modal-title">Series Name</h2>
+        <div class="modal-inputs">
+            <div><label>S</label><br><input type="number" id="season" value="1"></div>
+            <div><label>E</label><br><input type="number" id="episode" value="1"></div>
         </div>
-        <button onclick="startTvStream()" style="background:var(--n-red); color:#fff; border:none; padding:12px; width:100%; border-radius:4px; font-weight:bold; cursor:pointer;">PLAY</button>
+        <button class="play-btn" onclick="playTvSeries()">WATCH NOW</button>
+        <p onclick="document.getElementById('tv-modal').style.display='none'" style="margin-top:15px; cursor:pointer; color:gray;">Cancel</p>
     </div>
 </div>
 
-<div id="loading-screen">
-    <div style="text-align:center">
-        <img class="og-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
-        <p id="load-status" style="margin-top:20px; font-weight:bold; letter-spacing:2px; color:var(--n-red)">CONVERTING SLUG...</p>
-    </div>
+<div id="loader">
+    <img class="n-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
+    <p id="loader-text" style="margin-top:25px; font-weight:bold; letter-spacing:4px; color:var(--n-red)">BUILDING SLUG...</p>
 </div>
 
-<div id="player-view">
+<div id="player-wrap">
     <div id="artplayer"></div>
 </div>
 
 <script>
-const TMDB_KEY = '463dcd7993ab31d92eb586802fdeee6a';
-const PROXY = (u) => 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(u);
+const TMDB_API = '463dcd7993ab31d92eb586802fdeee6a';
+const PROXY_URL = (url) => 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(url);
 
-let art;
-let selectedMedia = null;
-let cues = [];
-let activeCue = null;
+let artPlayerInstance;
+let currentSelection = null;
+let activeSubtitles = [];
+let lastCueId = null;
 
-/** * FORCE DOT SLUG ENGINE
- * Converts "The Conjuring: Last Rites" -> "the.conjuring.last.rites"
- * Converts "It (2017)" -> "it.2017"
- **/
-function forceDotSlug(title) {
-    return title.toLowerCase()
-        .replace(/[^a-z0-9\s]/gi, ' ') // Replace all special characters (colon, parens, dots) with space
+/** 1. THE SLUG ENGINE: ENFORCED DOT PROTOCOL **/
+function slugify(text, type, s, e) {
+    let clean = text.toLowerCase()
+        .replace(/[^a-z0-9\s]/gi, ' ') // Replace non-alphanumeric with space
         .trim()
-        .replace(/\s+/g, '.'); // Replace all spaces with a single dot
+        .replace(/\s+/g, '.'); // Replace spaces with dots
+    
+    if (type === 'tv') {
+        const S = s.toString().padStart(2, '0');
+        const E = e.toString().padStart(2, '0');
+        clean += `.s${S}.e${E}`;
+    }
+    return clean;
 }
 
-async function executeSearch() {
-    const type = document.getElementById('search-type').value;
-    const q = document.getElementById('main-query').value;
+/** 2. SEARCH LOGIC **/
+async function handleSearch() {
+    const mode = document.getElementById('mode').value;
+    const q = document.getElementById('query').value;
     if(!q) return;
 
-    let url = (type === 'name') 
-        ? `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`
-        : (type === 'tmdb') 
-        ? `https://api.themoviedb.org/3/movie/${q}?api_key=${TMDB_KEY}`
-        : `https://api.themoviedb.org/3/find/${q}?api_key=${TMDB_KEY}&external_source=imdb_id`;
-
-    const res = await fetch(url);
-    const data = await res.json();
-    renderGrid(data);
-}
-
-function renderGrid(data) {
-    const grid = document.getElementById('results');
-    grid.innerHTML = "";
-    let items = data.results || data.movie_results || [data];
-    if(data.tv_results) items = [...items, ...data.tv_results];
-
-    items.forEach(item => {
-        if(!item || !item.poster_path) return;
-        const mType = item.media_type || (item.title ? 'movie' : 'tv');
-        const card = document.createElement('div');
-        card.className = 'm-card';
-        card.innerHTML = `<img src="https://image.tmdb.org/t/p/w300${item.poster_path}"><div class="meta">${item.title || item.name}</div>`;
-        card.onclick = () => {
-            selectedMedia = item;
-            if(mType === 'tv') {
-                document.getElementById('tv-display-title').innerText = item.name;
-                document.getElementById('tv-modal').style.display = 'flex';
-            } else {
-                initStreamProcess('movie', item.id, item.title || item.name);
-            }
-        };
-        grid.appendChild(card);
-    });
-}
-
-function startTvStream() {
-    document.getElementById('tv-modal').style.display = 'none';
-    initStreamProcess('tv', selectedMedia.id, selectedMedia.name, document.getElementById('s-input').value, document.getElementById('e-input').value);
-}
-
-async function initStreamProcess(type, id, title, s, e) {
-    const loader = document.getElementById('loading-screen');
-    const status = document.getElementById('load-status');
-    loader.style.display = 'flex';
-
-    // Apply Force Dot Slug
-    const dotTitle = forceDotSlug(title);
-    status.innerText = `REQUESTING: ${dotTitle}`;
+    let searchUrl = "";
+    if(mode === 'name') searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API}&query=${encodeURIComponent(q)}`;
+    else if(mode === 'tmdb') searchUrl = `https://api.themoviedb.org/3/movie/${q}?api_key=${TMDB_API}`;
+    else searchUrl = `https://api.themoviedb.org/3/find/${q}?api_key=${TMDB_API}&external_source=imdb_id`;
 
     try {
-        let streamUrl = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(dotTitle)}`;
-        if(type === 'tv') streamUrl += `&s=${s}&e=${e}`; // Adding series parameters
+        const res = await fetch(searchUrl);
+        const data = await res.json();
+        const grid = document.getElementById('results-grid');
+        grid.innerHTML = "";
 
-        const streamRes = await fetch(PROXY(streamUrl));
+        let results = data.results || data.movie_results || data.tv_results || [data];
+        results.forEach(item => {
+            if(!item.poster_path) return;
+            const type = item.media_type || (item.title ? 'movie' : 'tv');
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            card.innerHTML = `
+                <img src="https://image.tmdb.org/t/p/w300${item.poster_path}">
+                <div class="info">${item.title || item.name}</div>
+            `;
+            card.onclick = () => {
+                currentSelection = item;
+                if(type === 'tv') {
+                    document.getElementById('modal-title').innerText = item.name;
+                    document.getElementById('tv-modal').style.display = 'flex';
+                } else {
+                    processStream('movie', item.id, item.title);
+                }
+            };
+            grid.appendChild(card);
+        });
+    } catch(e) { alert("Search failed."); }
+}
+
+function playTvSeries() {
+    document.getElementById('tv-modal').style.display = 'none';
+    const s = document.getElementById('season').value;
+    const e = document.getElementById('episode').value;
+    processStream('tv', currentSelection.id, currentSelection.name, s, e);
+}
+
+/** 3. STREAM & SUBTITLE PROCESSING **/
+async function processStream(type, id, title, s, e) {
+    const loader = document.getElementById('loader');
+    const status = document.getElementById('loader-text');
+    loader.style.display = 'flex';
+
+    const slug = slugify(title, type, s, e);
+    status.innerText = `FETCHING: ${slug}`;
+
+    try {
+        const api = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(slug)}`;
+        const streamRes = await fetch(PROXY_URL(api));
         const streamData = await streamRes.json();
 
-        if(!streamData.m3u8_url) throw new Error("No Stream Found");
+        if(!streamData.m3u8_url) throw new Error("Null Stream");
 
-        let subUrl = `https://sub.wyzie.ru/search?id=${id}`;
-        if(type === 'tv') subUrl += `&season=${s}&episode=${e}`;
-        const subs = await fetch(PROXY(subUrl)).then(r => r.json()).catch(() => []);
+        status.innerText = "LOADING SUBTITLES...";
+        let subApi = `https://sub.wyzie.ru/search?id=${id}`;
+        if(type === 'tv') subApi += `&season=${s}&episode=${e}`;
+        const subs = await fetch(PROXY_URL(subApi)).then(r => r.json()).catch(() => []);
 
-        launchArt(PROXY(streamData.m3u8_url), subs);
-    } catch (err) {
-        alert("STREAM FAILED: Try searching by Name instead of ID.");
+        initArtPlayer(PROXY_URL(streamData.m3u8_url), subs);
+    } catch(err) {
+        alert("STREAM NOT FOUND for this slug.");
         loader.style.display = 'none';
     }
 }
 
-function parseVtt(t) {
-    const arr = [];
-    const lines = t.split('\n');
-    let cur = null;
-    lines.forEach(l => {
-        l = l.trim();
-        if(l.includes('-->')) {
-            const p = l.split('-->');
-            cur = { s: t2s(p[0]), e: t2s(p[1]), text: [] };
-        } else if(cur && l === "") {
-            arr.push({...cur, text: cur.text.join('<br>')});
-            cur = null;
-        } else if(cur) cur.text.push(l);
+/** 4. SUBTITLE VTT PARSER **/
+function parseVtt(text) {
+    const cues = [];
+    const lines = text.split('\n');
+    let current = null;
+    lines.forEach(line => {
+        line = line.trim();
+        if(line.includes('-->')) {
+            const parts = line.split('-->');
+            current = { start: timeToSec(parts[0]), end: timeToSec(parts[1]), text: [] };
+        } else if(current && line === "") {
+            cues.push({...current, text: current.text.join('<br>')});
+            current = null;
+        } else if(current) {
+            current.text.push(line);
+        }
     });
-    return arr;
+    return cues;
 }
-function t2s(s) {
-    const p = s.trim().split(':');
-    let h=0, m=0, sec=0;
-    if(p.length === 3) [h, m, sec] = p; else [m, sec] = p;
-    return (+h)*3600 + (+m)*60 + parseFloat(sec);
+function timeToSec(t) {
+    const p = t.trim().split(':');
+    let h=0, m=0, s=0;
+    if(p.length === 3) [h,m,s] = p; else [m,s] = p;
+    return (+h)*3600 + (+m)*60 + parseFloat(s);
 }
 
-function launchArt(m3u8, subs) {
-    document.getElementById('player-view').style.display = 'block';
+/** 5. FULL FEATURE ARTPLAYER ENGINE **/
+function initArtPlayer(m3u8, subs) {
+    document.getElementById('player-wrap').style.display = 'block';
 
-    art = new Artplayer({
+    artPlayerInstance = new Artplayer({
         container: '#artplayer',
         url: m3u8,
         type: 'm3u8',
         autoplay: true,
         fullscreen: true,
-        theme: '#e50914',
+        fullscreenWeb: true,
         setting: true,
+        playbackRate: true,
+        aspectRatio: true,
+        subtitleOffset: true, // Native Sync
+        theme: '#e50914',
+        
+        // ICONS & SUBTITLES AS LAYERS
         layers: [
-            { name: 'sub-layer', html: '<div class="sub-layer"><div id="sub-render"></div></div>' },
             {
-                name: 'center-controls',
+                name: 'center-ui',
                 html: `
-                <div class="center-controls">
-                    <div class="ctrl-icon" onclick="art.backward=10"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg></div>
-                    <div class="ctrl-icon" onclick="art.toggle()">
-                        <svg id="m-play" style="display:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        <svg id="m-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                <div class="art-layer-center-ui">
+                    <div class="icon-circle" onclick="artPlayerInstance.backward=10"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg></div>
+                    <div class="icon-circle" onclick="artPlayerInstance.toggle()">
+                        <svg id="svg-play" style="display:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="svg-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </div>
-                    <div class="ctrl-icon" onclick="art.forward=10"><svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></div>
+                    <div class="icon-circle" onclick="artPlayerInstance.forward=10"><svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></div>
                 </div>`
+            },
+            {
+                name: 'subs',
+                html: '<div class="art-layer-subs"><div id="sub-display"></div></div>'
             }
         ],
+
         customType: {
             m3u8: function(video, url) {
                 if (Hls.isSupported()) {
@@ -250,16 +283,18 @@ function launchArt(m3u8, subs) {
                     hls.loadSource(url);
                     hls.attachMedia(video);
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        art.setting.add({
+                        // Restoration of Quality Settings
+                        artPlayerInstance.setting.add({
                             name: 'quality', html: 'Quality',
                             selector: [{html: 'Auto', level: -1, default: true}, ...hls.levels.map((l, i) => ({html: l.height+'p', level: i}))],
-                            onSelect: (i) => { hls.currentLevel = i.level; return i.html; }
+                            onSelect: (item) => { hls.currentLevel = item.level; return item.html; }
                         });
+                        // Restoration of Audio Track Settings
                         if(hls.audioTracks.length > 1) {
-                            art.setting.add({
-                                name: 'audio', html: 'Audio',
+                            artPlayerInstance.setting.add({
+                                name: 'audio', html: 'Audio Track',
                                 selector: hls.audioTracks.map((t, i) => ({html: t.name || t.lang, index: i})),
-                                onSelect: (i) => { hls.audioTrack = i.index; return i.html; }
+                                onSelect: (item) => { hls.audioTrack = item.index; return item.html; }
                             });
                         }
                     });
@@ -268,35 +303,54 @@ function launchArt(m3u8, subs) {
         }
     });
 
-    art.on('video:playing', () => { document.getElementById('loading-screen').style.display = 'none'; });
+    // Handle Loading State
+    artPlayerInstance.on('video:playing', () => {
+        document.getElementById('loader').style.display = 'none';
+    });
 
-    art.on('ready', () => {
-        const pI = document.getElementById('m-play');
-        const sI = document.getElementById('m-pause');
-        art.on('play', () => { pI.style.display='none'; sI.style.display='block'; });
-        art.on('pause', () => { pI.style.display='block'; sI.style.display='none'; });
+    artPlayerInstance.on('ready', () => {
+        const playI = document.getElementById('svg-play');
+        const pauseI = document.getElementById('svg-pause');
+        
+        artPlayerInstance.on('play', () => { playI.style.display='none'; pauseI.style.display='block'; });
+        artPlayerInstance.on('pause', () => { playI.style.display='block'; pauseI.style.display='none'; });
 
+        // Subtitle Settings Injection
         if(subs.length) {
-            art.setting.add({
-                name: 'sub', html: 'Subtitles',
-                selector: [{html: 'Off', url: null, default: true}, ...subs.map(s=>({html: s.lang||s.language, url: PROXY(s.url)}))],
-                onSelect: async i => {
-                    if(!i.url) { cues=[]; document.getElementById('sub-render').style.display='none'; return 'Off'; }
-                    const txt = await fetch(i.url).then(r => r.text());
-                    cues = parseVtt(txt);
-                    document.getElementById('sub-render').style.display='block';
-                    return i.html;
+            artPlayerInstance.setting.add({
+                name: 'subtitles', html: 'Subtitles',
+                selector: [{html: 'Off', url: null, default: true}, ...subs.map(s=>({html: s.lang || s.language, url: PROXY_URL(s.url)}))],
+                onSelect: async (item) => {
+                    if(!item.url) {
+                        activeSubtitles = [];
+                        document.getElementById('sub-display').style.display = 'none';
+                        return 'Off';
+                    }
+                    const vttText = await fetch(item.url).then(r => r.text());
+                    activeSubtitles = parseVtt(vttText);
+                    document.getElementById('sub-display').style.display = 'block';
+                    return item.html;
                 }
             });
         }
     });
 
-    art.on('video:timeupdate', () => {
-        if(!cues.length) return;
-        const now = art.currentTime;
-        const cue = cues.find(c => now >= c.s && now <= c.e);
-        const box = document.getElementById('sub-render');
-        if(cue) { if(cue !== activeCue) { box.innerHTML = cue.text; activeCue = cue; } } else { box.innerHTML = ""; activeCue = null; }
+    // Layer-Based Subtitle Sync Engine
+    artPlayerInstance.on('video:timeupdate', () => {
+        if(!activeSubtitles.length) return;
+        const now = artPlayerInstance.currentTime;
+        const cue = activeSubtitles.find(c => now >= c.start && now <= c.end);
+        const display = document.getElementById('sub-display');
+        
+        if(cue) {
+            if(cue !== lastCueId) {
+                display.innerHTML = cue.text;
+                lastCueId = cue;
+            }
+        } else {
+            display.innerHTML = "";
+            lastCueId = null;
+        }
     });
 }
 </script>
