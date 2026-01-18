@@ -2,624 +2,291 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>Netflix Pro Player | NextGen Engine</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NextGen Pro | Ultimate Streaming Engine</title>
-    
+
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
-    <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
-    <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
 
     <style>
-        :root {
-            --netflix-red: #e50914;
-            --bg-black: #050505;
-            --surface: #141414;
-            --text-main: #ffffff;
-            --text-dim: #b3b3b3;
-        }
+        :root { --n-red: #e50914; --bg: #000; }
+        html, body { margin: 0; padding: 0; background: #000; color: #fff; font-family: sans-serif; height: 100%; overflow: hidden; }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            background: var(--bg-black);
-            color: var(--text-main);
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            height: 100%;
-            width: 100%;
-            overflow-x: hidden;
-        }
-
-        /* =========================================
-           HOME DASHBOARD (vidsrc.pk style)
-        ========================================= */
+        /* ===== HOME DASHBOARD ===== */
         #home-page {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: radial-gradient(circle at center, #222 0%, #000 100%);
-            transition: opacity 0.6s ease;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #222 0%, #000 100%);
+            display: flex; align-items: center; justify-content: center; z-index: 5000;
         }
-
-        .hero-container {
-            background: var(--surface);
-            padding: 50px;
-            border-radius: 15px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.9);
-            width: 95%;
-            max-width: 450px;
-            text-align: center;
-            border: 1px solid #333;
+        .ui-card {
+            background: #141414; padding: 40px; border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9); width: 100%; max-width: 380px; text-align: center;
         }
-
-        .hero-container h1 {
-            color: var(--netflix-red);
-            font-size: 2.8rem;
-            font-weight: 900;
-            margin-bottom: 10px;
-            letter-spacing: -1px;
-        }
-
-        .hero-container p {
-            color: var(--text-dim);
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-
-        label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            margin-bottom: 5px;
-            margin-left: 5px;
-        }
-
+        .ui-card h1 { color: var(--n-red); margin-bottom: 25px; letter-spacing: 2px; }
         input, select {
-            width: 100%;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background: #000;
-            color: white;
-            font-size: 1rem;
-            box-sizing: border-box;
-            transition: border 0.3s;
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 4px;
+            border: 1px solid #333; background: #000; color: #fff; box-sizing: border-box;
+        }
+        .play-btn {
+            width: 100%; padding: 15px; background: var(--n-red); border: none;
+            color: #fff; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top: 15px;
         }
 
-        input:focus {
-            border-color: var(--netflix-red);
-            outline: none;
+        /* ===== LOADING LAYER (POSTER + SPINNER) ===== */
+        #loading-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000 no-repeat center center; background-size: cover;
+            display: none; align-items: center; justify-content: center; z-index: 9999;
+        }
+        #loading-layer::before {
+            content: ""; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.7);
+        }
+        .net-spinner { width: 80px; height: 80px; z-index: 10000; animation: spin 1.1s linear infinite; }
+        @keyframes spin { from {transform:rotate(0deg)} to {transform:rotate(360deg)} }
+
+        /* ===== PLAYER BOX ===== */
+        #player { width: 100vw; height: 100vh; background: #000; }
+
+        /* ===== CENTER ICONS (SMART FADE) ===== */
+        .custom-center-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 60px;
+            z-index: 100; pointer-events: none; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+        /* Sync with Artplayer UI */
+        .art-state-show .custom-center-wrapper { opacity: 1; visibility: visible; }
+        .center-btn {
+            background: none; border: none; color: #fff; cursor: pointer;
+            pointer-events: auto; display: flex; align-items: center; justify-content: center;
+        }
+        .center-btn svg { width: 50px; height: 50px; filter: drop-shadow(0 0 10px #000); }
+
+        /* ===== RESUME TOAST ===== */
+        #resume-toast {
+            position: absolute; bottom: 100px; left: 40px; background: #1a1a1a;
+            border-left: 4px solid var(--n-red); padding: 15px 25px; border-radius: 4px;
+            display: none; z-index: 1000; cursor: pointer; box-shadow: 0 10px 30px #000;
         }
 
-        .watch-now-btn {
-            width: 100%;
-            padding: 18px;
-            background: var(--netflix-red);
-            border: none;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            margin-top: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s;
+        /* ===== SUBTITLES ===== */
+        .custom-subtitle-container {
+            position: absolute; bottom: 80px; left: 0; right: 0;
+            display: flex; justify-content: center; pointer-events: none; z-index: 100;
         }
-
-        .watch-now-btn:hover {
-            background: #ff0a16;
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(229, 9, 20, 0.4);
-        }
-
-        /* =========================================
-           LOADING ENGINE (Netflix Spinner + Poster)
-        ========================================= */
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            background-repeat: no-repeat;
-            background-position: center center;
-            background-size: cover;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        #loading-overlay::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.9));
-        }
-
-        .spinner-box {
-            position: relative;
-            z-index: 10000;
-            text-align: center;
-        }
-
-        .netflix-spinner {
-            width: 100px;
-            height: 100px;
-            animation: spin 1.1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            margin-top: 20px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            color: white;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-        }
-
-        /* =========================================
-           PLAYER VIEWPORT
-        ========================================= */
-        #player-wrapper {
-            display: none;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 5000;
-        }
-
-        #artplayer {
-            width: 100%;
-            height: 100%;
-        }
-
-        /* =========================================
-           CENTER ACTION ICONS
-        ========================================= */
-        .center-controls-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 80px;
-            pointer-events: none;
-            z-index: 100;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.4s ease, visibility 0.4s ease;
-        }
-
-        /* Show when Artplayer UI is active */
-        .art-state-show .center-controls-layer {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .center-icon-btn {
-            background: rgba(0, 0, 0, 0.4);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            width: 85px;
-            height: 85px;
-            border-radius: 50%;
-            cursor: pointer;
-            pointer-events: auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .center-icon-btn:hover {
-            background: rgba(229, 9, 20, 0.5);
-            transform: scale(1.1);
-        }
-
-        .center-icon-btn:active {
-            transform: scale(0.9);
-        }
-
-        .center-icon-btn svg {
-            width: 45px;
-            height: 45px;
-            fill: currentColor;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
-        }
-
-        /* =========================================
-           RESUME / JUMP TOAST
-        ========================================= */
-        #resume-notification {
-            position: absolute;
-            bottom: 120px;
-            left: 40px;
-            background: #1a1a1a;
-            border-left: 6px solid var(--netflix-red);
-            padding: 18px 28px;
-            border-radius: 8px;
-            display: none;
-            z-index: 1000;
-            cursor: pointer;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.9);
-            animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(-100px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* =========================================
-           SUBTITLE OVERLAY
-        ========================================= */
-        .art-subtitle {
-            font-size: 28px !important;
-            bottom: 10% !important;
-            text-shadow: 0 2px 4px #000, 0 2px 10px #000 !important;
-            font-weight: 500 !important;
-        }
-
-        .custom-sub-container {
-            position: absolute;
-            bottom: 80px;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: center;
-            z-index: 200;
-            pointer-events: none;
-        }
-
-        .custom-sub-text {
-            background: rgba(0,0,0,0.75);
-            padding: 8px 20px;
-            border-radius: 5px;
-            font-size: 26px;
-            color: white;
-            text-align: center;
-            max-width: 80%;
-            display: none;
+        .custom-subtitle-text {
+            padding: 8px 16px; font-size: 25px; font-weight: 500; color: #fff;
+            background: rgba(0, 0, 0, 0.8); text-shadow: 0 2px 4px #000;
+            border-radius: 4px; text-align: center; max-width: 85%;
         }
     </style>
 </head>
 <body>
 
-    <div id="home-page">
-        <div class="hero-container">
-            <h1>NEXTGEN TV</h1>
-            <p>Premium Metadata & Video Engine v5.0</p>
-            
-            <div class="input-group">
-                <label>Media Type</label>
-                <select id="m-type" onchange="toggleTvUI()">
-                    <option value="movie">Movie</option>
-                    <option value="tv">TV Series</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label>TMDB ID</label>
-                <input type="text" id="m-id" placeholder="Enter ID (e.g. 157336)">
-            </div>
-
-            <div id="tv-extra-ui" style="display:none">
-                <div style="display:flex; gap:10px;">
-                    <div class="input-group" style="flex:1">
-                        <label>Season</label>
-                        <input type="number" id="m-season" value="1">
-                    </div>
-                    <div class="input-group" style="flex:1">
-                        <label>Episode</label>
-                        <input type="number" id="m-episode" value="1">
-                    </div>
-                </div>
-            </div>
-
-            <button class="watch-now-btn" onclick="initStreamingProcess()">Watch Now</button>
+<div id="home-page">
+    <div class="ui-card">
+        <h1>NEXTGEN PRO</h1>
+        <select id="m-type" onchange="document.getElementById('tv-meta').style.display=(this.value==='tv'?'block':'none')">
+            <option value="movie">Movie</option>
+            <option value="tv">TV Series</option>
+        </select>
+        <input type="text" id="m-id" placeholder="TMDB ID (e.g. 1396)">
+        <div id="tv-meta" style="display:none">
+            <input type="number" id="m-s" placeholder="Season">
+            <input type="number" id="m-e" placeholder="Episode">
         </div>
+        <button class="play-btn" onclick="initLaunch()">WATCH NOW</button>
     </div>
+</div>
 
-    <div id="loading-overlay">
-        <div class="spinner-box">
-            <img class="netflix-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
-            <div class="loading-text" id="load-status">GETTING STREAM...</div>
-        </div>
-    </div>
+<div id="loading-layer">
+    <img class="net-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
+</div>
 
-    <div id="player-wrapper">
-        <div id="artplayer"></div>
+<div id="player"></div>
+
+<div id="resume-toast" onclick="resumePlay()">
+    <small style="color:var(--n-red)">CONTINUE WATCHING</small><br>
+    <b id="resume-msg">Jump to 0:00?</b>
+</div>
+
+<script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
+<script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
+
+<script>
+const TMDB_KEY = '463dcd7993ab31d92eb586802fdeee6a';
+const proxy = u => 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(u);
+
+let art;
+let savedTime = 0;
+let currentID = "";
+let subtitleCues = [];
+let activeSub = null;
+let subOffset = 0;
+
+function initLaunch() {
+    const type = document.getElementById('m-type').value;
+    const id = document.getElementById('m-id').value;
+    if(!id) return alert("Missing ID");
+    
+    currentID = `progress_${type}_${id}`;
+    startProcess(type, id);
+}
+
+async function startProcess(type, id) {
+    const loader = document.getElementById('loading-layer');
+    loader.style.display = 'flex';
+
+    try {
+        // 1. TMDB Metadata
+        const metaRes = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_KEY}`);
+        const meta = await metaRes.json();
+        const title = meta.title || meta.name;
+        if(meta.backdrop_path) loader.style.backgroundImage = `url(https://image.tmdb.org/t/p/original${meta.backdrop_path})`;
+
+        // 2. Stream
+        const streamRes = await fetch(proxy(`https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(title)}`));
+        const streamData = await streamRes.json();
         
-        <div class="center-controls-layer">
-            <button class="center-icon-btn" onclick="art.backward = 10">
-                <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
-            </button>
-            <button class="center-icon-btn" onclick="art.toggle()">
-                <svg id="svg-play" style="display:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                <svg id="svg-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            </button>
-            <button class="center-icon-btn" onclick="art.forward = 10">
-                <svg viewBox="0 0 24 24"><path d="M6 13c0-3.31 2.69-6 6-6v4l5-5-5-5v4c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8h-2z"/></svg>
-            </button>
-        </div>
+        // 3. Subtitles
+        let subU = `https://sub.wyzie.ru/search?id=${meta.imdb_id || id}`;
+        if(type==='tv') subU += `&season=${document.getElementById('m-s').value}&episode=${document.getElementById('m-e').value}`;
+        const subs = await fetch(proxy(subU)).then(r=>r.json()).catch(()=>[]);
 
-        <div id="resume-notification" onclick="applyResumeTime()">
-            <div style="font-size:11px; color:var(--netflix-red); font-weight:bold; margin-bottom:4px;">CONTINUE WATCHING</div>
-            <div id="resume-msg" style="font-size:16px; font-weight:bold;">Resume at 00:00?</div>
-        </div>
+        launchArt(proxy(streamData.m3u8_url), subs);
+    } catch(e) { alert("Error loading stream"); location.reload(); }
+}
 
-        <div class="custom-sub-container">
-            <div id="manual-sub" class="custom-sub-text"></div>
-        </div>
-    </div>
-
-    <script>
-        /* =========================================
-           CORE CONFIG
-        ========================================= */
-        const TMDB_KEY = '463dcd7993ab31d92eb586802fdeee6a';
-        const PROXY = (url) => 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(url);
-        
-        let art;
-        let savedTime = 0;
-        let videoId = "";
-        let subtitleCues = [];
-        let currentSubIndex = -1;
-        let subDelay = 0;
-
-        function toggleTvUI() {
-            document.getElementById('tv-extra-ui').style.display = 
-                document.getElementById('m-type').value === 'tv' ? 'block' : 'none';
-        }
-
-        /* =========================================
-           METADATA & STREAM LOGIC
-        ========================================= */
-        async function initStreamingProcess() {
-            const type = document.getElementById('m-type').value;
-            const id = document.getElementById('m-id').value;
-            const s = document.getElementById('m-season').value;
-            const e = document.getElementById('m-episode').value;
-
-            if(!id) return alert("Enter TMDB ID");
-            videoId = `${type}_${id}_${s}_${e}`;
-
-            // Show Loading UI
-            const loader = document.getElementById('loading-overlay');
-            const home = document.getElementById('home-page');
-            home.style.opacity = '0';
-            loader.style.display = 'flex';
-
-            try {
-                // 1. Fetch TMDB Image & Title
-                document.getElementById('load-status').innerText = "FETCHING METADATA...";
-                const tmdbRes = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_KEY}`);
-                const meta = await tmdbRes.json();
-                const title = meta.title || meta.name;
-
-                if(meta.backdrop_path) {
-                    loader.style.backgroundImage = `url(https://image.tmdb.org/t/p/original${meta.backdrop_path})`;
-                }
-
-                // 2. Fetch Stream URL
-                document.getElementById('load-status').innerText = "LINKING STREAM...";
-                const streamUrl = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(title)}`;
-                const streamRes = await fetch(PROXY(streamUrl));
-                const streamData = await streamRes.json();
-                
-                if(!streamData.m3u8_url) throw new Error("No stream found for this title.");
-
-                // 3. Fetch Subtitles
-                document.getElementById('load-status').innerText = "LOADING SUBTITLES...";
-                let subSearch = `https://sub.wyzie.ru/search?id=${meta.imdb_id || id}`;
-                if(type === 'tv') subSearch += `&season=${s}&episode=${e}`;
-                const subs = await fetch(PROXY(subSearch)).then(r => r.json()).catch(() => []);
-
-                // 4. Launch Artplayer
-                buildArtPlayer(PROXY(streamData.m3u8_url), subs);
-
-            } catch (err) {
-                alert("Error: " + err.message);
-                location.reload();
-            }
-        }
-
-        /* =========================================
-           SUBTITLE PARSER (The Original Logic)
-        ========================================= */
-        function parseVTT(text) {
-            const cues = [];
-            const vtt = text.replace(/^WEBVTT\s+/i, '').trim();
-            const blocks = vtt.split(/\n\n+/);
-            
-            blocks.forEach(block => {
-                const lines = block.split('\n');
-                const timeLine = lines.find(l => l.includes('-->'));
-                if (timeLine) {
-                    const times = timeLine.split('-->');
-                    const start = parseTime(times[0]);
-                    const end = parseTime(times[1]);
-                    const content = lines.slice(lines.indexOf(timeLine) + 1).join('\n');
-                    cues.push({ start, end, content });
-                }
+/* Restored Original Parser Logic */
+function parseSub(text){
+    const cues=[];
+    const cleanText = text.replace(/^WEBVTT\s+/i, '').trim();
+    const blocks=cleanText.replace(/\r/g,'').split('\n\n');
+    for(const b of blocks){
+        const lines=b.split('\n');
+        const tIndex = lines.findIndex(l => l.includes('-->'));
+        if(tIndex === -1) continue;
+        const content = lines.slice(tIndex + 1).join('\n');
+        try {
+            const [s,e] = lines[tIndex].split('-->').map(t=>{
+                const p = t.trim().replace(',','.');
+                const pts = p.split(':');
+                let h=0, m=0, sm=0;
+                if(pts.length === 3) [h, m, sm] = pts; else [m, sm] = pts;
+                return (+h)*3600 + (+m)*60 + parseFloat(sm);
             });
-            return cues;
-        }
+            cues.push({s, e, t: content});
+        } catch(e) {}
+    }
+    return cues;
+}
 
-        function parseTime(str) {
-            const parts = str.trim().replace(',', '.').split(':');
-            let h = 0, m = 0, s = 0;
-            if (parts.length === 3) {
-                h = parseFloat(parts[0]);
-                m = parseFloat(parts[1]);
-                s = parseFloat(parts[2]);
-            } else {
-                m = parseFloat(parts[0]);
-                s = parseFloat(parts[1]);
+function launchArt(m3u8, subs) {
+    document.getElementById('home-page').style.display = 'none';
+
+    art = new Artplayer({
+        container: '#player',
+        url: m3u8,
+        type: 'm3u8',
+        autoplay: true,
+        fullscreen: true,
+        fullscreenWeb: true,
+        setting: true,
+        theme: '#e50914',
+        layers: [
+            {
+                name: 'subtitle-layer',
+                html: '<div class="custom-subtitle-container"><div id="sub-text" class="custom-subtitle-text"></div></div>',
+            },
+            {
+                name: 'center-controls',
+                html: `
+                <div class="custom-center-wrapper">
+                    <button class="center-btn" onclick="art.backward=10"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg></button>
+                    <button class="center-btn" onclick="art.toggle()">
+                        <svg id="c-play" style="display:none" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="c-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+                    <button class="center-btn" onclick="art.forward=10"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 13c0-3.31 2.69-6 6-6v4l5-5-5-5v4c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8h-2z"/></svg></button>
+                </div>`
             }
-            return h * 3600 + m * 60 + s;
-        }
-
-        /* =========================================
-           ARTPLAYER INITIALIZATION
-        ========================================= */
-        function buildArtPlayer(videoUrl, subtitleData) {
-            document.getElementById('player-wrapper').style.display = 'block';
-
-            art = new Artplayer({
-                container: '#artplayer',
-                url: videoUrl,
-                type: 'm3u8',
-                autoplay: true,
-                fullscreen: true,
-                fullscreenWeb: true,
-                setting: true,
-                playbackRate: true,
-                aspectRatio: true,
-                miniProgressBar: true,
-                theme: '#e50914',
-                hotkey: true,
-                pip: true,
-                autoSize: true,
-                autoMini: true,
-                lock: true,
-                storage: true,
-                customType: {
-                    m3u8: function(video, url) {
-                        if (Hls.isSupported()) {
-                            const hls = new Hls();
-                            hls.loadSource(url);
-                            hls.attachMedia(video);
-                            
-                            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                                art.setting.add({
-                                    name: 'quality',
-                                    html: 'Quality',
-                                    selector: [
-                                        { html: 'Auto', level: -1, default: true },
-                                        ...hls.levels.map((l, i) => ({ html: l.height + 'p', level: i }))
-                                    ],
-                                    onSelect: (item) => {
-                                        hls.currentLevel = item.level;
-                                        return item.html;
-                                    }
-                                });
-                            });
-                        }
-                    }
-                },
-                settings: [
-                    {
-                        html: 'Subtitle Sync',
-                        width: 250,
-                        selector: [
-                            { html: '-5s', value: -5 }, { html: '-4s', value: -4 }, { html: '-3s', value: -3 },
-                            { html: '-2s', value: -2 }, { html: '-1s', value: -1 },
-                            { html: 'Original', value: 0, default: true },
-                            { html: '+1s', value: 1 }, { html: '+2s', value: 2 }, { html: '+3s', value: 3 },
-                            { html: '+4s', value: 4 }, { html: '+5s', value: 5 },
-                        ],
-                        onSelect: (item) => {
-                            subDelay = item.value;
-                            return item.html;
-                        }
-                    }
-                ]
-            });
-
-            art.on('ready', () => {
-                document.getElementById('loading-overlay').style.display = 'none';
-                
-                // Play/Pause Icon Sync
-                const svgP = document.getElementById('svg-play');
-                const svgS = document.getElementById('svg-pause');
-                art.on('play', () => { svgP.style.display='none'; svgS.style.display='block'; });
-                art.on('pause', () => { svgP.style.display='block'; svgS.style.display='none'; });
-
-                // Resume Logic
-                savedTime = localStorage.getItem('progress_' + videoId);
-                if (savedTime > 10) {
-                    const m = Math.floor(savedTime / 60);
-                    const s = Math.floor(savedTime % 60);
-                    document.getElementById('resume-msg').innerText = `Resume at ${m}:${s < 10 ? '0'+s : s}?`;
-                    document.getElementById('resume-notification').style.display = 'block';
-                    setTimeout(() => { document.getElementById('resume-notification').style.display='none'; }, 8000);
-                }
-
-                // Subtitle Menu
-                if(subtitleData.length) {
-                    art.setting.add({
-                        name: 'subtitle',
-                        html: 'Subtitles',
-                        selector: [
-                            { html: 'Off', url: '', default: true },
-                            ...subtitleData.map(s => ({ html: s.lang || s.language, url: PROXY(s.url) }))
-                        ],
-                        onSelect: async (item) => {
-                            if(!item.url) {
-                                subtitleCues = [];
-                                document.getElementById('manual-sub').style.display = 'none';
-                                return 'Off';
-                            }
-                            const res = await fetch(item.url).then(r => r.text());
-                            subtitleCues = parseVTT(res);
-                            document.getElementById('manual-sub').style.display = 'block';
-                            return item.html;
-                        }
+        ],
+        customType: {
+            m3u8: function(video, url) {
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
+                    // Quality Selector Logic
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        art.setting.add({
+                            name: 'quality', html: 'Quality',
+                            selector: [{html: 'Auto', level: -1, default: true}, ...hls.levels.map((l, i) => ({html: l.height+'p', level: i}))],
+                            onSelect: i => { hls.currentLevel = i.level; return i.html; }
+                        });
                     });
                 }
-            });
-
-            // Video Time Events
-            art.on('video:timeupdate', () => {
-                const now = art.currentTime;
-                
-                // Progress Storage
-                if(now > 10) localStorage.setItem('progress_' + videoId, Math.floor(now));
-
-                // Subtitle Engine
-                if(subtitleCues.length > 0) {
-                    const adjustedTime = now + subDelay;
-                    const cue = subtitleCues.find(c => adjustedTime >= c.start && adjustedTime <= c.end);
-                    const subEl = document.getElementById('manual-sub');
-                    if(cue) {
-                        subEl.innerHTML = cue.content.replace(/\n/g, '<br>');
-                    } else {
-                        subEl.innerHTML = "";
-                    }
-                }
-            });
-        }
-
-        function applyResumeTime() {
-            if(art && savedTime) {
-                art.currentTime = parseFloat(savedTime);
-                document.getElementById('resume-notification').style.display = 'none';
-                art.notice.show = "Resumed successfully";
             }
         }
-    </script>
+    });
+
+    art.on('ready', () => {
+        document.getElementById('loading-layer').style.display = 'none';
+        
+        // Icon Sync
+        const playI = document.getElementById('c-play');
+        const pauseI = document.getElementById('c-pause');
+        art.on('play', () => { playI.style.display='none'; pauseI.style.display='block'; });
+        art.on('pause', () => { playI.style.display='block'; pauseI.style.display='none'; });
+
+        // Resume Progress
+        savedTime = localStorage.getItem(currentID);
+        if(savedTime > 15) {
+            document.getElementById('resume-msg').innerText = `Resume at ${Math.floor(savedTime/60)}m?`;
+            document.getElementById('resume-toast').style.display = 'block';
+            setTimeout(() => { document.getElementById('resume-toast').style.display='none'; }, 8000);
+        }
+
+        // Add Subtitle Menus
+        if(subs.length) {
+            art.setting.add({
+                name: 'sub', html: 'Subtitles',
+                selector: [{html: 'Off', url: null, default: true}, ...subs.map(s=>({html: s.lang||s.language, url: proxy(s.url)}))],
+                onSelect: async i => {
+                    if(!i.url) { subtitleCues=[]; document.getElementById('sub-text').innerText=''; return 'Off'; }
+                    const t = await fetch(i.url).then(r=>r.text());
+                    subtitleCues = parseSub(t);
+                    return i.html;
+                }
+            });
+            art.setting.add({
+                name: 'sub-delay', html: 'Subtitle Sync',
+                selector: [{html: 'Original', value: 0, default: true}, {html: '+1s', value: 1}, {html: '+2s', value: 2}, {html: '-1s', value: -1}, {html: '-2s', value: -2}],
+                onSelect: i => { subOffset = i.value; return i.html; }
+            });
+        }
+    });
+
+    art.on('video:timeupdate', () => {
+        if(art.currentTime > 10) localStorage.setItem(currentID, Math.floor(art.currentTime));
+        
+        // Subtitle Sync Engine
+        if(!subtitleCues.length) return;
+        const t = art.currentTime + subOffset;
+        const cue = subtitleCues.find(c => t >= c.s && t <= c.e);
+        const el = document.getElementById('sub-text');
+        if(cue) {
+            if(cue !== activeSub) { el.innerHTML = cue.t.replace(/\n/g, '<br>'); activeSub = cue; }
+        } else { el.innerHTML = ''; activeSub = null; }
+    });
+}
+
+function resumePlay() {
+    if(art && savedTime) {
+        art.currentTime = parseFloat(savedTime);
+        document.getElementById('resume-toast').style.display = 'none';
+    }
+}
+</script>
 </body>
 </html>
