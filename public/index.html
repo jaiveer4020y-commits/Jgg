@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Netflix Pro Max | Enterprise Engine v15.0</title>
+    <title>Netflix Ultimate | OG Engine v18.0</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
@@ -11,271 +11,240 @@
 
     <style>
         :root { --n-red: #e50914; --n-black: #000; --n-dark: #141414; }
-        body, html { margin: 0; padding: 0; background: var(--n-black); color: #fff; font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, sans-serif; height: 100%; overflow-x: hidden; }
+        body, html { margin: 0; padding: 0; background: var(--n-black); color: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; height: 100%; overflow: hidden; }
 
-        /* DASHBOARD SECTION */
-        #dashboard { padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
-        .logo { font-size: 3.5rem; font-weight: 900; color: var(--n-red); margin-bottom: 30px; letter-spacing: -3px; }
+        /* UI ENHANCEMENT */
+        #ui-dashboard { padding: 40px 20px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; height: 100vh; }
+        .logo { font-size: 3rem; font-weight: 900; color: var(--n-red); margin-bottom: 30px; letter-spacing: -2px; }
         
-        .search-area { 
-            width: 100%; max-width: 900px; background: var(--n-dark); padding: 15px; border-radius: 12px; 
-            display: flex; gap: 10px; flex-wrap: wrap; border: 1px solid #333; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        .search-bar { 
+            width: 100%; max-width: 800px; background: var(--n-dark); padding: 10px; border-radius: 8px; 
+            display: flex; gap: 10px; border: 1px solid #333;
         }
-        .search-area select, .search-area input { background: #000; color: #fff; border: 1px solid #444; padding: 14px; border-radius: 6px; outline: none; }
-        .search-area input { flex: 1; min-width: 200px; font-size: 1rem; }
-        .search-area button { background: var(--n-red); color: #fff; border: none; padding: 0 30px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .search-area button:hover { background: #ff0a16; }
+        .search-bar input { flex: 1; background: transparent; border: none; color: #fff; padding: 10px; font-size: 1.1rem; outline: none; }
+        .search-bar button { background: var(--n-red); color: #fff; border: none; padding: 0 25px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
-        /* RESULTS GRID */
-        #results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; width: 100%; max-width: 1300px; margin-top: 40px; }
-        .movie-card { background: var(--n-dark); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.3s; border: 2px solid transparent; }
-        .movie-card:hover { transform: translateY(-10px); border-color: var(--n-red); }
-        .movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
-        .movie-card .info { padding: 12px; font-size: 0.9rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; width: 100%; max-width: 1200px; margin-top: 30px; }
+        .card { background: var(--n-dark); border-radius: 4px; overflow: hidden; cursor: pointer; transition: transform 0.3s; border: 2px solid transparent; }
+        .card:hover { transform: scale(1.05); border-color: var(--n-red); }
+        .card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
 
-        /* EPISODE MODAL */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 10000; }
-        .modal-box { background: var(--n-dark); padding: 40px; border-radius: 15px; width: 360px; text-align: center; border: 1px solid #333; }
-        .modal-box h2 { color: var(--n-red); margin-bottom: 25px; }
-        .modal-inputs { display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; }
-        .modal-inputs input { width: 80px; padding: 15px; background: #000; border: 1px solid #444; color: #fff; text-align: center; font-size: 1.5rem; border-radius: 8px; }
-        .play-btn { background: var(--n-red); color: #fff; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+        /* OG LOADING SCREEN WITH POSTER */
+        #loading-layer { 
+            position: fixed; inset: 0; background: #000; display: none; 
+            flex-direction: column; align-items: center; justify-content: center; z-index: 99999; 
+        }
+        #loading-poster {
+            position: absolute; inset: 0; width: 100%; height: 100%; 
+            object-fit: cover; opacity: 0.3; filter: blur(10px);
+        }
+        .spinner-container { position: relative; z-index: 10; text-align: center; }
+        .og-spinner { width: 100px; height: 100px; animation: spin 1.1s linear infinite; }
+        @keyframes spin { from {transform:rotate(0deg)} to {transform:rotate(360deg)} }
 
-        /* LOADING ENGINE */
-        #loader { position: fixed; inset: 0; background: #000; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 50000; }
-        .n-spinner { width: 110px; height: 110px; animation: rotate 1.1s linear infinite; }
-        @keyframes rotate { from {transform:rotate(0deg)} to {transform:rotate(360deg)} }
-
-        /* PLAYER VIEWPORT */
-        #player-wrap { position: fixed; inset: 0; background: #000; display: none; z-index: 100000; }
+        /* PLAYER WRAPPER */
+        #player-container { position: fixed; inset: 0; background: #000; display: none; z-index: 100000; }
         #artplayer { width: 100%; height: 100%; }
 
-        /* LAYERED ICONS (CENTER UI) */
-        .art-layer-center-ui {
+        /* LAYERED ICONS (PLAY/PAUSE/SEEK) */
+        .art-layer-controls {
             display: flex; align-items: center; justify-content: center;
-            gap: 100px; pointer-events: none; width: 100%; height: 100%;
+            gap: 80px; width: 100%; height: 100%; pointer-events: none;
             opacity: 0; transition: opacity 0.3s ease;
         }
-        .art-state-show .art-layer-center-ui { opacity: 1; }
-        .icon-circle { 
-            background: rgba(0,0,0,0.5); width: 90px; height: 90px; border-radius: 50%; 
+        /* Only show icons when ArtPlayer controls are active */
+        .art-state-show .art-layer-controls { opacity: 1; }
+        
+        .icon-btn { 
+            background: rgba(0,0,0,0.5); width: 80px; height: 80px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; 
             pointer-events: auto; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
         }
-        .icon-circle svg { width: 45px; height: 45px; fill: #fff; }
+        .icon-btn svg { width: 40px; height: 40px; fill: #fff; }
 
-        /* SUBTITLE LAYER */
-        .art-layer-subs {
-            position: absolute; bottom: 12%; width: 100%; display: flex; 
-            justify-content: center; pointer-events: none; text-align: center;
+        /* SUBTITLE OVERLAY */
+        .art-layer-subtitles {
+            position: absolute; bottom: 15%; width: 100%; display: flex; 
+            justify-content: center; pointer-events: none;
         }
-        #sub-display { 
-            background: rgba(0,0,0,0.8); padding: 8px 25px; border-radius: 5px; 
-            color: #fff; font-size: 30px; max-width: 80%; line-height: 1.3;
-            text-shadow: 2px 2px 5px #000; display: none;
+        #sub-text {
+            background: rgba(0,0,0,0.75); padding: 5px 20px; border-radius: 4px;
+            color: #fff; font-size: 28px; text-align: center; display: none;
+            text-shadow: 2px 2px 4px #000; max-width: 80%;
         }
+
+        /* TV MODAL */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 110000; }
+        .modal-ui { background: var(--n-dark); padding: 30px; border-radius: 8px; text-align: center; border: 1px solid #333; }
+        .modal-ui input { width: 60px; padding: 10px; background: #000; color: #fff; border: 1px solid #444; text-align: center; margin: 10px; }
     </style>
 </head>
 <body>
 
-<div id="dashboard">
+<div id="ui-dashboard">
     <div class="logo">NETFLIX</div>
-    <div class="search-area">
-        <select id="mode">
-            <option value="name">Search Name</option>
-            <option value="tmdb">TMDB ID</option>
-            <option value="imdb">IMDB ID</option>
-        </select>
-        <input type="text" id="query" placeholder="Enter Title or ID...">
-        <button onclick="handleSearch()">EXPLORE</button>
+    <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Search Movies or Series...">
+        <button onclick="startSearch()">SEARCH</button>
     </div>
-    <div id="results-grid"></div>
+    <div id="results"></div>
 </div>
 
 <div class="modal" id="tv-modal">
-    <div class="modal-box">
-        <h2 id="modal-title">Series Name</h2>
-        <div class="modal-inputs">
-            <div><label>S</label><br><input type="number" id="season" value="1"></div>
-            <div><label>E</label><br><input type="number" id="episode" value="1"></div>
-        </div>
-        <button class="play-btn" onclick="playTvSeries()">WATCH NOW</button>
-        <p onclick="document.getElementById('tv-modal').style.display='none'" style="margin-top:15px; cursor:pointer; color:gray;">Cancel</p>
+    <div class="modal-ui">
+        <h2 id="tv-title" style="color:var(--n-red)">Select Episode</h2>
+        S: <input type="number" id="s-num" value="1">
+        E: <input type="number" id="e-num" value="1">
+        <br><br>
+        <button onclick="playTv()" style="background:var(--n-red); color:#fff; border:none; padding:10px 30px; cursor:pointer; font-weight:bold;">PLAY</button>
     </div>
 </div>
 
-<div id="loader">
-    <img class="n-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
-    <p id="loader-text" style="margin-top:25px; font-weight:bold; letter-spacing:4px; color:var(--n-red)">BUILDING SLUG...</p>
+<div id="loading-layer">
+    <img id="loading-poster" src="">
+    <div class="spinner-container">
+        <img class="og-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
+        <p id="load-msg" style="margin-top:20px; font-weight:bold; letter-spacing:2px; color:var(--n-red)">INITIALIZING...</p>
+    </div>
 </div>
 
-<div id="player-wrap">
+<div id="player-container">
     <div id="artplayer"></div>
 </div>
 
 <script>
-const TMDB_API = '463dcd7993ab31d92eb586802fdeee6a';
-const PROXY_URL = (url) => 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(url);
+const TMDB_KEY = '463dcd7993ab31d92eb586802fdeee6a';
+const PROXY = (u) => 'https://workingg.vercel.app/api/proxy?url=' + encodeURIComponent(u);
 
-let artPlayerInstance;
-let currentSelection = null;
-let activeSubtitles = [];
-let lastCueId = null;
+let art;
+let activeItem = null;
+let currentSubs = [];
+let lastCue = null;
 
-/** 1. THE SLUG ENGINE: ENFORCED DOT PROTOCOL **/
-function slugify(text, type, s, e) {
-    let clean = text.toLowerCase()
-        .replace(/[^a-z0-9\s]/gi, ' ') // Replace non-alphanumeric with space
-        .trim()
-        .replace(/\s+/g, '.'); // Replace spaces with dots
-    
+/** 1. SLUG ENGINE: DOT PROTOCOL **/
+function makeSlug(title, type, s, e) {
+    let base = title.toLowerCase().replace(/[^a-z0-9\s]/gi, ' ').trim().replace(/\s+/g, '.');
     if (type === 'tv') {
-        const S = s.toString().padStart(2, '0');
-        const E = e.toString().padStart(2, '0');
-        clean += `.s${S}.e${E}`;
+        base += `.s${s.toString().padStart(2, '0')}.e${e.toString().padStart(2, '0')}`;
     }
-    return clean;
+    return base;
 }
 
-/** 2. SEARCH LOGIC **/
-async function handleSearch() {
-    const mode = document.getElementById('mode').value;
-    const q = document.getElementById('query').value;
+/** 2. SEARCH & UI **/
+async function startSearch() {
+    const q = document.getElementById('search-input').value;
     if(!q) return;
-
-    let searchUrl = "";
-    if(mode === 'name') searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API}&query=${encodeURIComponent(q)}`;
-    else if(mode === 'tmdb') searchUrl = `https://api.themoviedb.org/3/movie/${q}?api_key=${TMDB_API}`;
-    else searchUrl = `https://api.themoviedb.org/3/find/${q}?api_key=${TMDB_API}&external_source=imdb_id`;
-
-    try {
-        const res = await fetch(searchUrl);
-        const data = await res.json();
-        const grid = document.getElementById('results-grid');
-        grid.innerHTML = "";
-
-        let results = data.results || data.movie_results || data.tv_results || [data];
-        results.forEach(item => {
-            if(!item.poster_path) return;
-            const type = item.media_type || (item.title ? 'movie' : 'tv');
-            const card = document.createElement('div');
-            card.className = 'movie-card';
-            card.innerHTML = `
-                <img src="https://image.tmdb.org/t/p/w300${item.poster_path}">
-                <div class="info">${item.title || item.name}</div>
-            `;
-            card.onclick = () => {
-                currentSelection = item;
-                if(type === 'tv') {
-                    document.getElementById('modal-title').innerText = item.name;
-                    document.getElementById('tv-modal').style.display = 'flex';
-                } else {
-                    processStream('movie', item.id, item.title);
-                }
-            };
-            grid.appendChild(card);
-        });
-    } catch(e) { alert("Search failed."); }
+    const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    const grid = document.getElementById('results');
+    grid.innerHTML = "";
+    data.results.forEach(item => {
+        if(!item.poster_path) return;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<img src="https://image.tmdb.org/t/p/w300${item.poster_path}">`;
+        card.onclick = () => {
+            activeItem = item;
+            if(item.media_type === 'tv' || item.name) {
+                document.getElementById('tv-title').innerText = item.name;
+                document.getElementById('tv-modal').style.display = 'flex';
+            } else {
+                fetchStream('movie', item.id, item.title, item.poster_path);
+            }
+        };
+        grid.appendChild(card);
+    });
 }
 
-function playTvSeries() {
+function playTv() {
     document.getElementById('tv-modal').style.display = 'none';
-    const s = document.getElementById('season').value;
-    const e = document.getElementById('episode').value;
-    processStream('tv', currentSelection.id, currentSelection.name, s, e);
+    fetchStream('tv', activeItem.id, activeItem.name, activeItem.poster_path, document.getElementById('s-num').value, document.getElementById('e-num').value);
 }
 
-/** 3. STREAM & SUBTITLE PROCESSING **/
-async function processStream(type, id, title, s, e) {
-    const loader = document.getElementById('loader');
-    const status = document.getElementById('loader-text');
+/** 3. STREAM & POSTER LOADING **/
+async function fetchStream(type, id, title, poster, s, e) {
+    const loader = document.getElementById('loading-layer');
+    document.getElementById('loading-poster').src = `https://image.tmdb.org/t/p/original${poster}`;
     loader.style.display = 'flex';
 
-    const slug = slugify(title, type, s, e);
-    status.innerText = `FETCHING: ${slug}`;
+    const slug = makeSlug(title, type, s, e);
+    document.getElementById('load-msg').innerText = `LOADING: ${slug.toUpperCase()}`;
 
     try {
-        const api = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(slug)}`;
-        const streamRes = await fetch(PROXY_URL(api));
+        const streamApi = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(slug)}`;
+        const streamRes = await fetch(PROXY(streamApi));
         const streamData = await streamRes.json();
+        if(!streamData.m3u8_url) throw new Error("Stream not found");
 
-        if(!streamData.m3u8_url) throw new Error("Null Stream");
-
-        status.innerText = "LOADING SUBTITLES...";
         let subApi = `https://sub.wyzie.ru/search?id=${id}`;
         if(type === 'tv') subApi += `&season=${s}&episode=${e}`;
-        const subs = await fetch(PROXY_URL(subApi)).then(r => r.json()).catch(() => []);
+        const subs = await fetch(PROXY(subApi)).then(r => r.json()).catch(() => []);
 
-        initArtPlayer(PROXY_URL(streamData.m3u8_url), subs);
+        initPlayer(PROXY(streamData.m3u8_url), subs);
     } catch(err) {
-        alert("STREAM NOT FOUND for this slug.");
+        alert("STREAM FAILED: Slug mismatch.");
         loader.style.display = 'none';
     }
 }
 
-/** 4. SUBTITLE VTT PARSER **/
-function parseVtt(text) {
+/** 4. SUBTITLE PARSER **/
+function parseVtt(t) {
     const cues = [];
-    const lines = text.split('\n');
-    let current = null;
-    lines.forEach(line => {
-        line = line.trim();
-        if(line.includes('-->')) {
-            const parts = line.split('-->');
-            current = { start: timeToSec(parts[0]), end: timeToSec(parts[1]), text: [] };
-        } else if(current && line === "") {
-            cues.push({...current, text: current.text.join('<br>')});
-            current = null;
-        } else if(current) {
-            current.text.push(line);
-        }
+    const lines = t.split('\n');
+    let cur = null;
+    lines.forEach(l => {
+        l = l.trim();
+        if(l.includes('-->')) {
+            const p = l.split('-->');
+            cur = { s: t2s(p[0]), e: t2s(p[1]), text: [] };
+        } else if(cur && l === "") {
+            cues.push({...cur, text: cur.text.join('<br>')});
+            cur = null;
+        } else if(cur) cur.text.push(l);
     });
     return cues;
 }
-function timeToSec(t) {
-    const p = t.trim().split(':');
-    let h=0, m=0, s=0;
-    if(p.length === 3) [h,m,s] = p; else [m,s] = p;
-    return (+h)*3600 + (+m)*60 + parseFloat(s);
+function t2s(s) {
+    const p = s.trim().split(':');
+    let h=0, m=0, sec=0;
+    if(p.length === 3) [h, m, sec] = p; else [m, sec] = p;
+    return (+h)*3600 + (+m)*60 + parseFloat(sec);
 }
 
-/** 5. FULL FEATURE ARTPLAYER ENGINE **/
-function initArtPlayer(m3u8, subs) {
-    document.getElementById('player-wrap').style.display = 'block';
+/** 5. ARTPLAYER CORE WITH NATIVE SETTINGS & ICON LAYERS **/
+function initPlayer(url, subs) {
+    document.getElementById('player-container').style.display = 'block';
 
-    artPlayerInstance = new Artplayer({
+    art = new Artplayer({
         container: '#artplayer',
-        url: m3u8,
+        url: url,
         type: 'm3u8',
         autoplay: true,
+        autoPlayback: true, // RESUME PLAY
         fullscreen: true,
-        fullscreenWeb: true,
-        setting: true,
+        setting: true, // ALL NATIVE SETTINGS ENABLED
         playbackRate: true,
         aspectRatio: true,
-        subtitleOffset: true, // Native Sync
+        subtitleOffset: true,
         theme: '#e50914',
-        
-        // ICONS & SUBTITLES AS LAYERS
         layers: [
             {
-                name: 'center-ui',
+                name: 'controls',
                 html: `
-                <div class="art-layer-center-ui">
-                    <div class="icon-circle" onclick="artPlayerInstance.backward=10"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg></div>
-                    <div class="icon-circle" onclick="artPlayerInstance.toggle()">
+                <div class="art-layer-controls">
+                    <div class="icon-btn" onclick="art.backward=10"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg></div>
+                    <div class="icon-btn" onclick="art.toggle()">
                         <svg id="svg-play" style="display:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         <svg id="svg-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </div>
-                    <div class="icon-circle" onclick="artPlayerInstance.forward=10"><svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></div>
+                    <div class="icon-btn" onclick="art.forward=10"><svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></div>
                 </div>`
             },
             {
                 name: 'subs',
-                html: '<div class="art-layer-subs"><div id="sub-display"></div></div>'
+                html: '<div class="art-layer-subtitles"><div id="sub-text"></div></div>'
             }
         ],
-
         customType: {
             m3u8: function(video, url) {
                 if (Hls.isSupported()) {
@@ -283,18 +252,18 @@ function initArtPlayer(m3u8, subs) {
                     hls.loadSource(url);
                     hls.attachMedia(video);
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        // Restoration of Quality Settings
-                        artPlayerInstance.setting.add({
+                        // QUALITY SETTINGS
+                        art.setting.add({
                             name: 'quality', html: 'Quality',
                             selector: [{html: 'Auto', level: -1, default: true}, ...hls.levels.map((l, i) => ({html: l.height+'p', level: i}))],
-                            onSelect: (item) => { hls.currentLevel = item.level; return item.html; }
+                            onSelect: (i) => { hls.currentLevel = i.level; return i.html; }
                         });
-                        // Restoration of Audio Track Settings
+                        // AUDIO TRACKS
                         if(hls.audioTracks.length > 1) {
-                            artPlayerInstance.setting.add({
-                                name: 'audio', html: 'Audio Track',
+                            art.setting.add({
+                                name: 'audio', html: 'Audio',
                                 selector: hls.audioTracks.map((t, i) => ({html: t.name || t.lang, index: i})),
-                                onSelect: (item) => { hls.audioTrack = item.index; return item.html; }
+                                onSelect: (i) => { hls.audioTrack = i.index; return i.html; }
                             });
                         }
                     });
@@ -303,54 +272,39 @@ function initArtPlayer(m3u8, subs) {
         }
     });
 
-    // Handle Loading State
-    artPlayerInstance.on('video:playing', () => {
-        document.getElementById('loader').style.display = 'none';
+    art.on('video:playing', () => {
+        document.getElementById('loading-layer').style.display = 'none';
     });
 
-    artPlayerInstance.on('ready', () => {
-        const playI = document.getElementById('svg-play');
-        const pauseI = document.getElementById('svg-pause');
-        
-        artPlayerInstance.on('play', () => { playI.style.display='none'; pauseI.style.display='block'; });
-        artPlayerInstance.on('pause', () => { playI.style.display='block'; pauseI.style.display='none'; });
+    art.on('ready', () => {
+        const pI = document.getElementById('svg-play');
+        const sI = document.getElementById('svg-pause');
+        art.on('play', () => { pI.style.display='none'; sI.style.display='block'; });
+        art.on('pause', () => { pI.style.display='block'; sI.style.display='none'; });
 
-        // Subtitle Settings Injection
         if(subs.length) {
-            artPlayerInstance.setting.add({
+            art.setting.add({
                 name: 'subtitles', html: 'Subtitles',
-                selector: [{html: 'Off', url: null, default: true}, ...subs.map(s=>({html: s.lang || s.language, url: PROXY_URL(s.url)}))],
-                onSelect: async (item) => {
-                    if(!item.url) {
-                        activeSubtitles = [];
-                        document.getElementById('sub-display').style.display = 'none';
-                        return 'Off';
-                    }
-                    const vttText = await fetch(item.url).then(r => r.text());
-                    activeSubtitles = parseVtt(vttText);
-                    document.getElementById('sub-display').style.display = 'block';
-                    return item.html;
+                selector: [{html: 'Off', url: null, default: true}, ...subs.map(s=>({html: s.lang || s.language, url: PROXY(s.url)}))],
+                onSelect: async i => {
+                    if(!i.url) { currentSubs=[]; document.getElementById('sub-text').style.display='none'; return 'Off'; }
+                    const txt = await fetch(i.url).then(r => r.text());
+                    currentSubs = parseVtt(txt);
+                    document.getElementById('sub-text').style.display='block';
+                    return i.html;
                 }
             });
         }
     });
 
-    // Layer-Based Subtitle Sync Engine
-    artPlayerInstance.on('video:timeupdate', () => {
-        if(!activeSubtitles.length) return;
-        const now = artPlayerInstance.currentTime;
-        const cue = activeSubtitles.find(c => now >= c.start && now <= c.end);
-        const display = document.getElementById('sub-display');
-        
+    art.on('video:timeupdate', () => {
+        if(!currentSubs.length) return;
+        const now = art.currentTime;
+        const cue = currentSubs.find(c => now >= c.s && now <= c.e);
+        const el = document.getElementById('sub-text');
         if(cue) {
-            if(cue !== lastCueId) {
-                display.innerHTML = cue.text;
-                lastCueId = cue;
-            }
-        } else {
-            display.innerHTML = "";
-            lastCueId = null;
-        }
+            if(cue !== lastCue) { el.innerHTML = cue.text; lastCue = cue; }
+        } else { el.innerHTML = ""; lastCue = null; }
     });
 }
 </script>
