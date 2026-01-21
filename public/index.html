@@ -2,328 +2,288 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Enterprise Cinema | VidSrc Clean Architecture</title>
+    <title>Pro Stream Engine | Clean URL System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
     <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
     <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --accent: #e50914;
-            --bg: #050505;
-            --card: #111;
-            --url-blue: #007aff;
+            --red: #e50914;
+            --bg: #000;
+            --panel: #111;
+            --text: #fff;
         }
 
         body, html {
             margin: 0; padding: 0; background: var(--bg);
-            color: #fff; font-family: 'Poppins', sans-serif;
+            color: var(--text); font-family: 'Inter', sans-serif;
             height: 100vh; width: 100vw; overflow: hidden;
         }
 
-        /* --- DASHBOARD & ROUTING UI --- */
-        #app-gateway {
-            height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        /* --- UI LAYER --- */
+        #app-ui {
+            height: 100vh; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 10;
         }
 
-        .vid-box {
-            background: var(--card); border: 1px solid #222; border-radius: 20px;
-            width: 90%; max-width: 600px; padding: 40px; box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+        .control-panel {
+            background: var(--panel); border: 1px solid #333; padding: 40px;
+            border-radius: 16px; width: 90%; max-width: 550px; text-align: center;
         }
 
-        .header-slug { color: var(--accent); font-weight: 900; font-size: 2.5rem; margin-bottom: 30px; }
-
-        /* CLEAN URL DISPLAY (VIDSRC STYLE) */
-        .vidsrc-url-bar {
-            background: #000; border: 1px solid #333; padding: 12px 20px;
-            border-radius: 10px; margin-bottom: 25px; display: flex; align-items: center;
-            font-family: monospace; font-size: 0.9rem;
-        }
-        .vidsrc-url-bar b { color: #555; margin-right: 10px; }
-        .vidsrc-url-bar span { color: var(--url-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-        .input-row { margin-bottom: 20px; text-align: left; }
-        label { font-size: 11px; text-transform: uppercase; color: #666; letter-spacing: 2px; display: block; margin-bottom: 8px; }
-
-        input, select {
-            width: 100%; padding: 15px; background: #0a0a0a; border: 1px solid #333;
-            border-radius: 10px; color: #fff; font-size: 1rem; outline: none; transition: 0.3s;
-        }
-        input:focus { border-color: var(--accent); }
-
-        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-
-        .btn-play {
-            width: 100%; padding: 20px; background: var(--accent); color: #fff;
-            border: none; border-radius: 12px; font-weight: 900; font-size: 1.1rem;
-            cursor: pointer; text-transform: uppercase; margin-top: 10px;
+        .clean-url-display {
+            background: #000; padding: 12px; border-radius: 8px; border: 1px solid #444;
+            color: #007aff; font-family: monospace; margin-bottom: 25px; word-break: break-all;
         }
 
-        /* --- THE LOADING LAYER (CENTRED) --- */
-        #loading-lyr {
-            position: fixed; inset: 0; background: #000; z-index: 99999;
+        input {
+            width: 100%; padding: 16px; margin-bottom: 15px; background: #080808;
+            border: 1px solid #333; border-radius: 8px; color: #fff; outline: none;
+            box-sizing: border-box;
+        }
+        input:focus { border-color: var(--red); }
+
+        .btn-launch {
+            width: 100%; padding: 18px; background: var(--red); color: #fff;
+            border: none; border-radius: 8px; font-weight: 900; cursor: pointer;
+            text-transform: uppercase; margin-top: 10px;
+        }
+
+        /* --- LOADING LAYER --- */
+        #loading-screen {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
             display: none; flex-direction: column; align-items: center; justify-content: center;
         }
-        #load-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4; }
-        #load-logo { position: relative; max-width: 300px; margin-bottom: 40px; z-index: 2; }
-
-        /* CORNER SPINNER (FIXED POSITION) */
+        #load-backdrop {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0.3;
+        }
+        
         .spinner-corner {
             position: absolute; top: 30px; left: 30px; width: 50px; height: 50px;
-            border: 4px solid rgba(229, 9, 20, 0.1); border-top: 4px solid var(--accent);
-            border-radius: 50%; animation: spin 0.8s linear infinite; z-index: 3;
+            border: 4px solid rgba(229, 9, 20, 0.2); border-top: 4px solid var(--red);
+            border-radius: 50%; animation: spin 0.8s linear infinite; z-index: 10000;
         }
 
-        /* --- PLAYER IFRAME WRAPPER (CENTERED) --- */
-        #player-wrapper {
-            position: fixed; inset: 0; background: #000; z-index: 100000;
-            display: none; align-items: center; justify-content: center;
-        }
-        #player-iframe-container {
-            width: 100%; height: 100%; position: relative; display: flex; align-items: center; justify-content: center;
-        }
-        #artplayer { width: 100%; height: 100%; margin: auto; }
-
-        .close-btn {
-            position: absolute; top: 30px; right: 30px; z-index: 100005;
-            background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 50%;
-            width: 50px; height: 50px; color: #fff; display: flex; align-items: center;
-            justify-content: center; cursor: pointer; font-size: 20px;
+        /* --- PLAYER --- */
+        #player-container {
+            position: fixed; inset: 0; background: #000; z-index: 10000;
+            display: none; width: 100%; height: 100%;
         }
 
-        /* CUSTOM ICON LAYERS */
-        .art-ui-layer {
-            display: flex; align-items: center; justify-content: center; gap: 80px;
-            width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: 0.4s;
+        .art-video-player { width: 100%; height: 100%; }
+
+        /* Custom Subtitle & Icon Layers */
+        .layer-controls {
+            display: flex; gap: 60px; pointer-events: none; opacity: 0; transition: 0.3s;
+            width: 100%; height: 100%; align-items: center; justify-content: center;
         }
-        .art-state-show .art-ui-layer { opacity: 1; }
-        .icon-circle {
-            background: rgba(0,0,0,0.6); width: 90px; height: 90px; border-radius: 50%;
+        .art-state-show .layer-controls { opacity: 1; }
+        .circle-btn {
+            width: 80px; height: 80px; background: rgba(0,0,0,0.6); border-radius: 50%;
             display: flex; align-items: center; justify-content: center; pointer-events: auto;
-            cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer; border: 1px solid rgba(255,255,255,0.2);
         }
-        .icon-circle svg { width: 45px; height: 45px; fill: #fff; }
+        .circle-btn svg { width: 40px; fill: #fff; }
 
-        /* HIDE DEFAULT SPINNER IN ARTPLAYER */
+        .sub-display {
+            position: absolute; bottom: 10%; width: 100%; text-align: center; pointer-events: none;
+        }
+        .sub-text {
+            background: rgba(0,0,0,0.8); color: #fff; padding: 4px 16px; 
+            border-radius: 4px; font-size: 24px; display: none;
+        }
+
+        /* Hides default spinner, shows corner one */
         .art-loading .art-loading-icon { display: none !important; }
         .art-loading .spinner-corner { display: block !important; }
 
-        /* SUBTITLE LAYER */
-        #sub-container {
-            position: absolute; bottom: 12%; width: 100%; text-align: center;
-            pointer-events: none; z-index: 10;
-        }
-        #sub-text {
-            background: rgba(0,0,0,0.85); color: #fff; padding: 5px 25px;
-            font-size: 26px; border-radius: 5px; display: none;
-            text-shadow: 2px 2px 4px #000;
-        }
-
-        /* DYNAMIC SEARCH RESULTS */
-        #search-results {
-            position: absolute; top: 100%; left: 0; right: 0; background: #111;
-            border: 1px solid #333; border-radius: 0 0 12px 12px; z-index: 5000;
-            max-height: 300px; overflow-y: auto; display: none;
-        }
-        .search-item { display: flex; align-items: center; padding: 12px; cursor: pointer; border-bottom: 1px solid #222; }
-        .search-item:hover { background: #1a1a1a; }
-        .search-item img { width: 45px; height: 65px; border-radius: 5px; margin-right: 15px; }
-
-        @keyframes spin { from {transform:rotate(0deg)} to {transform:rotate(360deg)} }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div id="app-gateway">
-    <div class="header-slug">MOVIESGOD.IO</div>
-    
-    <div class="vid-box">
-        <div class="vidsrc-url-bar">
-            <b>CLEAN URL:</b>
-            <span id="route-path">/waiting_for_selection...</span>
+<div id="app-ui">
+    <h1 style="color:var(--red); text-transform:uppercase;">Stream Engine v4.0</h1>
+    <div class="control-panel">
+        <div class="clean-url-display" id="url-preview">/ ...</div>
+        
+        <input type="text" id="tmdb-id" placeholder="TMDB ID (e.g. 66732)" oninput="updateUrl()">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <input type="number" id="season" placeholder="S" value="1" oninput="updateUrl()">
+            <input type="number" id="episode" placeholder="E" value="1" oninput="updateUrl()">
         </div>
-
-        <div class="input-row" style="position:relative;">
-            <label>Title Search</label>
-            <input type="text" id="main-search" placeholder="Enter movie or series name..." autocomplete="off">
-            <div id="search-results"></div>
-        </div>
-
-        <div class="input-row">
-            <label>Mode</label>
-            <select id="mode-select" onchange="syncUI()">
-                <option value="movie">Movie Player</option>
-                <option value="tv">Series Player</option>
-            </select>
-        </div>
-
-        <div id="tv-params" style="display:none;">
-            <div class="grid-inputs">
-                <div class="input-row">
-                    <label>Season</label>
-                    <input type="number" id="s-val" value="1" oninput="updateCleanRoute()">
-                </div>
-                <div class="input-row">
-                    <label>Episode</label>
-                    <input type="number" id="e-val" value="1" oninput="updateCleanRoute()">
-                </div>
-            </div>
-        </div>
-
-        <input type="hidden" id="tmdb-id">
-        <button class="btn-play" onclick="initStreamingEngine()">LAUNCH STREAM</button>
+        
+        <button class="btn-launch" onclick="manualStart()">Play Stream</button>
     </div>
 </div>
 
-<div id="loading-lyr">
+<div id="loading-screen">
     <div class="spinner-corner"></div>
-    <img id="load-poster" src="">
-    <img id="load-logo" src="">
+    <img id="load-backdrop" src="">
+    <h2 id="status-text" style="position:relative; z-index:2;">INITIALIZING...</h2>
 </div>
 
-<div id="player-wrapper">
-    <div class="close-btn" onclick="destroyEngine()">✕</div>
-    <div id="player-iframe-container">
-        <div id="artplayer"></div>
-        <div id="sub-container"><div id="sub-text"></div></div>
-    </div>
+<div id="player-container">
+    <div style="position:absolute; top:30px; right:30px; z-index:10001; color:#fff; cursor:pointer; font-size:24px; background:rgba(0,0,0,0.5); width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff;" onclick="closePlayer()">✕</div>
+    <div id="artplayer" class="art-video-player"></div>
 </div>
 
 <script>
-/** ENGINE CONFIG **/
-const KEY = '463dcd7993ab31d92eb586802fdeee6a';
-const PROXY = (u) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`;
+/** * CONFIGURATION & PROXY
+ */
+const API_KEY = '463dcd7993ab31d92eb586802fdeee6a';
+const PROXY_BASE = 'https://workingg.vercel.app/api/proxy?url=';
+const PROXY = (url) => `${PROXY_BASE}${encodeURIComponent(url)}`;
 
-let artInstance = null;
-let currentSubs = [];
-let activeCue = null;
+let player = null;
+let subtitles = [];
+let activeSub = null;
 
-/** DYNAMIC SEARCH ENGINE **/
-const searchInput = document.getElementById('main-search');
-const resultsBox = document.getElementById('search-results');
-
-searchInput.addEventListener('input', async () => {
-    const q = searchInput.value;
-    if (q.length < 2) { resultsBox.style.display = 'none'; return; }
-
-    const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${KEY}&query=${encodeURIComponent(q)}`);
-    const data = await res.json();
-    
-    resultsBox.innerHTML = "";
-    if (data.results) {
-        resultsBox.style.display = 'block';
-        data.results.slice(0, 6).forEach(item => {
-            if (!item.poster_path) return;
-            const div = document.createElement('div');
-            div.className = 'search-item';
-            div.innerHTML = `<img src="https://image.tmdb.org/t/p/w92${item.poster_path}"><div><strong>${item.title || item.name}</strong><br><small>${((item.release_date || item.first_air_date || '')).split('-')[0]}</small></div>`;
-            div.onclick = () => selectTitle(item);
-            resultsBox.appendChild(div);
-        });
+// AUTO-DETECT URL ON LOAD
+window.onload = () => {
+    const path = window.location.pathname.split('/').filter(Boolean);
+    // Format: /id/season/episode or /id (for movie)
+    if (path.length >= 1 && !isNaN(path[0])) {
+        const id = path[0];
+        const s = path[1] || 1;
+        const e = path[2] || 1;
+        const type = path.length > 1 ? 'tv' : 'movie';
+        
+        document.getElementById('tmdb-id').value = id;
+        document.getElementById('season').value = s;
+        document.getElementById('episode').value = e;
+        
+        startEngine(id, s, e, type);
     }
-});
+};
 
-function selectTitle(item) {
-    searchInput.value = item.title || item.name;
-    document.getElementById('tmdb-id').value = item.id;
-    document.getElementById('mode-select').value = (item.media_type === 'tv' || item.name) ? 'tv' : 'movie';
-    syncUI();
-    resultsBox.style.display = 'none';
-    updateCleanRoute();
-}
-
-function syncUI() {
-    const isTV = document.getElementById('mode-select').value === 'tv';
-    document.getElementById('tv-params').style.display = isTV ? 'block' : 'none';
-    updateCleanRoute();
-}
-
-/** CLEAN URL ROUTER **/
-function updateCleanRoute() {
-    const id = document.getElementById('tmdb-id').value || 'xxxx';
-    const mode = document.getElementById('mode-select').value;
-    const s = document.getElementById('s-val').value;
-    const e = document.getElementById('e-val').value;
-    
-    let path = `/${id}`;
-    if (mode === 'tv') path = `/${id}/${s}/${e}`;
-    
-    document.getElementById('route-path').innerText = path;
-    return path;
-}
-
-/** STREAMING LOGIC **/
-async function initStreamingEngine() {
+function updateUrl() {
     const id = document.getElementById('tmdb-id').value;
-    const s = document.getElementById('s-val').value;
-    const e = document.getElementById('e-val').value;
-    const mode = document.getElementById('mode-select').value;
+    const s = document.getElementById('season').value;
+    const e = document.getElementById('episode').value;
+    const url = id ? `/${id}/${s}/${e}` : '/waiting-for-input';
+    document.getElementById('url-preview').innerText = window.location.origin + url;
+    // Optional: history.pushState({}, '', url); // Uncomment to actually change URL bar
+}
 
-    if (!id) return alert("Select a title first!");
+function manualStart() {
+    const id = document.getElementById('tmdb-id').value;
+    const s = document.getElementById('season').value;
+    const e = document.getElementById('episode').value;
+    if(!id) return alert("Enter ID");
+    startEngine(id, s, e, 'tv'); // Defaulting manual to TV for this demo
+}
 
-    // Show Centred Loading Layer
-    const lyr = document.getElementById('loading-lyr');
-    lyr.style.display = 'flex';
-
-    // Fetch Meta for Slug fix
-    const meta = await fetch(`https://api.themoviedb.org/3/${mode}/${id}?api_key=${KEY}`).then(r => r.json());
-    const cleanTitle = (meta.title || meta.name).toLowerCase().replace(/[^a-z0-9\s]/gi, ' ').trim().replace(/\s+/g, '.');
-    
-    // Slug Generation (Stranger Things Fix)
-    let slug = (mode === 'movie') ? `${cleanTitle}.${(meta.release_date||'2024').split('-')[0]}` : `${cleanTitle}.s${s.padStart(2,'0')}.e${e.padStart(2,'0')}`;
-
-    document.getElementById('load-poster').src = `https://image.tmdb.org/t/p/original${meta.backdrop_path}`;
-    const imgData = await fetch(`https://api.themoviedb.org/3/${mode}/${id}/images?api_key=${KEY}`).then(r => r.json());
-    const logo = imgData.logos?.find(l => l.iso_639_1 === 'en')?.file_path || imgData.logos?.[0]?.file_path;
-    document.getElementById('load-logo').src = logo ? `https://image.tmdb.org/t/p/w500${logo}` : "";
+/** * MAIN ENGINE LOGIC 
+ */
+async function startEngine(id, s, e, type) {
+    const loadScreen = document.getElementById('loading-screen');
+    loadScreen.style.display = 'flex';
+    document.getElementById('status-text').innerText = "RESOLVING METADATA...";
 
     try {
-        const streamApi = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(slug)}&id=${id}&season=${s}&episode=${e}`;
-        const stream = await fetch(PROXY(streamApi)).then(r => r.json());
+        // 1. Get TMDB Data
+        const metaUrl = `https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}`;
+        const meta = await fetch(metaUrl).then(r => r.json());
+        
+        document.getElementById('load-backdrop').src = `https://image.tmdb.org/t/p/original${meta.backdrop_path || ''}`;
 
-        // Subtitle logic (Fixed for Series)
-        let subUrl = `https://sub.wyzie.ru/search?id=${id}`;
-        if (mode === 'tv') subUrl += `&season=${s}&episode=${e}`;
-        const subs = await fetch(PROXY(subUrl)).then(r => r.json()).catch(() => []);
+        // 2. Slug Generation Strategy
+        // Clean Title: "Stranger Things" -> "stranger.things"
+        const rawTitle = (meta.title || meta.name || '').toLowerCase();
+        const cleanTitle = rawTitle.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '.');
 
-        startArtPlayer(PROXY(stream.m3u8_url), subs, slug);
-    } catch (err) {
-        alert("Source connectivity lost. Try again.");
-        lyr.style.display = 'none';
+        // SLUG ATTEMPT 1: stranger.things (Just title, rely on S/E params)
+        // SLUG ATTEMPT 2: stranger.things.s01.e01 (Dot padded)
+        // SLUG ATTEMPT 3: stranger-things (Hyphenated)
+
+        let streamData = null;
+        const slugVariants = [
+            cleanTitle,                                           // Try 1: stranger.things
+            `${cleanTitle}.s${pad(s)}.e${pad(e)}`,                // Try 2: stranger.things.s01.e01
+            rawTitle.replace(/\s+/g, '-')                         // Try 3: stranger-things
+        ];
+
+        document.getElementById('status-text').innerText = "HANDSHAKING SOURCE...";
+
+        for (const slug of slugVariants) {
+            console.log("Trying Slug:", slug);
+            try {
+                const api = `https://u-1-1azw.onrender.com/api/get-stream?title=${slug}&id=${id}&season=${s}&episode=${e}`;
+                const res = await fetch(PROXY(api)).then(r => r.json());
+                
+                if (res.success !== false && res.m3u8_url) {
+                    streamData = res;
+                    break; // Success!
+                }
+            } catch (err) { console.log(err); }
+        }
+
+        if (!streamData) throw new Error("No Stream Found");
+
+        // 3. Fetch Subtitles (Using your TMDB Proxy Logic)
+        const subApi = `https://sub.wyzie.ru/search?id=${id}&season=${s}&episode=${e}`;
+        const subData = await fetch(PROXY(subApi)).then(r => r.json()).catch(() => []);
+
+        // 4. Mount Player
+        initArtPlayer(PROXY(streamData.m3u8_url), subData, `${id}_${s}_${e}`);
+
+    } catch (error) {
+        alert("Error: " + error.message);
+        loadScreen.style.display = 'none';
     }
 }
 
-/** ARTPLAYER CORE **/
-function startArtPlayer(m3u8, subs, slug) {
-    document.getElementById('player-wrapper').style.display = 'flex';
+/** * ARTPLAYER WITH ALL FEATURES
+ */
+function initArtPlayer(url, subs, saveKey) {
+    document.getElementById('player-container').style.display = 'block';
 
-    artInstance = new Artplayer({
+    player = new Artplayer({
         container: '#artplayer',
-        url: m3u8,
+        url: url,
         type: 'm3u8',
         autoplay: true,
         autoPlayback: true,
         fullscreen: true,
+        
+        // ENABLING ALL REQUESTED SETTINGS
         setting: true,
+        flip: true,
+        playbackRate: true,
+        aspectRatio: true,
+        subtitleOffset: true,
+        lock: true,
+        fastForward: true,
+
         theme: '#e50914',
+        
         layers: [
             {
-                name: 'corner-spin',
+                name: 'corner-spinner',
                 html: `<div class="spinner-corner"></div>`
             },
             {
-                name: 'ui-controls',
+                name: 'center-ui',
                 html: `
-                <div class="art-ui-layer">
-                    <div class="icon-circle" onclick="artInstance.backward=10"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg></div>
-                    <div class="icon-circle" onclick="artInstance.toggle()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
-                    <div class="icon-circle" onclick="artInstance.forward=10"><svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></div>
-                </div>`
+                    <div class="layer-controls">
+                        <div class="circle-btn" onclick="player.backward=10"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg></div>
+                        <div class="circle-btn" onclick="player.toggle()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+                        <div class="circle-btn" onclick="player.forward=10"><svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg></div>
+                    </div>
+                `
+            },
+            {
+                name: 'sub-render',
+                html: `<div class="sub-display"><div class="sub-text" id="subtitle-box"></div></div>`
             }
         ],
+
         customType: {
             m3u8: function(video, url) {
                 if (Hls.isSupported()) {
@@ -331,17 +291,19 @@ function startArtPlayer(m3u8, subs, slug) {
                     hls.loadSource(url);
                     hls.attachMedia(video);
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        // Quality
-                        artInstance.setting.add({
+                        
+                        // 1. QUALITY SWITCHER
+                        player.setting.add({
                             name: 'quality', html: 'Quality',
-                            selector: [{html: 'Auto', level: -1, default: true}, ...hls.levels.map((l, i) => ({html: l.height+'p', level: i}))],
+                            selector: [{html:'Auto', level:-1, default:true}, ...hls.levels.map((l,i) => ({html:l.height+'p', level:i}))],
                             onSelect: (i) => { hls.currentLevel = i.level; return i.html; }
                         });
-                        // Audio
+
+                        // 2. AUDIO SWITCHER (If available)
                         if (hls.audioTracks.length > 1) {
-                            artInstance.setting.add({
-                                name: 'audio', html: 'Audio',
-                                selector: hls.audioTracks.map((t, i) => ({html: t.name || t.lang, index: i})),
+                            player.setting.add({
+                                name: 'audio', html: 'Audio Track',
+                                selector: hls.audioTracks.map((t,i) => ({html: t.name||`Track ${i+1}`, index:i})),
                                 onSelect: (i) => { hls.audioTrack = i.index; return i.html; }
                             });
                         }
@@ -351,73 +313,76 @@ function startArtPlayer(m3u8, subs, slug) {
         }
     });
 
-    artInstance.on('ready', () => {
-        // Resume play
-        const saved = localStorage.getItem(`pos_${slug}`);
-        if (saved) artInstance.currentTime = parseFloat(saved);
+    // Subtitle Processing
+    player.on('ready', () => {
+        const savedTime = localStorage.getItem('resume_' + saveKey);
+        if(savedTime) player.currentTime = parseFloat(savedTime);
 
-        // Subtitles injection
-        if (subs && subs.length > 0) {
-            artInstance.setting.add({
+        if (subs.length > 0) {
+            player.setting.add({
                 name: 'subs', html: 'Subtitles',
-                selector: [{html: 'Off', url: null, default: true}, ...subs.map(s => ({html: s.lang || s.language, url: PROXY(s.url)}))],
+                selector: [{html:'Off', url:null, default:true}, ...subs.map(s => ({html: s.lang || s.language, url: PROXY(s.url)}))],
                 onSelect: async (item) => {
-                    if (!item.url) { currentSubs = []; document.getElementById('sub-text').style.display='none'; return 'Off'; }
-                    const txt = await fetch(item.url).then(r => r.text());
-                    currentSubs = parseVtt(txt);
-                    document.getElementById('sub-text').style.display='block';
+                    if(!item.url) { subtitles=[]; document.getElementById('subtitle-box').style.display='none'; return 'Off'; }
+                    const txt = await fetch(item.url).then(r=>r.text());
+                    subtitles = parseVtt(txt);
+                    document.getElementById('subtitle-box').style.display='block';
                     return item.html;
                 }
             });
         }
     });
 
-    artInstance.on('video:timeupdate', () => {
-        localStorage.setItem(`pos_${slug}`, artInstance.currentTime);
-        if (!currentSubs.length) return;
-        const now = artInstance.currentTime;
-        const cue = currentSubs.find(c => now >= c.start && now <= c.end);
-        const el = document.getElementById('sub-text');
-        if (cue) {
-            if (cue !== activeCue) { el.innerHTML = cue.text; activeCue = cue; }
-        } else { el.innerHTML = ""; activeCue = null; }
+    player.on('video:timeupdate', () => {
+        localStorage.setItem('resume_' + saveKey, player.currentTime);
+        if(!subtitles.length) return;
+        const now = player.currentTime + (player.subtitleOffset || 0); // Apply Offset
+        const cue = subtitles.find(c => now >= c.start && now <= c.end);
+        const box = document.getElementById('subtitle-box');
+        if(cue) {
+            if(cue !== activeSub) { box.innerHTML = cue.text; activeSub = cue; }
+        } else {
+            box.innerHTML = ''; activeSub = null;
+        }
     });
 
-    artInstance.on('video:playing', () => {
-        document.getElementById('loading-lyr').style.display = 'none';
+    player.on('video:playing', () => {
+        document.getElementById('loading-screen').style.display = 'none';
     });
 }
 
-function destroyEngine() {
-    if (artInstance) artInstance.destroy();
-    document.getElementById('player-wrapper').style.display = 'none';
-    document.getElementById('app-gateway').style.display = 'flex';
+function closePlayer() {
+    if(player) player.destroy();
+    document.getElementById('player-container').style.display = 'none';
+    document.getElementById('app-ui').style.display = 'flex';
 }
 
-/** VTT PARSER **/
+function pad(n) { return n.toString().padStart(2, '0'); }
+
+// VTT Parser
 function parseVtt(text) {
-    const cues = [];
+    const items = [];
     const lines = text.split('\n');
-    let cur = null;
+    let curr = null;
     lines.forEach(l => {
         l = l.trim();
-        if (l.includes('-->')) {
-            const p = l.split('-->');
-            cur = { start: hmsToS(p[0]), end: hmsToS(p[1]), text: [] };
-        } else if (cur && l === "") {
-            cues.push({ ...cur, text: cur.text.join('<br>') });
-            cur = null;
-        } else if (cur) cur.text.push(l);
+        if(l.includes('-->')) {
+            const t = l.split('-->');
+            curr = { start: t2s(t[0]), end: t2s(t[1]), text: [] };
+        } else if(curr && l === '') {
+            items.push({ ...curr, text: curr.text.join('<br>') });
+            curr = null;
+        } else if(curr) curr.text.push(l);
     });
-    return cues;
+    return items;
 }
-
-function hmsToS(t) {
-    const p = t.trim().split(':');
+function t2s(str) {
+    const p = str.trim().split(':');
     let h=0, m=0, s=0;
-    if (p.length === 3) [h, m, s] = p; else [m, s] = p;
+    if(p.length===3) [h,m,s]=p; else [m,s]=p;
     return (+h)*3600 + (+m)*60 + parseFloat(s);
 }
 </script>
+
 </body>
 </html>
