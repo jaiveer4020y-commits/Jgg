@@ -2,75 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Enterprise Cinema Engine | Modular Build v6.2</title>
+    <title>ULTRA-CINEMA ENGINE | V7.0 PLATINUM</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
     <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
     <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
 
     <style>
-        /* CSS ARCHITECTURE - SCOPED STYLES 
-        */
+        /* --- DESIGN SYSTEM --- */
         :root {
             --nf-red: #E50914;
-            --nf-black: #141414;
-            --nf-white: #FFFFFF;
-            --nf-gray: #808080;
-            --transition-smooth: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            --nf-black: #000000;
+            --nf-dark: #141414;
+            --nf-gray: #b3b3b3;
+            --glow: 0 0 20px rgba(229, 9, 20, 0.4);
         }
 
         body, html {
-            margin: 0; padding: 0; background: #000; color: var(--nf-white);
-            font-family: 'Roboto', sans-serif; overflow: hidden; height: 100vh;
+            margin: 0; padding: 0; background-color: var(--nf-black);
+            color: #fff; font-family: 'Inter', sans-serif; overflow: hidden;
+            height: 100vh; width: 100vw;
         }
 
-        /* --- 1. CORE WRAPPERS --- */
-        #app-mount {
-            position: relative; width: 100vw; height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle at center, #222 0%, #000 100%);
+        /* --- DASHBOARD LAYER --- */
+        #main-dashboard {
+            position: fixed; inset: 0; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* --- 2. ENTERPRISE DASHBOARD --- */
-        .dashboard-container {
-            z-index: 10; width: 95%; max-width: 650px; padding: 50px;
-            background: rgba(20, 20, 20, 0.95); border: 1px solid #333;
-            border-radius: 4px; box-shadow: 0 0 50px rgba(0,0,0,1);
-            transition: var(--transition-smooth);
+        .cinema-card {
+            width: 90%; max-width: 550px; padding: 50px;
+            background: var(--nf-dark); border: 1px solid #333;
+            border-radius: 12px; box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            position: relative;
         }
 
-        .brand-logo {
+        .brand-title {
             font-size: 3rem; font-weight: 900; color: var(--nf-red);
-            text-align: center; margin-bottom: 30px; letter-spacing: -2px;
+            text-align: center; margin-bottom: 40px; letter-spacing: -2px;
+            text-shadow: var(--glow);
         }
 
-        .input-group { margin-bottom: 25px; position: relative; }
-        .input-group label {
-            display: block; font-size: 12px; color: var(--nf-gray);
-            margin-bottom: 8px; font-weight: 700; text-transform: uppercase;
+        .input-box { margin-bottom: 25px; position: relative; }
+        .input-box label {
+            display: block; font-size: 11px; font-weight: 800; color: var(--nf-gray);
+            text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px;
         }
 
         input {
-            width: 100%; padding: 18px; background: #333; border: none;
-            border-bottom: 3px solid transparent; color: #fff; font-size: 16px;
-            outline: none; transition: var(--transition-smooth);
+            width: 100%; padding: 18px; background: #080808; border: 1px solid #222;
+            border-radius: 6px; color: #fff; font-size: 16px; outline: none;
+            transition: border-color 0.3s;
         }
-        input:focus { border-bottom-color: var(--nf-red); background: #444; }
+        input:focus { border-color: var(--nf-red); }
 
-        .flex-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .selector-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-        .btn-primary {
+        .play-btn {
             width: 100%; padding: 20px; background: var(--nf-red); color: #fff;
-            border: none; border-radius: 4px; font-weight: 900; font-size: 18px;
-            cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
-            margin-top: 20px;
+            border: none; border-radius: 6px; font-weight: 900; font-size: 18px;
+            cursor: pointer; text-transform: uppercase; transition: transform 0.2s;
+            box-shadow: var(--glow); margin-top: 10px;
         }
+        .play-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
-        /* --- 3. NETFLIX SPINNER COMPONENT --- */
-        .nf-spinner-wrapper {
-            position: fixed; inset: 0; background: #000; z-index: 1000;
+        /* --- NETFLIX SPINNER COMPONENT --- */
+        .nf-spinner-overlay {
+            position: fixed; inset: 0; background: #000; z-index: 500;
             display: none; flex-direction: column; align-items: center; justify-content: center;
         }
 
@@ -83,280 +85,324 @@
 
         @keyframes nf-spin { 100% { transform: rotate(360deg); } }
 
-        /* --- 4. ADVANCED PLAYER LAYERS --- */
-        #player-engine {
-            position: fixed; inset: 0; background: #000; z-index: 2000; display: none;
+        /* --- PLAYER INTERFACE --- */
+        #player-wrapper {
+            position: fixed; inset: 0; background: #000; z-index: 1000; display: none;
         }
 
-        /* Forward/Backward Controls */
-        .center-ui-overlay {
-            width: 100%; height: 100%; display: flex; align-items: center;
-            justify-content: center; gap: 80px; pointer-events: none;
-            opacity: 0; transition: var(--transition-smooth);
+        /* Forward/Backward Control Icons */
+        .art-layer-netflix-controls {
+            display: flex; gap: 80px; align-items: center; justify-content: center;
+            width: 100%; height: 100%; pointer-events: none; opacity: 0;
+            transition: opacity 0.3s ease;
         }
-        .art-state-hover .center-ui-overlay,
-        .art-state-paused .center-ui-overlay { opacity: 1; }
+        /* Show icons on hover or pause */
+        .art-video-player:hover .art-layer-netflix-controls,
+        .art-state-paused .art-layer-netflix-controls { opacity: 1; }
 
-        .action-circle {
+        .nf-control-circle {
             width: 90px; height: 90px; background: rgba(0,0,0,0.5);
             border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; pointer-events: auto; backdrop-filter: blur(10px);
+            cursor: pointer; pointer-events: auto; backdrop-filter: blur(8px);
         }
-        .action-circle svg { width: 40px; fill: #fff; }
-        .action-circle:hover { background: var(--nf-red); border-color: var(--nf-red); }
+        .nf-control-circle svg { width: 42px; height: 42px; fill: #fff; }
+        .nf-control-circle:hover { background: var(--nf-red); border-color: var(--nf-red); }
 
-        /* Subtitle Text Renderer */
-        #custom-subtitle-layer {
-            position: absolute; bottom: 10%; width: 100%; text-align: center;
-            pointer-events: none; z-index: 100;
+        /* Subtitle Styling */
+        #subtitle-anchor {
+            position: absolute; bottom: 12%; width: 100%; text-align: center;
+            pointer-events: none; z-index: 200;
         }
-        #subtitle-text-node {
-            background: rgba(0,0,0,0.8); color: #fff; padding: 5px 20px;
-            font-size: 28px; border-radius: 4px; display: none;
-            text-shadow: 2px 2px 4px #000; font-weight: 500;
-        }
-
-        .close-player-btn {
-            position: absolute; top: 40px; right: 40px; z-index: 5000;
-            cursor: pointer; filter: drop-shadow(0 0 10px #000);
+        #subtitle-text {
+            background: rgba(0,0,0,0.8); color: #fff; padding: 6px 24px;
+            font-size: clamp(20px, 4vw, 32px); border-radius: 5px; display: none;
+            text-shadow: 2px 2px 4px #000; font-weight: 600; line-height: 1.4;
         }
 
-        /* --- 5. SEARCH ENGINE UI --- */
+        /* --- SEARCH DROPDOWN --- */
         #search-results {
-            position: absolute; top: 100%; left: 0; right: 0;
-            background: #181818; border: 1px solid #333; max-height: 400px;
-            overflow-y: auto; display: none; z-index: 500;
+            position: absolute; top: 100%; left: 0; right: 0; background: #111;
+            border: 1px solid #333; max-height: 380px; overflow-y: auto;
+            border-radius: 0 0 8px 8px; z-index: 5000; display: none;
         }
-        .result-card {
-            display: flex; align-items: center; padding: 15px; cursor: pointer;
-            border-bottom: 1px solid #222;
+        .search-item {
+            display: flex; gap: 20px; padding: 12px; border-bottom: 1px solid #222;
+            cursor: pointer; transition: background 0.2s;
         }
-        .result-card:hover { background: #252525; }
-        .result-card img { width: 50px; height: 75px; border-radius: 4px; margin-right: 20px; }
+        .search-item:hover { background: #222; }
+        .search-item img { width: 50px; height: 75px; object-fit: cover; border-radius: 4px; }
+        .search-item h4 { margin: 0; font-size: 14px; }
+        .search-item p { margin: 4px 0 0 0; color: #888; font-size: 11px; }
 
-        /* Artplayer Override for Netflix Spinner */
+        /* --- ARTPLAYER OVERRIDES --- */
         .art-loading-icon { display: none !important; }
-        .art-loading .netflix-spinner { display: block; position: absolute; top: 40%; left: 42%; }
+        .art-loading .netflix-spinner { 
+            display: block !important; position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); z-index: 999;
+        }
+        
+        .exit-btn {
+            position: absolute; top: 30px; right: 30px; z-index: 10001;
+            cursor: pointer; background: rgba(0,0,0,0.5); padding: 10px;
+            border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
+        }
     </style>
 </head>
 <body>
 
-<div id="app-mount">
-    <div class="dashboard-container">
-        <div class="brand-logo">PREMIUM ENGINE</div>
+<div id="main-dashboard">
+    <div class="cinema-card">
+        <div class="brand-title">CINEMA PLATINUM</div>
         
-        <div class="input-group">
-            <label>Master Search</label>
-            <input type="text" id="main-query" placeholder="Type Movie or TV Show Name...">
+        <div class="input-box">
+            <label>Title Search</label>
+            <input type="text" id="user-search" placeholder="Search movies or series...">
             <div id="search-results"></div>
         </div>
 
-        <div class="flex-row">
-            <div class="input-group">
+        <div class="selector-row">
+            <div class="input-box">
                 <label>Season</label>
-                <input type="number" id="s-val" value="1" min="1">
+                <input type="number" id="s-num" value="1" min="1">
             </div>
-            <div class="input-group">
+            <div class="input-box">
                 <label>Episode</label>
-                <input type="number" id="e-val" value="1" min="1">
+                <input type="number" id="e-num" value="1" min="1">
             </div>
         </div>
 
-        <input type="hidden" id="internal-tmdb-id">
-        <button class="btn-primary" onclick="launchSequence()">Start Streaming</button>
+        <input type="hidden" id="tmdb-id-store">
+        <button class="play-btn" onclick="startEngineAction()">Launch Stream</button>
     </div>
 </div>
 
-<div id="nf-load-screen" class="nf-spinner-wrapper">
+<div id="nf-preloader" class="nf-spinner-overlay">
     <div class="netflix-spinner"></div>
-    <div id="load-status" style="margin-top: 30px; font-weight: 900; letter-spacing: 4px; color: #555;">SYSTEM BOOTING</div>
+    <div id="status-update" style="margin-top: 30px; font-weight: 700; color: #E50914; text-transform: uppercase; letter-spacing: 2px;">Establishing Connection</div>
 </div>
 
-<div id="player-engine">
-    <div class="close-player-btn" onclick="killEngine()">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+<div id="player-wrapper">
+    <div class="exit-btn" onclick="shutdownEngine()">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </div>
-    <div id="art-mount"></div>
-    <div id="custom-subtitle-layer">
-        <div id="subtitle-text-node"></div>
+    <div id="artplayer-target" style="width:100%; height:100%;"></div>
+    <div id="subtitle-anchor">
+        <div id="subtitle-text"></div>
     </div>
 </div>
 
 <script>
 /**
- * ENTERPRISE STREAMING CORE
- * Logic: 1600-line functional equivalency
+ * CORE ENGINE LOGIC V7.0
+ * Features: Multi-Slug Resolver, Netflix Spinner, HLS Pro Audio
  */
 
-const APP_CONFIG = {
-    TMDB_KEY: '463dcd7993ab31d92eb586802fdeee6a',
-    PROXY: (url) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(url)}`,
-    AUTO_PLAY: true
+const ENGINE_PROPS = {
+    KEY: '463dcd7993ab31d92eb586802fdeee6a',
+    PROXY: (u) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`,
+    LOADER: document.getElementById('nf-preloader'),
+    STATUS: document.getElementById('status-update')
 };
 
-let mainPlayer = null;
+let activePlayer = null;
 let currentCues = [];
-let activeCueRef = null;
-let subDelayOffset = 0;
+let activeCueIndex = -1;
+let subDelay = 0;
 
-/* 1. ROUTER SYSTEM */
+/* 1. AUTO-ROUTING SYSTEM */
 window.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname.split('/').filter(Boolean);
-    if(path.length >= 1 && !isNaN(path[0])) {
-        const id = path[0];
-        const s = path[1] || 1;
-        const e = path[2] || 1;
+    const segments = window.location.pathname.split('/').filter(Boolean);
+    if(segments.length >= 1 && !isNaN(segments[0])) {
+        const id = segments[0];
+        const s = segments[1] || 1;
+        const e = segments[2] || 1;
         
-        document.getElementById('internal-tmdb-id').value = id;
-        document.getElementById('s-val').value = s;
-        document.getElementById('e-val').value = e;
+        document.getElementById('tmdb-id-store').value = id;
+        document.getElementById('s-num').value = s;
+        document.getElementById('e-num').value = e;
         
-        // Auto-resolve title from ID
-        autoResolveAndStart(id, s, e);
+        runAutomaticResolution(id, s, e);
     }
 });
 
-async function autoResolveAndStart(id, s, e) {
-    toggleLoader(true, "RESOLVING CLEAN URL...");
+async function runAutomaticResolution(id, s, e) {
+    toggleEngineLoader(true, "Resolving Direct Link...");
     try {
-        let meta = await fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${APP_CONFIG.TMDB_KEY}`).then(r => r.json());
-        if(!meta.id) meta = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${APP_CONFIG.TMDB_KEY}`).then(r => r.json());
+        // Fetch Metadata
+        let type = 'tv';
+        let meta = await fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${ENGINE_PROPS.KEY}`).then(r => r.json());
         
-        if(meta.id) {
-            document.getElementById('main-query').value = meta.name || meta.title;
-            const type = meta.name ? 'tv' : 'movie';
-            initiateStream(id, s, e, meta, type);
+        if(!meta.id) {
+            type = 'movie';
+            meta = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${ENGINE_PROPS.KEY}`).then(r => r.json());
         }
-    } catch (err) { toggleLoader(false); }
+
+        if(meta.id) {
+            document.getElementById('user-search').value = meta.name || meta.title;
+            processStreamingHandshake(id, s, e, meta, type);
+        }
+    } catch (e) { toggleEngineLoader(false); }
 }
 
-/* 2. DYNAMIC SEARCH ENGINE */
-const searchInput = document.getElementById('main-query');
-const resultsBox = document.getElementById('search-results');
+/* 2. DYNAMIC SEARCH MODULE */
+const searchInput = document.getElementById('user-search');
+const resultsPane = document.getElementById('search-results');
 
 searchInput.addEventListener('input', async () => {
-    const q = searchInput.value;
-    if(q.length < 2) { resultsBox.style.display = 'none'; return; }
+    const val = searchInput.value;
+    if(val.length < 2) { resultsPane.style.display = 'none'; return; }
     
-    const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${APP_CONFIG.TMDB_KEY}&query=${encodeURIComponent(q)}`);
-    const data = await res.json();
+    const raw = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${ENGINE_PROPS.KEY}&query=${encodeURIComponent(val)}`);
+    const data = await raw.json();
     
-    resultsBox.innerHTML = '';
+    resultsPane.innerHTML = '';
     if(data.results) {
-        resultsBox.style.display = 'block';
-        data.results.slice(0, 5).forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'result-card';
-            div.innerHTML = `<img src="https://image.tmdb.org/t/p/w92${item.poster_path}"><div><b>${item.title || item.name}</b><br><small>${item.media_type.toUpperCase()}</small></div>`;
-            div.onclick = () => {
-                document.getElementById('internal-tmdb-id').value = item.id;
-                searchInput.value = item.title || item.name;
-                resultsBox.style.display = 'none';
+        resultsPane.style.display = 'block';
+        data.results.slice(0, 5).forEach(m => {
+            const row = document.createElement('div');
+            row.className = 'search-item';
+            row.innerHTML = `<img src="https://image.tmdb.org/t/p/w92${m.poster_path}"><div><h4>${m.title || m.name}</h4><p>${m.media_type.toUpperCase()} • ${m.release_date || m.first_air_date}</p></div>`;
+            row.onclick = () => {
+                document.getElementById('tmdb-id-store').value = m.id;
+                searchInput.value = m.title || m.name;
+                resultsPane.style.display = 'none';
             };
-            resultsBox.appendChild(div);
+            resultsPane.appendChild(row);
         });
     }
 });
 
-/* 3. HANDSHAKE & SLUG LOGIC */
-async function launchSequence() {
-    const id = document.getElementById('internal-tmdb-id').value;
-    const s = document.getElementById('s-val').value;
-    const e = document.getElementById('e-val').value;
-    
-    if(!id) return alert("Select a Title First");
-    autoResolveAndStart(id, s, e);
+/* 3. MULTI-SLUG STREAM RESOLVER */
+async function startEngineAction() {
+    const id = document.getElementById('tmdb-id-store').value;
+    const s = document.getElementById('s-num').value;
+    const e = document.getElementById('e-num').value;
+    if(!id) return alert("Please select a title.");
+    runAutomaticResolution(id, s, e);
 }
 
-async function initiateStream(id, s, e, meta, type) {
-    toggleLoader(true, "HANDSHAKING SOURCES...");
+async function processStreamingHandshake(id, s, e, meta, type) {
+    toggleEngineLoader(true, "Handshaking with Servers...");
     
-    // SLUG SANITIZER (The Fix)
-    const rawTitle = (meta.name || meta.title).toLowerCase();
-    const cleanTitle = rawTitle.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '.');
+    const baseTitle = (meta.name || meta.title).toLowerCase().replace(/[^a-z0-9\s]/gi, '').trim();
+    const dotTitle = baseTitle.replace(/\s+/g, '.');
     
-    // Construct series slug properly: name.s01.e01
-    let slug = "";
+    // VARIATIONS TO TRY (The Slug Fix)
+    const slugs = [];
     if(type === 'tv') {
-        slug = `${cleanTitle}.s${s.toString().padStart(2, '0')}.e${e.toString().padStart(2, '0')}`;
+        const padding = `s${s.toString().padStart(2, '0')}.e${e.toString().padStart(2, '0')}`;
+        slugs.push(`${dotTitle}.${padding}`); // e.g. game.of.thrones.s01.e01
+        slugs.push(dotTitle);                 // e.g. game.of.thrones
+        slugs.push(baseTitle.replace(/\s+/g, '-')); // e.g. game-of-thrones
     } else {
-        const year = (meta.release_date || '2022').split('-')[0];
-        slug = `${cleanTitle}.${year}`;
+        const year = (meta.release_date || '').split('-')[0];
+        slugs.push(`${dotTitle}.${year}`);
+        slugs.push(dotTitle);
     }
 
-    console.log("Generated Slug:", slug);
+    let successData = null;
 
-    try {
-        const api = `https://u-1-1azw.onrender.com/api/get-stream?title=${slug}&id=${id}&season=${s}&episode=${e}`;
-        const stream = await fetch(APP_CONFIG.PROXY(api)).then(r => r.json());
-
-        if(!stream.m3u8_url) throw new Error("No Video Found");
-
-        // Subtitles
-        let subApi = `https://sub.wyzie.ru/search?id=${id}`;
-        if(type==='tv') subApi += `&season=${s}&episode=${e}`;
-        const subs = await fetch(APP_CONFIG.PROXY(subApi)).then(r => r.json()).catch(() => []);
-
-        mountPlayer(APP_CONFIG.PROXY(stream.m3u8_url), subs, slug);
-    } catch (err) {
-        alert(err.message);
-        toggleLoader(false);
+    for (let currentSlug of slugs) {
+        try {
+            console.log("Resolving Slug Attempt:", currentSlug);
+            const endpoint = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(currentSlug)}&id=${id}&season=${s}&episode=${e}`;
+            const res = await fetch(ENGINE_PROPS.PROXY(endpoint)).then(r => r.json());
+            
+            if(res.m3u8_url) {
+                successData = res;
+                break;
+            }
+        } catch (err) {}
     }
+
+    if(!successData) {
+        alert("No stream found for this slug variation. Retrying...");
+        toggleEngineLoader(false);
+        return;
+    }
+
+    // Subtitle Handshake
+    let subApi = `https://sub.wyzie.ru/search?id=${id}`;
+    if(type === 'tv') subApi += `&season=${s}&episode=${e}`;
+    const subRes = await fetch(ENGINE_PROPS.PROXY(subApi)).then(r => r.json()).catch(() => []);
+
+    launchProPlayer(ENGINE_PROPS.PROXY(successData.m3u8_url), subRes, `${id}_${s}_${e}`);
 }
 
-/* 4. ARTPLAYER MODULE */
-function mountPlayer(m3u8, subs, storageKey) {
-    document.getElementById('player-engine').style.display = 'block';
-    toggleLoader(false);
+/* 4. ARTPLAYER PRO CORE */
+function launchProPlayer(m3u8, subs, storageKey) {
+    document.getElementById('player-wrapper').style.display = 'block';
+    toggleEngineLoader(false);
 
-    mainPlayer = new Artplayer({
-        container: '#art-mount',
+    activePlayer = new Artplayer({
+        container: '#artplayer-target',
         url: m3u8,
         type: 'm3u8',
         autoplay: true,
+        autoPlayback: true,
         fullscreen: true,
         setting: true,
         theme: '#E50914',
+        lock: true,
+        fastForward: true,
+        autoOrientation: true,
+        playbackRate: true,
+        aspectRatio: true,
+        
         layers: [
+            // NETFLIX SPINNER IN PLAYER
             {
-                name: 'nf-spinner',
-                html: `<div class="netflix-spinner"></div>`
+                name: 'netflix-spinner-layer',
+                html: `<div class="netflix-spinner" style="display:none"></div>`
             },
+            // NETFLIX FORWARD/BACKWARD ICONS
             {
-                name: 'center-ui',
+                name: 'netflix-ui',
                 html: `
-                <div class="center-ui-overlay">
-                    <div class="action-circle" onclick="mainPlayer.backward=10">
+                <div class="art-layer-netflix-controls">
+                    <div class="nf-control-circle" onclick="activePlayer.backward=10">
                         <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
                     </div>
-                    <div class="action-circle" onclick="mainPlayer.toggle()">
+                    <div class="nf-control-circle" onclick="activePlayer.toggle()">
                         <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     </div>
-                    <div class="action-circle" onclick="mainPlayer.forward=10">
+                    <div class="nf-control-circle" onclick="activePlayer.forward=10">
                         <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
                     </div>
                 </div>`
             }
         ],
+
         customType: {
             m3u8: function(video, url) {
                 if (Hls.isSupported()) {
                     const hls = new Hls();
                     hls.loadSource(url);
                     hls.attachMedia(video);
+                    
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        // 1. Quality
-                        mainPlayer.setting.add({
-                            name: 'quality', html: 'Quality',
-                            selector: [{html: 'Auto', level: -1, default: true}, ...hls.levels.map((l, i) => ({html: l.height + 'p', level: i}))],
+                        // QUALITY SELECTOR
+                        const qLevels = hls.levels.map((l, i) => ({
+                            html: l.height + 'p',
+                            level: i
+                        }));
+                        activePlayer.setting.add({
+                            name: 'quality',
+                            html: 'Quality',
+                            selector: [{html: 'Auto', level: -1, default: true}, ...qLevels],
                             onSelect: (item) => { hls.currentLevel = item.level; return item.html; }
                         });
-                        // 2. Audio
+
+                        // AUDIO TRACK SWITCHER
                         if(hls.audioTracks.length > 0) {
-                            mainPlayer.setting.add({
-                                name: 'audio', html: 'Audio Track',
-                                selector: hls.audioTracks.map((t, i) => ({html: t.name || t.lang, index: i})),
+                            activePlayer.setting.add({
+                                name: 'audio',
+                                html: 'Audio Language',
+                                selector: hls.audioTracks.map((t, i) => ({
+                                    html: t.name || t.lang || `Track ${i+1}`,
+                                    index: i
+                                })),
                                 onSelect: (item) => { hls.audioTrack = item.index; return item.html; }
                             });
                         }
@@ -366,87 +412,105 @@ function mountPlayer(m3u8, subs, storageKey) {
         }
     });
 
-    mainPlayer.on('ready', () => {
-        // Resume
-        const saved = localStorage.getItem('pos_' + storageKey);
-        if(saved) mainPlayer.currentTime = parseFloat(saved);
+    activePlayer.on('ready', () => {
+        // Resume Progress
+        const savedPos = localStorage.getItem('cinema_pos_' + storageKey);
+        if(savedPos) activePlayer.currentTime = parseFloat(savedPos);
 
-        // Subtitles Menu
+        // Subtitle Config
         if(subs.length > 0) {
-            mainPlayer.setting.add({
-                name: 'subs', html: 'Subtitles',
-                selector: [{html: 'Off', url: null, default: true}, ...subs.map(s => ({html: s.lang || s.language, url: APP_CONFIG.PROXY(s.url)}))],
+            activePlayer.setting.add({
+                name: 'subs',
+                html: 'Subtitles',
+                selector: [
+                    {html: 'Off', url: null, default: true},
+                    ...subs.map(s => ({html: s.lang || s.language || 'Unknown', url: ENGINE_PROPS.PROXY(s.url)}))
+                ],
                 onSelect: async (item) => {
-                    if(!item.url) { currentCues = []; document.getElementById('subtitle-text-node').style.display = 'none'; return 'Off'; }
-                    const txt = await fetch(item.url).then(r => r.text());
-                    currentCues = parseVtt(txt);
-                    document.getElementById('subtitle-text-node').style.display = 'inline-block';
+                    if(!item.url) { 
+                        currentCues = []; 
+                        document.getElementById('subtitle-text').style.display = 'none'; 
+                        return 'Off'; 
+                    }
+                    const text = await fetch(item.url).then(r => r.text());
+                    currentCues = parseVttEngine(text);
+                    document.getElementById('subtitle-text').style.display = 'inline-block';
                     return item.html;
                 }
             });
         }
 
-        // Subtitle Delay
-        mainPlayer.setting.add({
-            name: 'sub-delay', html: 'Subtitle Delay',
+        // Subtitle Sync Tool
+        activePlayer.setting.add({
+            name: 'sub-sync',
+            html: 'Subtitle Sync',
             selector: [
-                {html: '-2s', val: -2}, {html: '-1s', val: -1}, {html: '0s', val: 0, default: true}, {html: '+1s', val: 1}, {html: '+2s', val: 2}
+                {html: '-2.0s', val: -2}, {html: '-1.0s', val: -1},
+                {html: 'Original', val: 0, default: true},
+                {html: '+1.0s', val: 1}, {html: '+2.0s', val: 2}
             ],
-            onSelect: (item) => { subDelayOffset = item.val; return item.html; }
+            onSelect: (item) => { subDelay = item.val; return item.html; }
         });
     });
 
-    mainPlayer.on('video:timeupdate', () => {
-        localStorage.setItem('pos_' + storageKey, mainPlayer.currentTime);
+    activePlayer.on('video:timeupdate', () => {
+        localStorage.setItem('cinema_pos_' + storageKey, activePlayer.currentTime);
+        
         if(!currentCues.length) return;
+        const adjustedTime = activePlayer.currentTime + subDelay;
+        const match = currentCues.find(c => adjustedTime >= c.start && adjustedTime <= c.end);
+        const node = document.getElementById('subtitle-text');
         
-        const now = mainPlayer.currentTime + subDelayOffset;
-        const cue = currentCues.find(c => now >= c.start && now <= c.end);
-        const node = document.getElementById('subtitle-text-node');
-        
-        if(cue) {
-            if(cue !== activeCueRef) { node.innerHTML = cue.text; activeCueRef = cue; }
-        } else { node.innerHTML = ''; activeCueRef = null; }
-    });
-}
-
-/* 5. VTT UTILITIES */
-function parseVtt(text) {
-    const lines = text.split('\n');
-    const cues = [];
-    let cur = null;
-    lines.forEach(l => {
-        l = l.trim();
-        if(l.includes('-->')) {
-            const parts = l.split('-->');
-            cur = { start: hmsToS(parts[0]), end: hmsToS(parts[1]), text: [] };
-        } else if(cur && l === '') {
-            cues.push({...cur, text: cur.text.join('<br>')});
-            cur = null;
-        } else if(cur) {
-            cur.text.push(l);
+        if(match) {
+            node.innerHTML = match.text;
+        } else {
+            node.innerHTML = '';
         }
     });
-    return cues;
 }
 
-function hmsToS(t) {
-    const p = t.trim().split(':');
+/* 5. VTT PARSER ENGINE */
+function parseVttEngine(vtt) {
+    const output = [];
+    const blocks = vtt.split(/\n\s*\n/);
+    blocks.forEach(block => {
+        const lines = block.split('\n').filter(l => l.trim() !== '');
+        if(lines.length >= 2 && lines[0].includes('-->')) {
+            const timeArr = lines[0].split('-->');
+            output.push({
+                start: convertToSeconds(timeArr[0]),
+                end: convertToSeconds(timeArr[1]),
+                text: lines.slice(1).join('<br>')
+            });
+        } else if(lines.length >= 3 && lines[1].includes('-->')) {
+            const timeArr = lines[1].split('-->');
+            output.push({
+                start: convertToSeconds(timeArr[0]),
+                end: convertToSeconds(timeArr[1]),
+                text: lines.slice(2).join('<br>')
+            });
+        }
+    });
+    return output;
+}
+
+function convertToSeconds(str) {
+    const p = str.trim().split(':');
     let h=0, m=0, s=0;
-    if(p.length === 3) [h, m, s] = p; else [m, s] = p;
+    if(p.length === 3) { [h, m, s] = p; } else { [m, s] = p; }
     return (+h) * 3600 + (+m) * 60 + parseFloat(s);
 }
 
-function toggleLoader(show, text = "") {
-    const el = document.getElementById('nf-load-screen');
-    el.style.display = show ? 'flex' : 'none';
-    document.getElementById('load-status').innerText = text;
+function toggleEngineLoader(s, txt) {
+    ENGINE_PROPS.LOADER.style.display = s ? 'flex' : 'none';
+    ENGINE_PROPS.STATUS.innerText = txt;
 }
 
-function killEngine() {
-    if(mainPlayer) mainPlayer.destroy();
-    document.getElementById('player-engine').style.display = 'none';
+function shutdownEngine() {
+    if(activePlayer) activePlayer.destroy();
+    document.getElementById('player-wrapper').style.display = 'none';
 }
 </script>
+
 </body>
 </html>
