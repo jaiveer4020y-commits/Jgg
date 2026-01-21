@@ -1,515 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>ULTRA-CINEMA ENGINE | V7.0 PLATINUM</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
-    <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
-    <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<title>CINEMA ENGINE FINAL</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 
-    <style>
-        /* --- DESIGN SYSTEM --- */
-        :root {
-            --nf-red: #E50914;
-            --nf-black: #000000;
-            --nf-dark: #141414;
-            --nf-gray: #b3b3b3;
-            --glow: 0 0 20px rgba(229, 9, 20, 0.4);
-        }
+<link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
+<script src="https://unpkg.com/hls.js@1.5.17"></script>
+<script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
 
-        body, html {
-            margin: 0; padding: 0; background-color: var(--nf-black);
-            color: #fff; font-family: 'Inter', sans-serif; overflow: hidden;
-            height: 100vh; width: 100vw;
-        }
+<style>
+html,body{
+    margin:0;
+    background:#000;
+    color:#fff;
+    height:100%;
+    overflow:hidden;
+    font-family:Inter,system-ui;
+}
 
-        /* --- DASHBOARD LAYER --- */
-        #main-dashboard {
-            position: fixed; inset: 0; z-index: 100;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
-            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+/* ARTPLAYER FIXES */
+.art-loading-icon,
+.art-subtitle{
+    display:none !important;
+}
 
-        .cinema-card {
-            width: 90%; max-width: 550px; padding: 50px;
-            background: var(--nf-dark); border: 1px solid #333;
-            border-radius: 12px; box-shadow: 0 30px 60px rgba(0,0,0,0.8);
-            position: relative;
-        }
+/* NETFLIX LOADER */
+#nf-loader{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    background:#000;
+    z-index:9999;
+}
+#nf-loader img{
+    width:96px;
+    animation:spin 1.1s steps(12) infinite;
+}
+#nf-loader span{
+    margin-top:20px;
+    color:#e50914;
+    letter-spacing:2px;
+    font-weight:700;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-        .brand-title {
-            font-size: 3rem; font-weight: 900; color: var(--nf-red);
-            text-align: center; margin-bottom: 40px; letter-spacing: -2px;
-            text-shadow: var(--glow);
-        }
+/* SUBTITLE OVERLAY */
+#subtitle-layer{
+    position:absolute;
+    bottom:12%;
+    width:100%;
+    display:flex;
+    justify-content:center;
+    pointer-events:none;
+    z-index:9000;
+}
+#subtitle-text{
+    max-width:90%;
+    text-align:center;
+    font-size:22px;
+    line-height:1.4;
+    padding:6px 18px;
+    color:#fff;
+    text-shadow:
+        0 2px 4px #000,
+        0 0 10px #000;
+}
 
-        .input-box { margin-bottom: 25px; position: relative; }
-        .input-box label {
-            display: block; font-size: 11px; font-weight: 800; color: var(--nf-gray);
-            text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px;
-        }
+/* NETFLIX CONTROLS */
+#nf-controls{
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:80px;
+    opacity:0;
+    transition:.3s;
+    z-index:8000;
+}
+.nf-btn{
+    width:90px;height:90px;
+    border-radius:50%;
+    background:rgba(0,0,0,.55);
+    border:1px solid rgba(255,255,255,.2);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+.nf-btn svg{width:40px;fill:#fff}
 
-        input {
-            width: 100%; padding: 18px; background: #080808; border: 1px solid #222;
-            border-radius: 6px; color: #fff; font-size: 16px; outline: none;
-            transition: border-color 0.3s;
-        }
-        input:focus { border-color: var(--nf-red); }
-
-        .selector-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-
-        .play-btn {
-            width: 100%; padding: 20px; background: var(--nf-red); color: #fff;
-            border: none; border-radius: 6px; font-weight: 900; font-size: 18px;
-            cursor: pointer; text-transform: uppercase; transition: transform 0.2s;
-            box-shadow: var(--glow); margin-top: 10px;
-        }
-        .play-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
-
-        /* --- NETFLIX SPINNER COMPONENT --- */
-        .nf-spinner-overlay {
-            position: fixed; inset: 0; background: #000; z-index: 500;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-        }
-
-        .netflix-spinner {
-            width: 100px; height: 100px;
-            background: url('https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png') no-repeat;
-            background-size: contain;
-            animation: nf-spin 1.2s steps(12) infinite;
-        }
-
-        @keyframes nf-spin { 100% { transform: rotate(360deg); } }
-
-        /* --- PLAYER INTERFACE --- */
-        #player-wrapper {
-            position: fixed; inset: 0; background: #000; z-index: 1000; display: none;
-        }
-
-        /* Forward/Backward Control Icons */
-        .art-layer-netflix-controls {
-            display: flex; gap: 80px; align-items: center; justify-content: center;
-            width: 100%; height: 100%; pointer-events: none; opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        /* Show icons on hover or pause */
-        .art-video-player:hover .art-layer-netflix-controls,
-        .art-state-paused .art-layer-netflix-controls { opacity: 1; }
-
-        .nf-control-circle {
-            width: 90px; height: 90px; background: rgba(0,0,0,0.5);
-            border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; pointer-events: auto; backdrop-filter: blur(8px);
-        }
-        .nf-control-circle svg { width: 42px; height: 42px; fill: #fff; }
-        .nf-control-circle:hover { background: var(--nf-red); border-color: var(--nf-red); }
-
-        /* Subtitle Styling */
-        #subtitle-anchor {
-            position: absolute; bottom: 12%; width: 100%; text-align: center;
-            pointer-events: none; z-index: 200;
-        }
-        #subtitle-text {
-            background: rgba(0,0,0,0.8); color: #fff; padding: 6px 24px;
-            font-size: clamp(20px, 4vw, 32px); border-radius: 5px; display: none;
-            text-shadow: 2px 2px 4px #000; font-weight: 600; line-height: 1.4;
-        }
-
-        /* --- SEARCH DROPDOWN --- */
-        #search-results {
-            position: absolute; top: 100%; left: 0; right: 0; background: #111;
-            border: 1px solid #333; max-height: 380px; overflow-y: auto;
-            border-radius: 0 0 8px 8px; z-index: 5000; display: none;
-        }
-        .search-item {
-            display: flex; gap: 20px; padding: 12px; border-bottom: 1px solid #222;
-            cursor: pointer; transition: background 0.2s;
-        }
-        .search-item:hover { background: #222; }
-        .search-item img { width: 50px; height: 75px; object-fit: cover; border-radius: 4px; }
-        .search-item h4 { margin: 0; font-size: 14px; }
-        .search-item p { margin: 4px 0 0 0; color: #888; font-size: 11px; }
-
-        /* --- ARTPLAYER OVERRIDES --- */
-        .art-loading-icon { display: none !important; }
-        .art-loading .netflix-spinner { 
-            display: block !important; position: absolute; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%); z-index: 999;
-        }
-        
-        .exit-btn {
-            position: absolute; top: 30px; right: 30px; z-index: 10001;
-            cursor: pointer; background: rgba(0,0,0,0.5); padding: 10px;
-            border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
-        }
-    </style>
+/* SHOW CONTROLS */
+.show-controls #nf-controls{opacity:1}
+</style>
 </head>
+
 <body>
 
-<div id="main-dashboard">
-    <div class="cinema-card">
-        <div class="brand-title">CINEMA PLATINUM</div>
-        
-        <div class="input-box">
-            <label>Title Search</label>
-            <input type="text" id="user-search" placeholder="Search movies or series...">
-            <div id="search-results"></div>
-        </div>
+<div id="player"></div>
 
-        <div class="selector-row">
-            <div class="input-box">
-                <label>Season</label>
-                <input type="number" id="s-num" value="1" min="1">
-            </div>
-            <div class="input-box">
-                <label>Episode</label>
-                <input type="number" id="e-num" value="1" min="1">
-            </div>
-        </div>
-
-        <input type="hidden" id="tmdb-id-store">
-        <button class="play-btn" onclick="startEngineAction()">Launch Stream</button>
-    </div>
+<div id="nf-loader">
+    <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
+    <span>HANDSHAKING WITH SERVERS…</span>
 </div>
 
-<div id="nf-preloader" class="nf-spinner-overlay">
-    <div class="netflix-spinner"></div>
-    <div id="status-update" style="margin-top: 30px; font-weight: 700; color: #E50914; text-transform: uppercase; letter-spacing: 2px;">Establishing Connection</div>
-</div>
+<div id="subtitle-layer"><div id="subtitle-text"></div></div>
 
-<div id="player-wrapper">
-    <div class="exit-btn" onclick="shutdownEngine()">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+<div id="nf-controls">
+    <div class="nf-btn" onclick="art.currentTime-=10">
+        <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6z"/></svg>
     </div>
-    <div id="artplayer-target" style="width:100%; height:100%;"></div>
-    <div id="subtitle-anchor">
-        <div id="subtitle-text"></div>
+    <div class="nf-btn" onclick="art.toggle()">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </div>
+    <div class="nf-btn" onclick="art.currentTime+=10">
+        <svg viewBox="0 0 24 24"><path d="M4 6v12l8.5-6z"/></svg>
     </div>
 </div>
 
 <script>
-/**
- * CORE ENGINE LOGIC V7.0
- * Features: Multi-Slug Resolver, Netflix Spinner, HLS Pro Audio
- */
+const PROXY = u=>`https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`;
+let art,subs=[],subDelay=0;
 
-const ENGINE_PROPS = {
-    KEY: '463dcd7993ab31d92eb586802fdeee6a',
-    PROXY: (u) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`,
-    LOADER: document.getElementById('nf-preloader'),
-    STATUS: document.getElementById('status-update')
-};
-
-let activePlayer = null;
-let currentCues = [];
-let activeCueIndex = -1;
-let subDelay = 0;
-
-/* 1. AUTO-ROUTING SYSTEM */
-window.addEventListener('DOMContentLoaded', () => {
-    const segments = window.location.pathname.split('/').filter(Boolean);
-    if(segments.length >= 1 && !isNaN(segments[0])) {
-        const id = segments[0];
-        const s = segments[1] || 1;
-        const e = segments[2] || 1;
-        
-        document.getElementById('tmdb-id-store').value = id;
-        document.getElementById('s-num').value = s;
-        document.getElementById('e-num').value = e;
-        
-        runAutomaticResolution(id, s, e);
-    }
-});
-
-async function runAutomaticResolution(id, s, e) {
-    toggleEngineLoader(true, "Resolving Direct Link...");
-    try {
-        // Fetch Metadata
-        let type = 'tv';
-        let meta = await fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${ENGINE_PROPS.KEY}`).then(r => r.json());
-        
-        if(!meta.id) {
-            type = 'movie';
-            meta = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${ENGINE_PROPS.KEY}`).then(r => r.json());
-        }
-
-        if(meta.id) {
-            document.getElementById('user-search').value = meta.name || meta.title;
-            processStreamingHandshake(id, s, e, meta, type);
-        }
-    } catch (e) { toggleEngineLoader(false); }
-}
-
-/* 2. DYNAMIC SEARCH MODULE */
-const searchInput = document.getElementById('user-search');
-const resultsPane = document.getElementById('search-results');
-
-searchInput.addEventListener('input', async () => {
-    const val = searchInput.value;
-    if(val.length < 2) { resultsPane.style.display = 'none'; return; }
-    
-    const raw = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${ENGINE_PROPS.KEY}&query=${encodeURIComponent(val)}`);
-    const data = await raw.json();
-    
-    resultsPane.innerHTML = '';
-    if(data.results) {
-        resultsPane.style.display = 'block';
-        data.results.slice(0, 5).forEach(m => {
-            const row = document.createElement('div');
-            row.className = 'search-item';
-            row.innerHTML = `<img src="https://image.tmdb.org/t/p/w92${m.poster_path}"><div><h4>${m.title || m.name}</h4><p>${m.media_type.toUpperCase()} • ${m.release_date || m.first_air_date}</p></div>`;
-            row.onclick = () => {
-                document.getElementById('tmdb-id-store').value = m.id;
-                searchInput.value = m.title || m.name;
-                resultsPane.style.display = 'none';
-            };
-            resultsPane.appendChild(row);
+/* VTT PARSER */
+function parseVTT(v){
+    const cues=[];
+    v.split(/\n\n+/).forEach(b=>{
+        const l=b.split('\n');
+        const t=l.find(x=>x.includes('-->'));
+        if(!t) return;
+        const i=l.indexOf(t);
+        const [s,e]=t.split('-->');
+        cues.push({
+            s:time(s),
+            e:time(e),
+            t:l.slice(i+1).join('<br>')
         });
-    }
-});
-
-/* 3. MULTI-SLUG STREAM RESOLVER */
-async function startEngineAction() {
-    const id = document.getElementById('tmdb-id-store').value;
-    const s = document.getElementById('s-num').value;
-    const e = document.getElementById('e-num').value;
-    if(!id) return alert("Please select a title.");
-    runAutomaticResolution(id, s, e);
+    });
+    return cues;
+}
+function time(t){
+    const p=t.trim().split(':');
+    return (p.length===3?+p[0]*3600:0)+(+p[p.length-2]*60)+parseFloat(p[p.length-1]);
 }
 
-async function processStreamingHandshake(id, s, e, meta, type) {
-    toggleEngineLoader(true, "Handshaking with Servers...");
-    
-    const baseTitle = (meta.name || meta.title).toLowerCase().replace(/[^a-z0-9\s]/gi, '').trim();
-    const dotTitle = baseTitle.replace(/\s+/g, '.');
-    
-    // VARIATIONS TO TRY (The Slug Fix)
-    const slugs = [];
-    if(type === 'tv') {
-        const padding = `s${s.toString().padStart(2, '0')}.e${e.toString().padStart(2, '0')}`;
-        slugs.push(`${dotTitle}.${padding}`); // e.g. game.of.thrones.s01.e01
-        slugs.push(dotTitle);                 // e.g. game.of.thrones
-        slugs.push(baseTitle.replace(/\s+/g, '-')); // e.g. game-of-thrones
-    } else {
-        const year = (meta.release_date || '').split('-')[0];
-        slugs.push(`${dotTitle}.${year}`);
-        slugs.push(dotTitle);
-    }
+/* PLAYER */
+art=new Artplayer({
+    container:'#player',
+    autoplay:true,
+    fullscreen:true,
+    setting:true,
+    lock:true,
+    autoOrientation:true,
+    customType:{
+        m3u8:(v,u)=>{
+            const h=new Hls();
+            h.loadSource(u);
+            h.attachMedia(v);
 
-    let successData = null;
+            h.on(Hls.Events.MANIFEST_PARSED,()=>{
+                document.getElementById('nf-loader').style.display='none';
 
-    for (let currentSlug of slugs) {
-        try {
-            console.log("Resolving Slug Attempt:", currentSlug);
-            const endpoint = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(currentSlug)}&id=${id}&season=${s}&episode=${e}`;
-            const res = await fetch(ENGINE_PROPS.PROXY(endpoint)).then(r => r.json());
-            
-            if(res.m3u8_url) {
-                successData = res;
-                break;
-            }
-        } catch (err) {}
-    }
+                /* QUALITY */
+                art.setting.add({
+                    name:'quality',
+                    html:'Quality',
+                    selector:[{html:'Auto',level:-1,default:true}]
+                        .concat(h.levels.map((l,i)=>({html:l.height+'p',level:i}))),
+                    onSelect:i=>{h.currentLevel=i.level;return i.html}
+                });
 
-    if(!successData) {
-        alert("No stream found for this slug variation. Retrying...");
-        toggleEngineLoader(false);
-        return;
-    }
-
-    // Subtitle Handshake
-    let subApi = `https://sub.wyzie.ru/search?id=${id}`;
-    if(type === 'tv') subApi += `&season=${s}&episode=${e}`;
-    const subRes = await fetch(ENGINE_PROPS.PROXY(subApi)).then(r => r.json()).catch(() => []);
-
-    launchProPlayer(ENGINE_PROPS.PROXY(successData.m3u8_url), subRes, `${id}_${s}_${e}`);
-}
-
-/* 4. ARTPLAYER PRO CORE */
-function launchProPlayer(m3u8, subs, storageKey) {
-    document.getElementById('player-wrapper').style.display = 'block';
-    toggleEngineLoader(false);
-
-    activePlayer = new Artplayer({
-        container: '#artplayer-target',
-        url: m3u8,
-        type: 'm3u8',
-        autoplay: true,
-        autoPlayback: true,
-        fullscreen: true,
-        setting: true,
-        theme: '#E50914',
-        lock: true,
-        fastForward: true,
-        autoOrientation: true,
-        playbackRate: true,
-        aspectRatio: true,
-        
-        layers: [
-            // NETFLIX SPINNER IN PLAYER
-            {
-                name: 'netflix-spinner-layer',
-                html: `<div class="netflix-spinner" style="display:none"></div>`
-            },
-            // NETFLIX FORWARD/BACKWARD ICONS
-            {
-                name: 'netflix-ui',
-                html: `
-                <div class="art-layer-netflix-controls">
-                    <div class="nf-control-circle" onclick="activePlayer.backward=10">
-                        <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
-                    </div>
-                    <div class="nf-control-circle" onclick="activePlayer.toggle()">
-                        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    </div>
-                    <div class="nf-control-circle" onclick="activePlayer.forward=10">
-                        <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
-                    </div>
-                </div>`
-            }
-        ],
-
-        customType: {
-            m3u8: function(video, url) {
-                if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(url);
-                    hls.attachMedia(video);
-                    
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        // QUALITY SELECTOR
-                        const qLevels = hls.levels.map((l, i) => ({
-                            html: l.height + 'p',
-                            level: i
-                        }));
-                        activePlayer.setting.add({
-                            name: 'quality',
-                            html: 'Quality',
-                            selector: [{html: 'Auto', level: -1, default: true}, ...qLevels],
-                            onSelect: (item) => { hls.currentLevel = item.level; return item.html; }
-                        });
-
-                        // AUDIO TRACK SWITCHER
-                        if(hls.audioTracks.length > 0) {
-                            activePlayer.setting.add({
-                                name: 'audio',
-                                html: 'Audio Language',
-                                selector: hls.audioTracks.map((t, i) => ({
-                                    html: t.name || t.lang || `Track ${i+1}`,
-                                    index: i
-                                })),
-                                onSelect: (item) => { hls.audioTrack = item.index; return item.html; }
-                            });
-                        }
+                /* AUDIO */
+                if(h.audioTracks.length){
+                    art.setting.add({
+                        name:'audio',
+                        html:'Audio',
+                        selector:h.audioTracks.map((a,i)=>({
+                            html:a.name||a.lang||`Track ${i+1}`,i
+                        })),
+                        onSelect:x=>{h.audioTrack=x.i;return x.html}
                     });
                 }
-            }
-        }
-    });
-
-    activePlayer.on('ready', () => {
-        // Resume Progress
-        const savedPos = localStorage.getItem('cinema_pos_' + storageKey);
-        if(savedPos) activePlayer.currentTime = parseFloat(savedPos);
-
-        // Subtitle Config
-        if(subs.length > 0) {
-            activePlayer.setting.add({
-                name: 'subs',
-                html: 'Subtitles',
-                selector: [
-                    {html: 'Off', url: null, default: true},
-                    ...subs.map(s => ({html: s.lang || s.language || 'Unknown', url: ENGINE_PROPS.PROXY(s.url)}))
-                ],
-                onSelect: async (item) => {
-                    if(!item.url) { 
-                        currentCues = []; 
-                        document.getElementById('subtitle-text').style.display = 'none'; 
-                        return 'Off'; 
-                    }
-                    const text = await fetch(item.url).then(r => r.text());
-                    currentCues = parseVttEngine(text);
-                    document.getElementById('subtitle-text').style.display = 'inline-block';
-                    return item.html;
-                }
             });
         }
+    },
+    url:PROXY('YOUR_M3U8_URL_HERE')
+});
 
-        // Subtitle Sync Tool
-        activePlayer.setting.add({
-            name: 'sub-sync',
-            html: 'Subtitle Sync',
-            selector: [
-                {html: '-2.0s', val: -2}, {html: '-1.0s', val: -1},
-                {html: 'Original', val: 0, default: true},
-                {html: '+1.0s', val: 1}, {html: '+2.0s', val: 2}
-            ],
-            onSelect: (item) => { subDelay = item.val; return item.html; }
-        });
-    });
+/* SUBTITLES LOAD */
+fetch(PROXY('YOUR_VTT_URL_HERE'))
+.then(r=>r.text())
+.then(t=>subs=parseVTT(t));
 
-    activePlayer.on('video:timeupdate', () => {
-        localStorage.setItem('cinema_pos_' + storageKey, activePlayer.currentTime);
-        
-        if(!currentCues.length) return;
-        const adjustedTime = activePlayer.currentTime + subDelay;
-        const match = currentCues.find(c => adjustedTime >= c.start && adjustedTime <= c.end);
-        const node = document.getElementById('subtitle-text');
-        
-        if(match) {
-            node.innerHTML = match.text;
-        } else {
-            node.innerHTML = '';
-        }
-    });
+/* SUB RENDER */
+art.on('video:timeupdate',()=>{
+    const t=art.currentTime+subDelay;
+    const c=subs.find(x=>t>=x.s&&t<=x.e);
+    document.getElementById('subtitle-text').innerHTML=c?c.t:'';
+});
+
+/* CONTROLS AUTO HIDE */
+let hideTimer;
+function showControls(){
+    document.body.classList.add('show-controls');
+    clearTimeout(hideTimer);
+    hideTimer=setTimeout(()=>document.body.classList.remove('show-controls'),3000);
 }
-
-/* 5. VTT PARSER ENGINE */
-function parseVttEngine(vtt) {
-    const output = [];
-    const blocks = vtt.split(/\n\s*\n/);
-    blocks.forEach(block => {
-        const lines = block.split('\n').filter(l => l.trim() !== '');
-        if(lines.length >= 2 && lines[0].includes('-->')) {
-            const timeArr = lines[0].split('-->');
-            output.push({
-                start: convertToSeconds(timeArr[0]),
-                end: convertToSeconds(timeArr[1]),
-                text: lines.slice(1).join('<br>')
-            });
-        } else if(lines.length >= 3 && lines[1].includes('-->')) {
-            const timeArr = lines[1].split('-->');
-            output.push({
-                start: convertToSeconds(timeArr[0]),
-                end: convertToSeconds(timeArr[1]),
-                text: lines.slice(2).join('<br>')
-            });
-        }
-    });
-    return output;
-}
-
-function convertToSeconds(str) {
-    const p = str.trim().split(':');
-    let h=0, m=0, s=0;
-    if(p.length === 3) { [h, m, s] = p; } else { [m, s] = p; }
-    return (+h) * 3600 + (+m) * 60 + parseFloat(s);
-}
-
-function toggleEngineLoader(s, txt) {
-    ENGINE_PROPS.LOADER.style.display = s ? 'flex' : 'none';
-    ENGINE_PROPS.STATUS.innerText = txt;
-}
-
-function shutdownEngine() {
-    if(activePlayer) activePlayer.destroy();
-    document.getElementById('player-wrapper').style.display = 'none';
-}
+document.addEventListener('mousemove',showControls);
+document.addEventListener('touchstart',showControls);
 </script>
 
 </body>
