@@ -2,454 +2,406 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CINEMA QUANTUM ENGINE | V13.0 TITAN EDITION</title>
+    <title>CINEMA QUANTUM ENGINE | V14.0 APEX STABLE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
     <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
     <script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
 
     <style>
         /* ================================================================
-        1. TITAN DESIGN SYSTEM (TDS) - CINEMATIC GLASSMORPHISM
+        1. APEX DESIGN SYSTEM (ADS) 
         ================================================================
         */
         :root {
             --nf-red: #E50914;
             --nf-black: #050505;
-            --nf-dark-grey: #141414;
-            --accent-glow: rgba(229, 9, 20, 0.5);
-            --glass: rgba(10, 10, 10, 0.85);
+            --nf-grey: #141414;
+            --glass: rgba(10, 10, 10, 0.9);
             --blur: blur(40px);
-            --font-main: 'Inter', sans-serif;
-            --font-display: 'Outfit', sans-serif;
-            --transition-fluid: cubic-bezier(0.23, 1, 0.32, 1);
+            --transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            --glow: 0 0 25px rgba(229, 9, 20, 0.4);
         }
 
-        /* RESET & SCROLLBARS */
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; outline: none !important; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: var(--nf-red); border-radius: 10px; }
-
+        
         body, html {
             margin: 0; padding: 0; width: 100vw; height: 100vh;
             background-color: var(--nf-black); color: #fff;
-            font-family: var(--font-main); overflow: hidden;
+            font-family: 'Inter', sans-serif; overflow: hidden;
             user-select: none;
         }
 
-        /* ================================================================
-        2. KINETIC ANIMATIONS
-        ================================================================
-        */
-        @keyframes netflix-spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes titan-fade-in {
-            from { opacity: 0; transform: scale(1.05); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        @keyframes slide-up-ui {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes pulse-red {
-            0% { text-shadow: 0 0 10px rgba(229, 9, 20, 0.4); }
-            50% { text-shadow: 0 0 25px rgba(229, 9, 20, 0.8); }
-            100% { text-shadow: 0 0 10px rgba(229, 9, 20, 0.4); }
-        }
+        /* ANIMATION REFINERY */
+        @keyframes nf-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes logo-shimmer { 0% { filter: brightness(1) drop-shadow(0 0 10px rgba(0,0,0,0.5)); } 50% { filter: brightness(1.3) drop-shadow(0 0 25px var(--nf-red)); } 100% { filter: brightness(1) drop-shadow(0 0 10px rgba(0,0,0,0.5)); } }
 
         /* ================================================================
-        3. QUANTUM DASHBOARD ARCHITECTURE
+        2. DASHBOARD & INTERFACE
         ================================================================
         */
-        #dashboard-layer {
+        #dashboard-engine {
             position: fixed; inset: 0; z-index: 100;
-            background: radial-gradient(circle at 50% -20%, #2a0505 0%, #050505 100%);
+            background: radial-gradient(circle at center, #1e0505 0%, #000 100%);
             display: flex; align-items: center; justify-content: center;
-            transition: transform 1.2s var(--transition-fluid), opacity 0.8s;
+            transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s;
         }
 
-        .dashboard-exit { transform: translateY(-100%) scale(1.1); opacity: 0; pointer-events: none; }
+        .dashboard-hidden { transform: translateY(-100%) scale(1.1); opacity: 0; pointer-events: none; }
 
-        .titan-container {
-            width: 90%; max-width: 550px; padding: 60px;
+        .quantum-shell {
+            width: 95%; max-width: 500px; padding: 50px;
             background: var(--glass); backdrop-filter: var(--blur);
-            border: 1px solid rgba(255,255,255,0.08); border-radius: 40px;
-            box-shadow: 0 50px 100px rgba(0,0,0,0.9);
-            animation: titan-fade-in 1s ease-out;
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 35px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+            animation: fade-up 0.8s ease-out;
         }
 
-        .titan-brand {
-            text-align: center; margin-bottom: 45px;
+        .shell-title {
+            font-family: 'Outfit', sans-serif; font-size: 2.8rem; font-weight: 900;
+            text-align: center; color: var(--nf-red); margin-bottom: 40px;
+            text-transform: uppercase; letter-spacing: -2px;
         }
 
-        .titan-brand h1 {
-            font-family: var(--font-display); font-size: 3.2rem; font-weight: 900;
-            color: var(--nf-red); letter-spacing: -4px; text-transform: uppercase;
-            margin: 0; animation: pulse-red 3s infinite;
+        .selector-box {
+            display: flex; gap: 10px; margin-bottom: 30px;
+            background: #000; padding: 6px; border-radius: 18px;
         }
 
-        .mode-switcher {
-            display: flex; gap: 10px; margin-bottom: 35px;
-            background: rgba(0,0,0,0.6); padding: 8px; border-radius: 20px;
+        .selector-btn {
+            flex: 1; padding: 14px; border: none; border-radius: 14px;
+            background: transparent; color: #666; font-weight: 800;
+            cursor: pointer; transition: var(--transition); text-transform: uppercase;
+            font-size: 12px; letter-spacing: 1px;
         }
 
-        .mode-opt {
-            flex: 1; padding: 15px; border: none; border-radius: 15px;
-            background: transparent; color: #555; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 2px; cursor: pointer;
-            transition: all 0.4s var(--transition-fluid); font-size: 12px;
+        .selector-btn.active { background: var(--nf-red); color: #fff; box-shadow: var(--glow); }
+
+        .input-wrap { margin-bottom: 25px; position: relative; }
+        .input-wrap label {
+            display: block; font-size: 10px; font-weight: 900; color: var(--nf-red);
+            text-transform: uppercase; margin-bottom: 10px; letter-spacing: 2px;
         }
 
-        .mode-opt.active { background: var(--nf-red); color: #fff; box-shadow: 0 10px 20px rgba(229, 9, 20, 0.3); }
-
-        .form-group { margin-bottom: 30px; position: relative; }
-        .form-group label {
-            display: block; font-size: 11px; font-weight: 900; color: var(--nf-red);
-            text-transform: uppercase; margin-bottom: 15px; letter-spacing: 3px;
+        .main-field {
+            width: 100%; padding: 18px; background: #080808; border: 1px solid #222;
+            border-radius: 15px; color: #fff; font-size: 16px; transition: 0.3s;
         }
 
-        .titan-input {
-            width: 100%; padding: 20px; background: #000; border: 1px solid #222;
-            border-radius: 18px; color: #fff; font-size: 17px; font-family: var(--font-main);
-            transition: all 0.3s;
+        .main-field:focus { border-color: var(--nf-red); background: #000; }
+
+        .results-tray {
+            position: absolute; width: 100%; max-height: 300px; background: #0a0a0a;
+            top: 100%; left: 0; z-index: 500; border-radius: 15px; overflow-y: auto;
+            display: none; border: 1px solid #222; margin-top: 10px;
         }
 
-        .titan-input:focus { border-color: var(--nf-red); box-shadow: 0 0 0 5px rgba(229, 9, 20, 0.15); }
-
-        .search-bridge {
-            position: absolute; top: 100%; left: 0; right: 0;
-            background: #080808; border: 1px solid #1a1a1a; border-radius: 20px;
-            margin-top: 15px; max-height: 350px; overflow-y: auto;
-            z-index: 1000; display: none; box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+        .tray-item {
+            display: flex; gap: 15px; padding: 12px; border-bottom: 1px solid #111;
+            cursor: pointer; align-items: center; transition: 0.2s;
         }
 
-        .search-node {
-            display: flex; gap: 20px; padding: 15px; border-bottom: 1px solid #111;
-            cursor: pointer; align-items: center; transition: background 0.2s;
+        .tray-item:hover { background: #1a1a1a; }
+        .tray-item img { width: 40px; height: 60px; border-radius: 5px; object-fit: cover; }
+
+        .boot-btn {
+            width: 100%; padding: 20px; background: var(--nf-red); color: #fff;
+            border: none; border-radius: 15px; font-weight: 900; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 3px; font-size: 16px;
+            margin-top: 10px; box-shadow: var(--glow); transition: 0.3s;
         }
 
-        .search-node:hover { background: #111; }
-        .search-node img { width: 50px; height: 75px; border-radius: 8px; object-fit: cover; }
-        .search-meta h5 { margin: 0; font-size: 16px; font-family: var(--font-display); }
-        .search-meta p { margin: 5px 0 0; font-size: 13px; color: #666; font-weight: 600; }
-
-        .launch-trigger {
-            width: 100%; padding: 24px; background: var(--nf-red); color: #fff;
-            border: none; border-radius: 18px; font-weight: 900; font-size: 18px;
-            text-transform: uppercase; letter-spacing: 4px; cursor: pointer;
-            transition: all 0.3s; box-shadow: 0 15px 30px rgba(229, 9, 20, 0.4);
-        }
-
-        .launch-trigger:active { transform: scale(0.96); }
+        .boot-btn:hover { filter: brightness(1.2); transform: scale(1.02); }
 
         /* ================================================================
-        4. LOADING HUB (TMDB LOGO + SMOOTH SPINNER)
+        3. QUANTUM LOADER HUB
         ================================================================
         */
-        #loading-overlay {
+        #loader-hub {
             position: fixed; inset: 0; z-index: 900; background: #000;
             display: none; align-items: center; justify-content: center;
             flex-direction: column;
         }
 
-        #loading-backdrop {
+        #bg-backdrop {
             position: absolute; inset: 0; width: 100%; height: 100%;
-            object-fit: cover; opacity: 0; transition: opacity 2.5s ease-in-out;
-            filter: brightness(0.2) blur(30px); transform: scale(1.15);
+            object-fit: cover; opacity: 0; transition: opacity 2s;
+            filter: brightness(0.25) blur(25px); transform: scale(1.1);
         }
 
-        .loading-stack {
+        .loader-content {
             z-index: 10; text-align: center; display: flex;
-            flex-direction: column; align-items: center; gap: 50px;
-            animation: titan-fade-in 1.2s forwards;
+            flex-direction: column; align-items: center; gap: 40px;
         }
 
-        #tmdb-brand-logo {
-            max-width: 350px; max-height: 180px; object-fit: contain;
-            filter: drop-shadow(0 0 30px rgba(0,0,0,1));
+        #brand-logo-img {
+            max-width: 300px; max-height: 150px; object-fit: contain;
+            animation: logo-shimmer 4s infinite ease-in-out;
             display: none;
         }
 
-        .nf-spinner-wrap img {
-            width: 85px; height: 85px;
-            animation: netflix-spin 2s linear infinite;
+        .nf-spinner-container img {
+            width: 80px; height: 80px;
+            animation: nf-rotate 2s linear infinite;
         }
 
-        #loading-status {
-            font-size: 13px; color: var(--nf-red); font-weight: 900;
-            text-transform: uppercase; letter-spacing: 6px;
+        #loader-status {
+            font-size: 12px; color: var(--nf-red); font-weight: 800;
+            text-transform: uppercase; letter-spacing: 5px;
+            text-shadow: 0 0 10px rgba(229,9,20,0.5);
         }
 
         /* ================================================================
-        5. ARTPLAYER TITAN VIEWPORT & CUSTOM UI
+        4. PLAYER VIEWPORT & CUSTOM UI
         ================================================================
         */
-        #player-viewport { 
-            position: fixed; inset: 0; background: #000; 
-            z-index: 1000; display: none; 
-        }
+        #viewport-container { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; }
 
-        /* FORCED ICON STYLING - NO BG, MINIATURIZED */
+        /* CENTER CONTROLS - RESTORED ORIGINAL ICONS */
         .mobileCenterControls_playerControlsInnerContainer__6MCmU {
             position: absolute; inset: 0; display: flex; align-items: center;
-            justify-content: center; gap: 15vw; pointer-events: none;
-            opacity: 0; transition: opacity 0.5s var(--transition-fluid);
-            z-index: 60;
+            justify-content: center; gap: 10vw; pointer-events: none;
+            opacity: 0; transition: opacity 0.4s var(--transition);
+            z-index: 100;
         }
-
         .art-hover .mobileCenterControls_playerControlsInnerContainer__6MCmU,
         .art-state-paused .mobileCenterControls_playerControlsInnerContainer__6MCmU { opacity: 1; }
 
-        .btn-icon-logic {
+        .videasy-scale {
             background: transparent !important;
-            border: none; width: 40px; height: 40px; 
+            border: none; width: 50px; height: 50px; 
             display: flex; align-items: center; justify-content: center; 
             color: #fff; cursor: pointer; pointer-events: auto; 
-            transition: 0.3s; filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+            transition: 0.2s ease;
         }
+        .videasy-scale:hover { transform: scale(1.2); color: var(--nf-red); }
+        .videasy-icon-lg { width: 32px; height: 32px; }
 
-        .btn-icon-logic:hover { transform: scale(1.3); color: var(--nf-red); }
-        .btn-icon-logic svg { width: 28px; height: 28px; }
-        
-        #MainPlayBtn { width: 65px; height: 65px; }
-        #MainPlayBtn svg { width: 40px; height: 40px; }
+        #BtnPlayToggle { width: 80px; height: 80px; }
+        #BtnPlayToggle .videasy-icon-lg { width: 45px; height: 45px; }
 
-        /* EXIT BUTTON */
-        .exit-nav {
-            position: absolute; top: 40px; left: 40px; z-index: 10001;
-            cursor: pointer; background: rgba(0,0,0,0.6); padding: 18px;
+        /* LOADING OVERRIDE */
+        .art-loading-icon, .art-state-loading .art-loading-icon { display: none !important; }
+
+        .exit-trigger {
+            position: absolute; top: 30px; left: 30px; z-index: 10001;
+            cursor: pointer; background: rgba(0,0,0,0.4); padding: 12px;
             border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
-            transition: 0.4s var(--transition-fluid);
+            transition: 0.3s; backdrop-filter: blur(10px);
         }
-        .exit-nav:hover { background: var(--nf-red); transform: translateX(-10px); }
-
-        /* SETTINGS OVERRIDE */
-        .art-settings { 
-            background: rgba(5,5,5,0.96) !important; 
-            backdrop-filter: blur(25px) !important; 
-            border: 1px solid rgba(255,255,255,0.05) !important;
-            border-radius: 20px !important;
-        }
-        .art-setting-item { height: 45px !important; font-size: 14px !important; font-weight: 700 !important; }
-        .art-setting-item:hover { background: var(--nf-red) !important; }
+        .exit-trigger:hover { background: var(--nf-red); transform: translateX(-5px); }
 
     </style>
 </head>
 <body>
 
-<div id="dashboard-layer">
-    <div class="titan-container">
-        <div class="titan-brand">
-            <h1>Cinema Titan</h1>
-        </div>
+<div id="dashboard-engine">
+    <div class="quantum-shell">
+        <div class="shell-title">Cinema Apex</div>
         
-        <div class="mode-switcher">
-            <button class="mode-opt active" id="opt-tv" onclick="handleMode('tv')">TV Series</button>
-            <button class="mode-opt" id="opt-movie" onclick="handleMode('movie')">Feature Film</button>
+        <div class="selector-box">
+            <button class="selector-btn active" id="sel-tv" onclick="toggleMedia('tv')">Series</button>
+            <button class="selector-btn" id="sel-movie" onclick="toggleMedia('movie')">Movie</button>
         </div>
 
-        <div class="form-group">
-            <label>Master Search Interface</label>
-            <input type="text" id="quantum-search" class="titan-input" placeholder="Enter title to begin..." autocomplete="off">
-            <div id="bridge-results" class="search-bridge"></div>
+        <div class="input-wrap">
+            <label>Title Intelligence</label>
+            <input type="text" id="search-input" class="main-field" placeholder="Search for content..." autocomplete="off">
+            <div id="results-tray" class="results-tray"></div>
         </div>
 
-        <div id="tv-logic-gate">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
+        <div id="episode-logic-container">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="input-wrap">
                     <label>Season</label>
-                    <input type="number" id="inp-s" class="titan-input" value="1" min="1">
+                    <input type="number" id="inp-season" class="main-field" value="1" min="1">
                 </div>
-                <div class="form-group">
+                <div class="input-wrap">
                     <label>Episode</label>
-                    <input type="number" id="inp-e" class="titan-input" value="1" min="1">
+                    <input type="number" id="inp-episode" class="main-field" value="1" min="1">
                 </div>
             </div>
         </div>
 
-        <button class="launch-trigger" onclick="initializeTitanSequence()">Engage Playback</button>
+        <button class="boot-btn" onclick="initializeSequence()">Establish Connection</button>
     </div>
 </div>
 
-<div id="loading-overlay">
-    <img id="loading-backdrop" src="">
-    <div class="loading-stack">
-        <img id="tmdb-brand-logo" src="">
-        <div class="nf-spinner-wrap">
+<div id="loader-hub">
+    <img id="bg-backdrop" src="">
+    <div class="loader-content">
+        <img id="brand-logo-img" src="">
+        <div class="nf-spinner-container">
             <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" alt="Loading">
         </div>
-        <div id="loading-status">Syncing Quantum Nodes...</div>
+        <div id="loader-status">Initializing Quantum Tunnel...</div>
     </div>
 </div>
 
-<div id="player-viewport">
-    <div class="exit-nav" onclick="killTitanEngine()">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+<div id="viewport-container">
+    <div class="exit-trigger" onclick="killEngine()">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
     </div>
-    <div id="artplayer-target" style="width:100%; height:100%;"></div>
+    <div id="art-target-node" style="width:100%; height:100%;"></div>
 </div>
 
 <script>
 /**
- * CINEMA QUANTUM ENGINE V13.0 - TITAN CORE
- * Logic: HLS Resolver, Wyzie Subtitle Scraper, Strict Settings Force
+ * CINEMA QUANTUM CORE ENGINE v14.0 APEX
+ * Fixed Subtitle Logic, Audio Manifest Handling, Original Icons Restored
  */
 
-const ENGINE = {
+const APEX = {
     TMDB_KEY: '463dcd7993ab31d92eb586802fdeee6a',
     PROXY: (u) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`,
     MODE: 'tv',
     ID: null,
     TITLE: '',
     YEAR: '',
+    SLUG: '',
     PLAYER: null,
     HLS: null,
-    SLUG: '',
-    SUBS: []
+    SUBS_CACHE: []
 };
 
-// 1. SEARCH INTELLIGENCE
-const qSearch = document.getElementById('quantum-search');
-const qBridge = document.getElementById('bridge-results');
+// 1. SEARCH BRIDGE
+const sInput = document.getElementById('search-input');
+const sTray = document.getElementById('results-tray');
 
-qSearch.addEventListener('input', async (e) => {
-    const val = e.target.value;
-    if(val.length < 2) { qBridge.style.display = 'none'; return; }
+sInput.addEventListener('input', async (e) => {
+    const q = e.target.value;
+    if(q.length < 2) { sTray.style.display = 'none'; return; }
 
     try {
-        const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${ENGINE.TMDB_KEY}&query=${encodeURIComponent(val)}`);
+        const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${APEX.TMDB_KEY}&query=${encodeURIComponent(q)}`);
         const data = await r.json();
         
-        qBridge.innerHTML = '';
+        sTray.innerHTML = '';
         if(data.results.length > 0) {
-            qBridge.style.display = 'block';
-            data.results.slice(0, 10).forEach(m => {
-                if(m.media_type !== 'tv' && m.media_type !== 'movie') return;
-                
-                const yr = (m.release_date || m.first_air_date || '').split('-')[0];
-                const node = document.createElement('div');
-                node.className = 'search-node';
-                node.innerHTML = `
-                    <img src="https://image.tmdb.org/t/p/w92${m.poster_path}" onerror="this.src='https://via.placeholder.com/92x138/000/fff?text=?'">
-                    <div class="search-meta">
-                        <h5>${m.title || m.name}</h5>
-                        <p>${m.media_type.toUpperCase()} • ${yr || 'N/A'}</p>
+            sTray.style.display = 'block';
+            data.results.slice(0, 10).forEach(item => {
+                if(item.media_type !== 'tv' && item.media_type !== 'movie') return;
+                const yr = (item.release_date || item.first_air_date || '').split('-')[0];
+                const div = document.createElement('div');
+                div.className = 'tray-item';
+                div.innerHTML = `
+                    <img src="https://image.tmdb.org/t/p/w92${item.poster_path}" onerror="this.src='https://via.placeholder.com/92x138?text=?'">
+                    <div>
+                        <div style="font-weight:800; font-size:14px;">${item.title || item.name}</div>
+                        <div style="font-size:11px; color:#888;">${item.media_type.toUpperCase()} • ${yr}</div>
                     </div>
                 `;
-                node.onclick = () => {
-                    ENGINE.ID = m.id;
-                    ENGINE.TITLE = m.title || m.name;
-                    ENGINE.YEAR = yr;
-                    ENGINE.MODE = m.media_type;
-                    qSearch.value = ENGINE.TITLE;
-                    qBridge.style.display = 'none';
-                    handleMode(ENGINE.MODE);
+                div.onclick = () => {
+                    APEX.ID = item.id;
+                    APEX.TITLE = item.title || item.name;
+                    APEX.YEAR = yr;
+                    APEX.MODE = item.media_type;
+                    sInput.value = APEX.TITLE;
+                    sTray.style.display = 'none';
+                    toggleMedia(APEX.MODE);
                 };
-                qBridge.appendChild(node);
+                sTray.appendChild(div);
             });
         }
-    } catch(err) { console.error("Bridge Error", err); }
+    } catch(err) { console.error("Search Fail"); }
 });
 
-function handleMode(m) {
-    ENGINE.MODE = m;
-    document.querySelectorAll('.mode-opt').forEach(b => b.classList.remove('active'));
-    document.getElementById(`opt-${m}`).classList.add('active');
-    document.getElementById('tv-logic-gate').style.display = m === 'tv' ? 'block' : 'none';
+function toggleMedia(m) {
+    APEX.MODE = m;
+    document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`sel-${m}`).classList.add('active');
+    document.getElementById('episode-logic-container').style.display = m === 'tv' ? 'block' : 'none';
 }
 
-// 2. QUANTUM SEQUENCE & SUBTITLE SCRAPER
-async function initializeTitanSequence() {
-    if(!ENGINE.ID) return alert("Identify a target title first.");
+// 2. INITIALIZATION SEQUENCE (FIXED SUBTITLE & SLUG LOGIC)
+async function initializeSequence() {
+    if(!APEX.ID) return alert("Select a title first");
 
-    const loader = document.getElementById('loading-overlay');
-    loader.style.display = 'flex';
-    document.getElementById('loading-status').innerText = "Acquiring Meta-Data...";
+    const hub = document.getElementById('loader-hub');
+    hub.style.display = 'flex';
+    document.getElementById('loader-status').innerText = "Acquiring Media Data...";
 
-    // Metadata & Logo Fetching
+    // Fetch Backdrop & Logo
     try {
         const [meta, imgs] = await Promise.all([
-            fetch(`https://api.themoviedb.org/3/${ENGINE.MODE}/${ENGINE.ID}?api_key=${ENGINE.TMDB_KEY}`).then(r=>r.json()),
-            fetch(`https://api.themoviedb.org/3/${ENGINE.MODE}/${ENGINE.ID}/images?api_key=${ENGINE.TMDB_KEY}`).then(r=>r.json())
+            fetch(`https://api.themoviedb.org/3/${APEX.MODE}/${APEX.ID}?api_key=${APEX.TMDB_KEY}`).then(r=>r.json()),
+            fetch(`https://api.themoviedb.org/3/${APEX.MODE}/${APEX.ID}/images?api_key=${APEX.TMDB_KEY}`).then(r=>r.json())
         ]);
 
         if(meta.backdrop_path) {
-            const bg = document.getElementById('loading-backdrop');
+            const bg = document.getElementById('bg-backdrop');
             bg.src = `https://image.tmdb.org/t/p/original${meta.backdrop_path}`;
             bg.style.opacity = '1';
         }
 
-        const logoNode = document.getElementById('tmdb-brand-logo');
+        const logo = document.getElementById('brand-logo-img');
         const bestLogo = imgs.logos.find(l => l.file_path.endsWith('.png'));
         if(bestLogo) {
-            logoNode.src = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
-            logoNode.style.display = 'block';
+            logo.src = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
+            logo.style.display = 'block';
         }
     } catch(e) { console.warn("Meta Fail"); }
 
-    // SLUG LOGIC FIX
-    const s = document.getElementById('inp-s').value;
-    const e = document.getElementById('inp-e').value;
-    const cleanTitle = ENGINE.TITLE.toLowerCase().replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '.');
-    
-    if(ENGINE.MODE === 'tv') {
+    const s = document.getElementById('inp-season').value;
+    const e = document.getElementById('inp-episode').value;
+    const cleanTitle = APEX.TITLE.toLowerCase().replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '.');
+
+    // Requirement: MOVIE SLUG = title.year
+    if(APEX.MODE === 'tv') {
         const sP = s.toString().padStart(2, '0');
         const eP = e.toString().padStart(2, '0');
-        ENGINE.SLUG = `${cleanTitle}.s${sP}e${eP}`;
+        APEX.SLUG = `${cleanTitle}.s${sP}e${eP}`;
     } else {
-        ENGINE.SLUG = `${cleanTitle}.${ENGINE.YEAR}`;
+        APEX.SLUG = `${cleanTitle}.${APEX.YEAR}`;
     }
 
-    document.getElementById('loading-status').innerText = `Scraping Subs: ${ENGINE.SLUG}`;
+    document.getElementById('loader-status').innerText = `Resolving Subtitles...`;
 
-    // SUBTITLE SCRAPING FROM sub.wyzie.ru
+    // FIX: SUBTITLE FETCHING LOGIC (ID BASED)
     try {
-        const subRes = await fetch(ENGINE.PROXY(`https://sub.wyzie.ru/search?title=${encodeURIComponent(ENGINE.SLUG)}`)).then(r=>r.json());
-        // Map wyzie results to Artplayer format
-        if(subRes && Array.isArray(subRes)) {
-            ENGINE.SUBS = subRes.map(sub => ({
+        let subUrl = `https://sub.wyzie.ru/search?id=${APEX.ID}`;
+        if(APEX.MODE === 'tv') {
+            subUrl += `&season=${s}&episode=${e}`;
+        }
+        
+        const subData = await fetch(APEX.PROXY(subUrl)).then(r => r.json());
+        if(subData && Array.isArray(subData)) {
+            APEX.SUBS_CACHE = subData.map(sub => ({
                 html: sub.lang || sub.language || 'Unknown',
-                url: ENGINE.PROXY(sub.url),
+                url: APEX.PROXY(sub.url),
                 name: sub.lang
             }));
         }
     } catch(err) { console.warn("Subtitle Scrape Empty"); }
 
-    document.getElementById('loading-status').innerText = "Connecting to Stream...";
+    document.getElementById('loader-status').innerText = "Negotiating Stream Bridge...";
 
-    const streamApi = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(ENGINE.SLUG)}&id=${ENGINE.ID}&season=${s}&episode=${e}`;
+    const streamApi = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(APEX.SLUG)}&id=${APEX.ID}&season=${s}&episode=${e}`;
     
     try {
-        const data = await fetch(ENGINE.PROXY(streamApi)).then(r => r.json());
-        if(data.m3u8_url) {
-            launchTitanPlayer(ENGINE.PROXY(data.m3u8_url));
-        } else {
-            throw new Error();
-        }
+        const stream = await fetch(APEX.PROXY(streamApi)).then(r => r.json());
+        if(stream.m3u8_url) {
+            startApexPlayer(APEX.PROXY(stream.m3u8_url));
+        } else { throw new Error(); }
     } catch(err) {
-        alert("Quantum Link Failed. Slug: " + ENGINE.SLUG);
-        loader.style.display = 'none';
+        alert("Quantum Failure: Link could not be established.");
+        hub.style.display = 'none';
     }
 }
 
-// 3. ARTPLAYER TITAN BUILD (STRICT SETTINGS)
-function launchTitanPlayer(m3u8) {
-    document.getElementById('player-viewport').style.display = 'block';
-    document.getElementById('loading-overlay').style.display = 'none';
-    document.getElementById('dashboard-layer').classList.add('dashboard-exit');
+// 3. APEX PLAYER ARCHITECTURE (FORCED SETTINGS & HLS AUDIO FIX)
+function startApexPlayer(m3u8) {
+    document.getElementById('viewport-container').style.display = 'block';
+    document.getElementById('loader-hub').style.display = 'none';
+    document.getElementById('dashboard-engine').classList.add('dashboard-hidden');
 
-    if(ENGINE.PLAYER) ENGINE.PLAYER.destroy();
+    if(APEX.PLAYER) APEX.PLAYER.destroy();
 
-    ENGINE.PLAYER = new Artplayer({
-        container: '#artplayer-target',
+    APEX.PLAYER = new Artplayer({
+        container: '#art-target-node',
         url: m3u8,
         type: 'm3u8',
         autoplay: true,
@@ -457,24 +409,29 @@ function launchTitanPlayer(m3u8) {
         fullscreen: true,
         setting: true,
         theme: '#E50914',
-        loadingShow: false, // Default loading hidden for our custom spinner
-        icons: {
-            loading: '<img class="netflix-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" style="width:70px;">',
-        },
+        loadingShow: false, // Use our own layer
         layers: [
             {
-                name: 'titan-controls',
+                name: 'original-controls',
                 html: `
                     <div class="mobileCenterControls_playerControlsInnerContainer__6MCmU">
-                        <button class="btn-icon-logic" onclick="ENGINE.PLAYER.backward=10">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
+                        <button class="videasy-scale" onclick="APEX.PLAYER.backward=10">
+                            <svg viewBox="0 0 24 24" fill="none" class="videasy-icon-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.02 2.048A10 10 0 1 1 2 12H0a12 12 0 1 0 5-9.747V1H3v4a1 1 0 0 0 1 1h4V4H6a10 10 0 0 1 5.02-1.952ZM2 4v3h3v2H1a1 1 0 0 1-1-1V4h2Zm12.125 12c-.578 0-1.086-.141-1.523-.424-.43-.29-.764-.694-.999-1.215-.235-.527-.353-1.148-.353-1.861 0-.707.118-1.324.353-1.851.236-.527.568-.932.999-1.215.437-.29.945-.434 1.523-.434s1.083.145 1.513.434c.437.283.774.688 1.009 1.215.235.527.353 1.144.353 1.851 0 .713-.118 1.334-.353 1.86-.235.522-.572.927-1.009 1.216-.43.283-.935.424-1.513.424Zm0-1.35c.39 0 .696-.186.918-.56.222-.378.333-.909.333-1.59s-.111-1.208-.333-1.581c-.222-.38-.528-.57-.918-.57s-.696.19-.918.57c-.222.373-.333.9-.333 1.581 0 .681.111 1.212.333 1.59.222.374.528.56.918.56Zm-5.521 1.205v-5.139L7 11.141V9.82l3.198-.8v6.835H8.604Z" fill="currentColor"></path></svg>
                         </button>
-                        <button id="MainPlayBtn" class="btn-icon-logic" onclick="ENGINE.PLAYER.toggle()">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <button id="BtnPlayToggle" class="videasy-scale" onclick="APEX.PLAYER.toggle()">
+                            <svg viewBox="0 0 384 512" class="videasy-icon-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path></svg>
                         </button>
-                        <button class="btn-icon-logic" onclick="ENGINE.PLAYER.forward=10">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
+                        <button class="videasy-scale" onclick="APEX.PLAYER.forward=10">
+                            <svg viewBox="0 0 24 24" fill="none" class="videasy-icon-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707.118-1.324-.353-1.851-.235-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
                         </button>
+                    </div>
+                `
+            },
+            {
+                name: 'netflix-spin-layer',
+                html: `
+                    <div id="inline-spinner" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:none; z-index:10;">
+                        <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" style="width:70px; animation: nf-rotate 2s linear infinite;">
                     </div>
                 `
             }
@@ -485,18 +442,16 @@ function launchTitanPlayer(m3u8) {
                     const hls = new Hls();
                     hls.loadSource(url);
                     hls.attachMedia(video);
-                    ENGINE.HLS = hls;
+                    APEX.HLS = hls;
 
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        // FORCED SETTINGS INJECTION
-                        
-                        // Audio Track Switcher
+                        // 1. Audio Switcher (FIXED: Ensure manifest read)
                         if(hls.audioTracks.length > 0) {
-                            ENGINE.PLAYER.setting.add({
+                            APEX.PLAYER.setting.add({
                                 name: 'audio',
                                 html: 'Audio Track',
                                 selector: hls.audioTracks.map((t, i) => ({
-                                    html: t.name || t.lang || `Track ${i+1}`,
+                                    html: t.name || t.lang || `Audio ${i+1}`,
                                     index: i,
                                     default: i === hls.audioTrack
                                 })),
@@ -504,61 +459,60 @@ function launchTitanPlayer(m3u8) {
                             });
                         }
 
-                        // Quality Switcher
-                        const qLevels = hls.levels.map((l, i) => ({ html: `${l.height}P`, index: i }));
-                        ENGINE.PLAYER.setting.add({
+                        // 2. Resolution Switcher
+                        const levels = hls.levels.map((l, i) => ({ html: `${l.height}P`, index: i }));
+                        APEX.PLAYER.setting.add({
                             name: 'quality',
                             html: 'Resolution',
-                            selector: [{html: 'Auto', index: -1, default: true}, ...qLevels],
+                            selector: [{html: 'Auto', index: -1, default: true}, ...levels],
                             onSelect: (item) => { hls.currentLevel = item.index; return item.html; }
                         });
 
-                        // Subtitle Switcher (From Wyzie Scraper)
-                        ENGINE.PLAYER.setting.add({
-                            name: 'subtitle-switch',
+                        // 3. Subtitles Switcher (From Wyzie)
+                        APEX.PLAYER.setting.add({
+                            name: 'subs',
                             html: 'Subtitles',
                             selector: [
-                                {html: 'None', url: '', default: true},
-                                ...ENGINE.SUBS
+                                {html: 'Disabled', url: '', default: true},
+                                ...APEX.SUBS_CACHE
                             ],
                             onSelect: (item) => {
                                 if(item.url) {
-                                    ENGINE.PLAYER.subtitle.url = item.url;
-                                    ENGINE.PLAYER.subtitle.show = true;
+                                    APEX.PLAYER.subtitle.url = item.url;
+                                    APEX.PLAYER.subtitle.show = true;
                                 } else {
-                                    ENGINE.PLAYER.subtitle.show = false;
+                                    APEX.PLAYER.subtitle.show = false;
                                 }
                                 return item.html;
                             }
                         });
 
-                        // Subtitle Delay (Strict 1-5s)
-                        ENGINE.PLAYER.setting.add({
+                        // 4. Subtitle Delay (Strict 1-5s)
+                        APEX.PLAYER.setting.add({
                             name: 'sub-delay',
                             html: 'Subtitle Delay',
                             selector: [
-                                {html: '-5.0s', val: -5}, {html: '-2.5s', val: -2.5},
+                                {html: '-5.0s', val: -5}, {html: '-2.0s', val: -2},
                                 {html: '0.0s', val: 0, default: true},
-                                {html: '+2.5s', val: 2.5}, {html: '+5.0s', val: 5}
+                                {html: '+2.0s', val: 2}, {html: '+5.0s', val: 5}
                             ],
                             onSelect: (item) => {
-                                ENGINE.PLAYER.subtitleOffset = item.val;
+                                APEX.PLAYER.subtitleOffset = item.val;
                                 return item.html;
                             }
                         });
 
-                        // Aspect Ratio Logic
-                        ENGINE.PLAYER.setting.add({
+                        // 5. Aspect Ratio
+                        APEX.PLAYER.setting.add({
                             name: 'aspect',
                             html: 'Aspect Ratio',
                             selector: [
                                 {html: 'Original', val: 'default', default: true},
                                 {html: '16:9 Wide', val: '16:9'},
-                                {html: '4:3 Classic', val: '4:3'},
-                                {html: 'Zoom/Fill', val: 'fill'}
+                                {html: 'Stretch Fill', val: 'fill'}
                             ],
                             onSelect: (item) => {
-                                ENGINE.PLAYER.aspectRatio = item.val;
+                                APEX.PLAYER.aspectRatio = item.val;
                                 return item.html;
                             }
                         });
@@ -570,28 +524,32 @@ function launchTitanPlayer(m3u8) {
         }
     });
 
-    // Play/Pause State Management for Custom Icons
-    ENGINE.PLAYER.on('play', () => {
-        const b = document.querySelector('#MainPlayBtn');
-        if(b) b.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    // Event Bindings
+    APEX.PLAYER.on('play', () => {
+        const b = document.querySelector('#BtnPlayToggle');
+        if(b) b.innerHTML = '<svg viewBox="0 0 320 512" class="videasy-icon-lg"><path fill="currentColor" d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z"/></svg>';
     });
-    ENGINE.PLAYER.on('pause', () => {
-        const b = document.querySelector('#MainPlayBtn');
-        if(b) b.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    APEX.PLAYER.on('pause', () => {
+        const b = document.querySelector('#BtnPlayToggle');
+        if(b) b.innerHTML = '<svg viewBox="0 0 384 512" class="videasy-icon-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>';
+    });
+    APEX.PLAYER.on('loading', (show) => {
+        const spin = document.getElementById('inline-spinner');
+        if(spin) spin.style.display = show ? 'block' : 'none';
     });
 }
 
-function killTitanEngine() {
-    if(ENGINE.PLAYER) ENGINE.PLAYER.destroy();
-    if(ENGINE.HLS) ENGINE.HLS.destroy();
-    document.getElementById('player-viewport').style.display = 'none';
-    document.getElementById('dashboard-layer').classList.remove('dashboard-exit');
+function killEngine() {
+    if(APEX.PLAYER) APEX.PLAYER.destroy();
+    if(APEX.HLS) APEX.HLS.destroy();
+    document.getElementById('viewport-container').style.display = 'none';
+    document.getElementById('dashboard-engine').classList.remove('dashboard-hidden');
     
-    // Clear Meta
-    const bg = document.getElementById('loading-backdrop');
+    // Cleanup
+    const bg = document.getElementById('bg-backdrop');
     bg.style.opacity = '0';
     bg.src = '';
-    ENGINE.SUBS = [];
+    APEX.SUBS_CACHE = [];
 }
 
 </script>
