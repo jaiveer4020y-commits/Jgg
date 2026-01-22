@@ -1,217 +1,226 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>CINEMA ENGINE FINAL</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    <title>Netflix Pro Player - Advanced UI</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Base Styling */
+        body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            background: #000; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden;
+        }
 
-<link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
-<script src="https://unpkg.com/hls.js@1.5.17"></script>
-<script src="https://unpkg.com/artplayer@5.3.0/dist/artplayer.js"></script>
+        .artplayer-app { 
+            width: 100%; 
+            height: 100%; 
+            background: #000; 
+            position: relative; 
+        }
 
-<style>
-html,body{
-    margin:0;
-    background:#000;
-    color:#fff;
-    height:100%;
-    overflow:hidden;
-    font-family:Inter,system-ui;
-}
+        /* Netflix Header Overlay */
+        .netflix-header {
+            position: absolute; top: 0; left: 0; right: 0;
+            padding: 40px 30px; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+            z-index: 100; display: flex; align-items: center; gap: 20px;
+            opacity: 0; visibility: hidden; transition: opacity 0.4s ease;
+        }
+        .art-state-show .netflix-header { opacity: 1; visibility: visible; }
+        
+        .back-arrow { width: 35px; height: 35px; fill: white; cursor: pointer; transition: transform 0.2s; }
+        .back-arrow:hover { transform: scale(1.1); }
+        .movie-title { color: white; font-size: 24px; font-weight: bold; letter-spacing: 0.5px; }
 
-/* ARTPLAYER FIXES */
-.art-loading-icon,
-.art-subtitle{
-    display:none !important;
-}
+        /* Netflix Center Controls */
+        .netflix-overlay {
+            position: absolute; inset: 0; 
+            display: flex; align-items: center; justify-content: center;
+            gap: 12%; z-index: 50; pointer-events: none; 
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+        .art-state-show .netflix-overlay { opacity: 1; visibility: visible; }
+        
+        .netflix-btn { 
+            pointer-events: auto; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        .netflix-btn:hover { transform: scale(1.1); }
+        .netflix-btn:active { transform: scale(0.9); }
+        .netflix-btn svg { width: 65px; height: 65px; fill: #ffffff; filter: drop-shadow(0 0 10px rgba(0,0,0,0.6)); }
+        .netflix-btn.play-center svg { width: 100px; height: 100px; }
 
-/* NETFLIX LOADER */
-#nf-loader{
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    background:#000;
-    z-index:9999;
-}
-#nf-loader img{
-    width:96px;
-    animation:spin 1.1s steps(12) infinite;
-}
-#nf-loader span{
-    margin-top:20px;
-    color:#e50914;
-    letter-spacing:2px;
-    font-weight:700;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
+        /* Subtitle Styling */
+        .art-subtitle {
+            font-size: 28px !important;
+            font-weight: 500 !important;
+            color: #ffffff !important;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0, 0, 0, 0.5) !important;
+            padding: 0 15px;
+            background-color: transparent !important;
+        }
 
-/* SUBTITLE OVERLAY */
-#subtitle-layer{
-    position:absolute;
-    bottom:12%;
-    width:100%;
-    display:flex;
-    justify-content:center;
-    pointer-events:none;
-    z-index:9000;
-}
-#subtitle-text{
-    max-width:90%;
-    text-align:center;
-    font-size:22px;
-    line-height:1.4;
-    padding:6px 18px;
-    color:#fff;
-    text-shadow:
-        0 2px 4px #000,
-        0 0 10px #000;
-}
+        /* Netflix Spinner */
+        .art-loading .netflix-spinner { 
+            width: 80px; height: 80px; 
+            animation: netflix-rotate 1.1s linear infinite; 
+        }
+        @keyframes netflix-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-/* NETFLIX CONTROLS */
-#nf-controls{
-    position:absolute;
-    inset:0;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    gap:80px;
-    opacity:0;
-    transition:.3s;
-    z-index:8000;
-}
-.nf-btn{
-    width:90px;height:90px;
-    border-radius:50%;
-    background:rgba(0,0,0,.55);
-    border:1px solid rgba(255,255,255,.2);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-.nf-btn svg{width:40px;fill:#fff}
-
-/* SHOW CONTROLS */
-.show-controls #nf-controls{opacity:1}
-</style>
+        /* Custom Red Theme for Progress Bar */
+        .art-progress-played { background: #e50914 !important; }
+        .art-progress-indicator { background: #e50914 !important; border: 2px solid #fff; }
+    </style>
 </head>
-
 <body>
 
-<div id="player"></div>
-
-<div id="nf-loader">
-    <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
-    <span>HANDSHAKING WITH SERVERS…</span>
-</div>
-
-<div id="subtitle-layer"><div id="subtitle-text"></div></div>
-
-<div id="nf-controls">
-    <div class="nf-btn" onclick="art.currentTime-=10">
-        <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6z"/></svg>
-    </div>
-    <div class="nf-btn" onclick="art.toggle()">
-        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-    </div>
-    <div class="nf-btn" onclick="art.currentTime+=10">
-        <svg viewBox="0 0 24 24"><path d="M4 6v12l8.5-6z"/></svg>
+<div class="artplayer-app">
+    <div class="netflix-header">
+        <svg class="back-arrow" viewBox="0 0 24 24" onclick="window.history.back()">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        <div class="movie-title">Netflix Online Stream</div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@swarmcloud/hls/hls.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/artplayer@5.0.9/dist/artplayer.js"></script>
 
 <script>
-const PROXY = u=>`https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`;
-let art,subs=[],subDelay=0;
+    // YOUR FIXED M3U8 URL
+    const m3u8Url = 'https://workingg.vercel.app/api/proxy?url=https://185.237.106.169/v4/Lis-38MjEgUbLsw9uh2SEQ/1767968654/is3/fdtaux/master.m3u8?v=1766717457';
 
-/* VTT PARSER */
-function parseVTT(v){
-    const cues=[];
-    v.split(/\n\n+/).forEach(b=>{
-        const l=b.split('\n');
-        const t=l.find(x=>x.includes('-->'));
-        if(!t) return;
-        const i=l.indexOf(t);
-        const [s,e]=t.split('-->');
-        cues.push({
-            s:time(s),
-            e:time(e),
-            t:l.slice(i+1).join('<br>')
-        });
-    });
-    return cues;
-}
-function time(t){
-    const p=t.trim().split(':');
-    return (p.length===3?+p[0]*3600:0)+(+p[p.length-2]*60)+parseFloat(p[p.length-1]);
-}
+    // SVG Icons
+    const icons = {
+        back10: `<svg viewBox="0 0 24 24"><path d="M12.5 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.31 2.69-6 6-6s6 2.69 6 6-2.69 6-6 6c-1.66 0-3.15-.69-4.22-1.78L6.36 17.64C7.81 19.09 9.8 20 12 20c4.42 0 8-3.58 8-8s-3.58-8-8-8zm-2.42 10.71V11.5h-1.12v-.65h1.92v4.44h-.8zm2.46-.66h.71c.05.35.15.62.3.8.15.18.36.27.64.27.28 0 .5-.09.65-.26.15-.17.22-.43.22-.76s-.07-.59-.22-.77c-.15-.18-.36-.26-.64-.26-.18 0-.34.03-.48.1-.14.07-.26.18-.36.32l-.74-.1.14-2.18h3.04v.65h-2.4l-.07 1.08c.15-.12.31-.2.49-.25.18-.05.38-.08.6-.08.47 0 .85.14 1.13.43.28.29.43.71.43 1.25 0 .56-.15 1-.44 1.33-.3.33-.71.49-1.25.49-.52 0-.94-.16-1.25-.47-.31-.32-.47-.76-.48-1.32z"/></svg>`,
+        forward10: `<svg viewBox="0 0 24 24"><path d="M11.5 3c4.97 0 9 4.03 9 9h2.5l-3.89 3.89-.07.14L15 12h3c0-3.31-2.69-6-6-6s-6 2.69-6 6 2.69 6 6 6c1.66 0 3.15-.69 4.22-1.78l1.41 1.41C16.19 19.09 14.2 20 12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8zm-2.42 10.71V11.5h-1.12v-.65h1.92v4.44h-.8zm2.46-.66h.71c.05.35.15.62.3.8.15.18.36.27.64.27.28 0 .5-.09.65-.26.15-.17.22-.43.22-.76s-.07-.59-.22-.77c-.15-.18-.36-.26-.64-.26-.18 0-.34.03-.48.1-.14.07-.26.18-.36.32l-.74-.1.14-2.18h3.04v.65h-2.4l-.07 1.08c.15-.12.31-.2.49-.25.18-.05.38-.08.6-.08.47 0 .85.14 1.13.43.28.29.43.71.43 1.25 0 .56-.15 1-.44 1.33-.3.33-.71.49-1.25.49-.52 0-.94-.16-1.25-.47-.31-.32-.47-.76-.48-1.32z"/></svg>`,
+        play: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`,
+        pause: `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
+    };
 
-/* PLAYER */
-art=new Artplayer({
-    container:'#player',
-    autoplay:true,
-    fullscreen:true,
-    setting:true,
-    lock:true,
-    autoOrientation:true,
-    customType:{
-        m3u8:(v,u)=>{
-            const h=new Hls();
-            h.loadSource(u);
-            h.attachMedia(v);
+    const art = new Artplayer({
+        container: '.artplayer-app',
+        url: m3u8Url,
+        type: 'm3u8',
+        theme: '#e50914',
+        autoSize: true,
+        fullscreen: true,
+        fullscreenWeb: true,
+        setting: true,
+        playbackRate: true,
+        aspectRatio: true,
+        miniProgressBar: true,
+        mutex: true,
+        backdrop: true,
+        playsInline: true,
+        autoPlayback: true,
+        airplay: true,
+        lock: true,
+        fastForward: true,
+        icons: {
+            loading: '<img class="netflix-spinner" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">',
+        },
+        layers: [
+            {
+                name: 'netflix-center',
+                html: `
+                    <div class="netflix-overlay">
+                        <div class="netflix-btn skip-back">${icons.back10}</div>
+                        <div class="netflix-btn play-center">${icons.play}</div>
+                        <div class="netflix-btn skip-forward">${icons.forward10}</div>
+                    </div>`,
+            },
+        ],
+        customType: {
+            m3u8: function (video, url, art) {
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
+                    art.hls = hls;
 
-            h.on(Hls.Events.MANIFEST_PARSED,()=>{
-                document.getElementById('nf-loader').style.display='none';
-
-                /* QUALITY */
-                art.setting.add({
-                    name:'quality',
-                    html:'Quality',
-                    selector:[{html:'Auto',level:-1,default:true}]
-                        .concat(h.levels.map((l,i)=>({html:l.height+'p',level:i}))),
-                    onSelect:i=>{h.currentLevel=i.level;return i.html}
-                });
-
-                /* AUDIO */
-                if(h.audioTracks.length){
-                    art.setting.add({
-                        name:'audio',
-                        html:'Audio',
-                        selector:h.audioTracks.map((a,i)=>({
-                            html:a.name||a.lang||`Track ${i+1}`,i
-                        })),
-                        onSelect:x=>{h.audioTrack=x.i;return x.html}
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        // Quality Selector logic
+                        art.setting.add({
+                            name: 'quality',
+                            html: 'Quality',
+                            tooltip: 'Auto',
+                            selector: [
+                                { default: true, html: 'Auto', level: -1 },
+                                ...hls.levels.map((l, i) => ({ html: l.height + 'p', level: i }))
+                            ],
+                            onSelect: (item) => {
+                                hls.currentLevel = item.level;
+                                return item.html;
+                            }
+                        });
                     });
                 }
-            });
+            }
         }
-    },
-    url:PROXY('YOUR_M3U8_URL_HERE')
-});
+    });
 
-/* SUBTITLES LOAD */
-fetch(PROXY('YOUR_VTT_URL_HERE'))
-.then(r=>r.text())
-.then(t=>subs=parseVTT(t));
+    art.on('ready', () => {
+        const playBtn = document.querySelector('.play-center');
+        const skipBack = document.querySelector('.skip-back');
+        const skipForward = document.querySelector('.skip-forward');
 
-/* SUB RENDER */
-art.on('video:timeupdate',()=>{
-    const t=art.currentTime+subDelay;
-    const c=subs.find(x=>t>=x.s&&t<=x.e);
-    document.getElementById('subtitle-text').innerHTML=c?c.t:'';
-});
+        // Central Play Toggle
+        playBtn.onclick = (e) => {
+            e.stopPropagation();
+            art.toggle();
+        };
 
-/* CONTROLS AUTO HIDE */
-let hideTimer;
-function showControls(){
-    document.body.classList.add('show-controls');
-    clearTimeout(hideTimer);
-    hideTimer=setTimeout(()=>document.body.classList.remove('show-controls'),3000);
-}
-document.addEventListener('mousemove',showControls);
-document.addEventListener('touchstart',showControls);
+        // Skip Buttons
+        skipBack.onclick = (e) => {
+            e.stopPropagation();
+            art.currentTime -= 10;
+        };
+        skipForward.onclick = (e) => {
+            e.stopPropagation();
+            art.currentTime += 10;
+        };
+
+        // Sync Central Icon with State
+        art.on('play', () => playBtn.innerHTML = icons.pause);
+        art.on('pause', () => playBtn.innerHTML = icons.play);
+
+        // Double Click to Fullscreen
+        art.on('video:dblclick', () => {
+            art.fullscreen = !art.fullscreen;
+        });
+    });
+
+    // Custom Subtitle Import Feature
+    art.setting.add({
+        name: 'subtitle-import',
+        html: 'Subtitle URL',
+        tooltip: 'None',
+        selector: [
+            { default: true, html: 'Off', url: '' },
+            { html: 'External Link', import: true },
+        ],
+        onSelect: function (item) {
+            if (item.import) {
+                const url = prompt("Enter .vtt or .srt URL:");
+                if (url) {
+                    art.subtitle.url = url;
+                    return "Enabled";
+                }
+            }
+            art.subtitle.url = '';
+            return "Off";
+        },
+    });
 </script>
-
 </body>
 </html>
