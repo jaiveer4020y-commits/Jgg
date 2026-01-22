@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CINEMA QUANTUM ENGINE | V14.0 APEX STABLE</title>
+    <title>CINEMA QUANTUM ENGINE | V15.0 ELYSIUM EDITION</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
@@ -12,249 +12,276 @@
 
     <style>
         /* ================================================================
-        1. APEX DESIGN SYSTEM (ADS) 
+        1. ELYSIUM DESIGN SYSTEM (EDS)
         ================================================================
         */
         :root {
-            --nf-red: #E50914;
-            --nf-black: #050505;
-            --nf-grey: #141414;
-            --glass: rgba(10, 10, 10, 0.9);
-            --blur: blur(40px);
-            --transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            --glow: 0 0 25px rgba(229, 9, 20, 0.4);
+            --elysium-red: #E50914;
+            --elysium-black: #020202;
+            --elysium-panel: rgba(10, 10, 10, 0.95);
+            --elysium-glow: 0 0 30px rgba(229, 9, 20, 0.4);
+            --font-display: 'Outfit', sans-serif;
+            --font-main: 'Inter', sans-serif;
+            --blur-strength: 30px;
         }
 
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; outline: none !important; }
         
         body, html {
             margin: 0; padding: 0; width: 100vw; height: 100vh;
-            background-color: var(--nf-black); color: #fff;
-            font-family: 'Inter', sans-serif; overflow: hidden;
+            background-color: var(--elysium-black); color: #fff;
+            font-family: var(--font-main); overflow: hidden;
             user-select: none;
         }
 
-        /* ANIMATION REFINERY */
-        @keyframes nf-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes logo-shimmer { 0% { filter: brightness(1) drop-shadow(0 0 10px rgba(0,0,0,0.5)); } 50% { filter: brightness(1.3) drop-shadow(0 0 25px var(--nf-red)); } 100% { filter: brightness(1) drop-shadow(0 0 10px rgba(0,0,0,0.5)); } }
+        /* SCROLLBAR GHOSTING */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--elysium-red); border-radius: 10px; }
 
         /* ================================================================
-        2. DASHBOARD & INTERFACE
+        2. KINETIC INTERFACE
         ================================================================
         */
-        #dashboard-engine {
+        #master-control-panel {
             position: fixed; inset: 0; z-index: 100;
-            background: radial-gradient(circle at center, #1e0505 0%, #000 100%);
+            background: radial-gradient(circle at 50% 50%, #200404 0%, #000 100%);
             display: flex; align-items: center; justify-content: center;
-            transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s;
+            transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.8s;
         }
 
-        .dashboard-hidden { transform: translateY(-100%) scale(1.1); opacity: 0; pointer-events: none; }
+        .panel-hidden { transform: translateY(-100%); opacity: 0; pointer-events: none; }
 
-        .quantum-shell {
-            width: 95%; max-width: 500px; padding: 50px;
-            background: var(--glass); backdrop-filter: var(--blur);
-            border: 1px solid rgba(255,255,255,0.08); border-radius: 35px;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
-            animation: fade-up 0.8s ease-out;
+        .quantum-card {
+            width: 90%; max-width: 520px; padding: 50px;
+            background: var(--elysium-panel); backdrop-filter: blur(var(--blur-strength));
+            border: 1px solid rgba(255,255,255,0.05); border-radius: 40px;
+            box-shadow: 0 60px 120px rgba(0,0,0,0.9);
+            animation: card-entry 1s ease-out;
         }
 
-        .shell-title {
-            font-family: 'Outfit', sans-serif; font-size: 2.8rem; font-weight: 900;
-            text-align: center; color: var(--nf-red); margin-bottom: 40px;
-            text-transform: uppercase; letter-spacing: -2px;
+        @keyframes card-entry { from { opacity: 0; transform: scale(0.9) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+        .brand-header { text-align: center; margin-bottom: 40px; }
+        .brand-header h1 {
+            font-family: var(--font-display); font-size: 3.2rem; font-weight: 900;
+            color: var(--elysium-red); margin: 0; letter-spacing: -3px;
+            text-transform: uppercase; text-shadow: var(--elysium-glow);
         }
 
-        .selector-box {
-            display: flex; gap: 10px; margin-bottom: 30px;
-            background: #000; padding: 6px; border-radius: 18px;
+        .media-switcher {
+            display: flex; gap: 12px; margin-bottom: 30px;
+            background: #000; padding: 8px; border-radius: 20px;
         }
 
-        .selector-btn {
-            flex: 1; padding: 14px; border: none; border-radius: 14px;
-            background: transparent; color: #666; font-weight: 800;
-            cursor: pointer; transition: var(--transition); text-transform: uppercase;
-            font-size: 12px; letter-spacing: 1px;
+        .switch-opt {
+            flex: 1; padding: 15px; border: none; border-radius: 15px;
+            background: transparent; color: #555; font-weight: 800;
+            text-transform: uppercase; cursor: pointer; transition: 0.3s;
+            font-size: 12px; letter-spacing: 2px;
         }
 
-        .selector-btn.active { background: var(--nf-red); color: #fff; box-shadow: var(--glow); }
+        .switch-opt.active { background: var(--elysium-red); color: #fff; box-shadow: var(--elysium-glow); }
 
-        .input-wrap { margin-bottom: 25px; position: relative; }
-        .input-wrap label {
-            display: block; font-size: 10px; font-weight: 900; color: var(--nf-red);
-            text-transform: uppercase; margin-bottom: 10px; letter-spacing: 2px;
+        .form-unit { margin-bottom: 25px; position: relative; }
+        .form-unit label {
+            display: block; font-size: 11px; font-weight: 900; color: var(--elysium-red);
+            text-transform: uppercase; margin-bottom: 12px; letter-spacing: 3px;
         }
 
-        .main-field {
-            width: 100%; padding: 18px; background: #080808; border: 1px solid #222;
-            border-radius: 15px; color: #fff; font-size: 16px; transition: 0.3s;
+        .titan-input {
+            width: 100%; padding: 20px; background: #080808; border: 1px solid #222;
+            border-radius: 18px; color: #fff; font-size: 17px; font-family: var(--font-main);
+            transition: all 0.4s;
         }
 
-        .main-field:focus { border-color: var(--nf-red); background: #000; }
+        .titan-input:focus { border-color: var(--elysium-red); background: #000; box-shadow: 0 0 0 4px rgba(229,9,20,0.1); }
 
-        .results-tray {
-            position: absolute; width: 100%; max-height: 300px; background: #0a0a0a;
-            top: 100%; left: 0; z-index: 500; border-radius: 15px; overflow-y: auto;
-            display: none; border: 1px solid #222; margin-top: 10px;
+        .search-results-portal {
+            position: absolute; width: 100%; max-height: 320px; background: #0a0a0a;
+            top: 100%; left: 0; z-index: 500; border-radius: 20px; overflow-y: auto;
+            display: none; border: 1px solid #1a1a1a; margin-top: 12px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
         }
 
-        .tray-item {
-            display: flex; gap: 15px; padding: 12px; border-bottom: 1px solid #111;
-            cursor: pointer; align-items: center; transition: 0.2s;
+        .portal-item {
+            display: flex; gap: 18px; padding: 15px; border-bottom: 1px solid #111;
+            cursor: pointer; align-items: center; transition: 0.3s;
         }
 
-        .tray-item:hover { background: #1a1a1a; }
-        .tray-item img { width: 40px; height: 60px; border-radius: 5px; object-fit: cover; }
+        .portal-item:hover { background: #161616; padding-left: 20px; }
+        .portal-item img { width: 45px; height: 68px; border-radius: 8px; object-fit: cover; }
+        .portal-meta h5 { margin: 0; font-size: 15px; color: #fff; }
+        .portal-meta p { margin: 5px 0 0; font-size: 12px; color: #666; font-weight: 600; }
 
-        .boot-btn {
-            width: 100%; padding: 20px; background: var(--nf-red); color: #fff;
-            border: none; border-radius: 15px; font-weight: 900; cursor: pointer;
-            text-transform: uppercase; letter-spacing: 3px; font-size: 16px;
-            margin-top: 10px; box-shadow: var(--glow); transition: 0.3s;
+        .engage-btn {
+            width: 100%; padding: 24px; background: var(--elysium-red); color: #fff;
+            border: none; border-radius: 20px; font-weight: 900; font-size: 18px;
+            text-transform: uppercase; letter-spacing: 4px; cursor: pointer;
+            transition: 0.4s; box-shadow: var(--elysium-glow);
         }
 
-        .boot-btn:hover { filter: brightness(1.2); transform: scale(1.02); }
+        .engage-btn:hover { transform: translateY(-3px); filter: brightness(1.1); }
 
         /* ================================================================
-        3. QUANTUM LOADER HUB
+        3. LOADING ARCHITECTURE
         ================================================================
         */
-        #loader-hub {
+        #loading-hub {
             position: fixed; inset: 0; z-index: 900; background: #000;
-            display: none; align-items: center; justify-content: center;
-            flex-direction: column;
+            display: none; align-items: center; justify-content: center; flex-direction: column;
         }
 
-        #bg-backdrop {
+        #backdrop-blur-img {
             position: absolute; inset: 0; width: 100%; height: 100%;
             object-fit: cover; opacity: 0; transition: opacity 2s;
-            filter: brightness(0.25) blur(25px); transform: scale(1.1);
+            filter: brightness(0.2) blur(40px); transform: scale(1.1);
         }
 
-        .loader-content {
+        .loading-vessel {
             z-index: 10; text-align: center; display: flex;
             flex-direction: column; align-items: center; gap: 40px;
         }
 
-        #brand-logo-img {
-            max-width: 300px; max-height: 150px; object-fit: contain;
-            animation: logo-shimmer 4s infinite ease-in-out;
-            display: none;
+        #meta-logo-static {
+            max-width: 320px; max-height: 160px; object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); display: none;
         }
 
-        .nf-spinner-container img {
-            width: 80px; height: 80px;
-            animation: nf-rotate 2s linear infinite;
+        .spinner-elysium {
+            width: 90px; height: 90px;
+            animation: spin-kf 1.8s linear infinite;
         }
 
-        #loader-status {
-            font-size: 12px; color: var(--nf-red); font-weight: 800;
-            text-transform: uppercase; letter-spacing: 5px;
-            text-shadow: 0 0 10px rgba(229,9,20,0.5);
+        @keyframes spin-kf { to { transform: rotate(360deg); } }
+
+        #status-text {
+            font-size: 13px; color: var(--elysium-red); font-weight: 900;
+            text-transform: uppercase; letter-spacing: 6px;
         }
 
         /* ================================================================
-        4. PLAYER VIEWPORT & CUSTOM UI
+        4. PLAYER VIEWPORT & SUBTITLE VISIBILITY
         ================================================================
         */
-        #viewport-container { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; }
+        #player-canvas { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; }
 
-        /* CENTER CONTROLS - RESTORED ORIGINAL ICONS */
+        /* FORCED SUBTITLE VISIBILITY LAYER */
+        .art-subtitle {
+            z-index: 200 !important;
+            bottom: 12% !important;
+            text-shadow: 0 0 10px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,1) !important;
+            font-weight: 600 !important;
+            font-size: clamp(16px, 4vw, 28px) !important;
+        }
+
+        .art-video-container { background: #000 !important; }
+
+        /* RESTORED ORIGINAL CENTER ICONS */
         .mobileCenterControls_playerControlsInnerContainer__6MCmU {
             position: absolute; inset: 0; display: flex; align-items: center;
-            justify-content: center; gap: 10vw; pointer-events: none;
-            opacity: 0; transition: opacity 0.4s var(--transition);
-            z-index: 100;
+            justify-content: center; gap: 12vw; pointer-events: none;
+            opacity: 0; transition: opacity 0.5s; z-index: 150;
         }
         .art-hover .mobileCenterControls_playerControlsInnerContainer__6MCmU,
         .art-state-paused .mobileCenterControls_playerControlsInnerContainer__6MCmU { opacity: 1; }
 
-        .videasy-scale {
-            background: transparent !important;
-            border: none; width: 50px; height: 50px; 
+        .ctrl-icon-btn {
+            background: transparent !important; border: none; width: 60px; height: 60px; 
             display: flex; align-items: center; justify-content: center; 
             color: #fff; cursor: pointer; pointer-events: auto; 
-            transition: 0.2s ease;
+            transition: 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .videasy-scale:hover { transform: scale(1.2); color: var(--nf-red); }
-        .videasy-icon-lg { width: 32px; height: 32px; }
+        .ctrl-icon-btn:hover { transform: scale(1.3); color: var(--elysium-red); }
+        .ctrl-svg-lg { width: 34px; height: 34px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
 
-        #BtnPlayToggle { width: 80px; height: 80px; }
-        #BtnPlayToggle .videasy-icon-lg { width: 45px; height: 45px; }
+        #MasterPlayTrigger { width: 90px; height: 90px; }
+        #MasterPlayTrigger .ctrl-svg-lg { width: 50px; height: 50px; }
 
-        /* LOADING OVERRIDE */
-        .art-loading-icon, .art-state-loading .art-loading-icon { display: none !important; }
-
-        .exit-trigger {
-            position: absolute; top: 30px; left: 30px; z-index: 10001;
-            cursor: pointer; background: rgba(0,0,0,0.4); padding: 12px;
+        .exit-navigator {
+            position: absolute; top: 40px; left: 40px; z-index: 10001;
+            cursor: pointer; background: rgba(0,0,0,0.5); padding: 15px;
             border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
             transition: 0.3s; backdrop-filter: blur(10px);
         }
-        .exit-trigger:hover { background: var(--nf-red); transform: translateX(-5px); }
+        .exit-navigator:hover { background: var(--elysium-red); transform: translateX(-5px); }
+
+        /* SETTINGS OVERRIDE */
+        .art-settings {
+            background: rgba(5,5,5,0.98) !important;
+            border-radius: 25px !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            width: 280px !important;
+        }
+        .art-setting-item { height: 50px !important; font-weight: 700 !important; font-size: 14px !important; }
+        .art-setting-item:hover { background: var(--elysium-red) !important; }
 
     </style>
 </head>
 <body>
 
-<div id="dashboard-engine">
-    <div class="quantum-shell">
-        <div class="shell-title">Cinema Apex</div>
+<div id="master-control-panel">
+    <div class="quantum-card">
+        <div class="brand-header">
+            <h1>Cinema Elysium</h1>
+        </div>
         
-        <div class="selector-box">
-            <button class="selector-btn active" id="sel-tv" onclick="toggleMedia('tv')">Series</button>
-            <button class="selector-btn" id="sel-movie" onclick="toggleMedia('movie')">Movie</button>
+        <div class="media-switcher">
+            <button class="switch-opt active" id="sw-tv" onclick="setMediaType('tv')">TV Series</button>
+            <button class="switch-opt" id="sw-movie" onclick="setMediaType('movie')">Movie</button>
         </div>
 
-        <div class="input-wrap">
-            <label>Title Intelligence</label>
-            <input type="text" id="search-input" class="main-field" placeholder="Search for content..." autocomplete="off">
-            <div id="results-tray" class="results-tray"></div>
+        <div class="form-unit">
+            <label>Neural Search Interface</label>
+            <input type="text" id="main-search-input" class="titan-input" placeholder="Query title..." autocomplete="off">
+            <div id="search-portal" class="search-results-portal"></div>
         </div>
 
-        <div id="episode-logic-container">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div class="input-wrap">
+        <div id="tv-logic-block">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-unit">
                     <label>Season</label>
-                    <input type="number" id="inp-season" class="main-field" value="1" min="1">
+                    <input type="number" id="inp-s" class="titan-input" value="1" min="1">
                 </div>
-                <div class="input-wrap">
+                <div class="form-unit">
                     <label>Episode</label>
-                    <input type="number" id="inp-episode" class="main-field" value="1" min="1">
+                    <input type="number" id="inp-e" class="titan-input" value="1" min="1">
                 </div>
             </div>
         </div>
 
-        <button class="boot-btn" onclick="initializeSequence()">Establish Connection</button>
+        <button class="engage-btn" onclick="initElysiumBoot()">Connect Terminal</button>
     </div>
 </div>
 
-<div id="loader-hub">
-    <img id="bg-backdrop" src="">
-    <div class="loader-content">
-        <img id="brand-logo-img" src="">
-        <div class="nf-spinner-container">
-            <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" alt="Loading">
+<div id="loading-hub">
+    <img id="backdrop-blur-img" src="">
+    <div class="loading-vessel">
+        <img id="meta-logo-static" src="">
+        <div class="spinner-container">
+            <img class="spinner-elysium" src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" alt="Loading">
         </div>
-        <div id="loader-status">Initializing Quantum Tunnel...</div>
+        <div id="status-text">Synchronizing Quantum Nodes...</div>
     </div>
 </div>
 
-<div id="viewport-container">
-    <div class="exit-trigger" onclick="killEngine()">
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+<div id="player-canvas">
+    <div class="exit-navigator" onclick="shutdownElysium()">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
     </div>
-    <div id="art-target-node" style="width:100%; height:100%;"></div>
+    <div id="art-mount-point" style="width:100%; height:100%;"></div>
 </div>
 
 <script>
 /**
- * CINEMA QUANTUM CORE ENGINE v14.0 APEX
- * Fixed Subtitle Logic, Audio Manifest Handling, Original Icons Restored
+ * CINEMA QUANTUM CORE v15.0 - ELYSIUM BUILD
+ * - Enhanced Subtitle Logic (ID based)
+ * - Forced Visibility Layers
+ * - Original Icon Restored
+ * - Native Apple Subtitle Injection
  */
 
-const APEX = {
+const CORE = {
     TMDB_KEY: '463dcd7993ab31d92eb586802fdeee6a',
     PROXY: (u) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`,
     MODE: 'tv',
@@ -264,174 +291,170 @@ const APEX = {
     SLUG: '',
     PLAYER: null,
     HLS: null,
-    SUBS_CACHE: []
+    SUBS: []
 };
 
-// 1. SEARCH BRIDGE
-const sInput = document.getElementById('search-input');
-const sTray = document.getElementById('results-tray');
+// 1. NEURAL SEARCH BRIDGE
+const sInput = document.getElementById('main-search-input');
+const sPortal = document.getElementById('search-portal');
 
 sInput.addEventListener('input', async (e) => {
-    const q = e.target.value;
-    if(q.length < 2) { sTray.style.display = 'none'; return; }
+    const val = e.target.value;
+    if(val.length < 2) { sPortal.style.display = 'none'; return; }
 
     try {
-        const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${APEX.TMDB_KEY}&query=${encodeURIComponent(q)}`);
+        const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${CORE.TMDB_KEY}&query=${encodeURIComponent(val)}`);
         const data = await r.json();
         
-        sTray.innerHTML = '';
+        sPortal.innerHTML = '';
         if(data.results.length > 0) {
-            sTray.style.display = 'block';
+            sPortal.style.display = 'block';
             data.results.slice(0, 10).forEach(item => {
                 if(item.media_type !== 'tv' && item.media_type !== 'movie') return;
                 const yr = (item.release_date || item.first_air_date || '').split('-')[0];
                 const div = document.createElement('div');
-                div.className = 'tray-item';
+                div.className = 'portal-item';
                 div.innerHTML = `
-                    <img src="https://image.tmdb.org/t/p/w92${item.poster_path}" onerror="this.src='https://via.placeholder.com/92x138?text=?'">
-                    <div>
-                        <div style="font-weight:800; font-size:14px;">${item.title || item.name}</div>
-                        <div style="font-size:11px; color:#888;">${item.media_type.toUpperCase()} • ${yr}</div>
+                    <img src="https://image.tmdb.org/t/p/w92${item.poster_path}" onerror="this.src='https://via.placeholder.com/92x138/000/fff?text=?'">
+                    <div class="portal-meta">
+                        <h5>${item.title || item.name}</h5>
+                        <p>${item.media_type.toUpperCase()} • ${yr || 'N/A'}</p>
                     </div>
                 `;
                 div.onclick = () => {
-                    APEX.ID = item.id;
-                    APEX.TITLE = item.title || item.name;
-                    APEX.YEAR = yr;
-                    APEX.MODE = item.media_type;
-                    sInput.value = APEX.TITLE;
-                    sTray.style.display = 'none';
-                    toggleMedia(APEX.MODE);
+                    CORE.ID = item.id;
+                    CORE.TITLE = item.title || item.name;
+                    CORE.YEAR = yr;
+                    CORE.MODE = item.media_type;
+                    sInput.value = CORE.TITLE;
+                    sPortal.style.display = 'none';
+                    setMediaType(CORE.MODE);
                 };
-                sTray.appendChild(div);
+                sPortal.appendChild(div);
             });
         }
-    } catch(err) { console.error("Search Fail"); }
+    } catch(err) { console.warn("Bridge Disconnected"); }
 });
 
-function toggleMedia(m) {
-    APEX.MODE = m;
-    document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`sel-${m}`).classList.add('active');
-    document.getElementById('episode-logic-container').style.display = m === 'tv' ? 'block' : 'none';
+function setMediaType(m) {
+    CORE.MODE = m;
+    document.querySelectorAll('.switch-opt').forEach(b => b.classList.remove('active'));
+    document.getElementById(`sw-${m}`).classList.add('active');
+    document.getElementById('tv-logic-block').style.display = m === 'tv' ? 'block' : 'none';
 }
 
-// 2. INITIALIZATION SEQUENCE (FIXED SUBTITLE & SLUG LOGIC)
-async function initializeSequence() {
-    if(!APEX.ID) return alert("Select a title first");
+// 2. BOOT SEQUENCE & SUBTITLE RECOVERY
+async function initElysiumBoot() {
+    if(!CORE.ID) return alert("Quantum Identity Missing: Select Title.");
 
-    const hub = document.getElementById('loader-hub');
+    const hub = document.getElementById('loading-hub');
     hub.style.display = 'flex';
-    document.getElementById('loader-status').innerText = "Acquiring Media Data...";
+    document.getElementById('status-text').innerText = "Acquiring Meta-Matrix...";
 
-    // Fetch Backdrop & Logo
+    // Metadata Fetching
     try {
         const [meta, imgs] = await Promise.all([
-            fetch(`https://api.themoviedb.org/3/${APEX.MODE}/${APEX.ID}?api_key=${APEX.TMDB_KEY}`).then(r=>r.json()),
-            fetch(`https://api.themoviedb.org/3/${APEX.MODE}/${APEX.ID}/images?api_key=${APEX.TMDB_KEY}`).then(r=>r.json())
+            fetch(`https://api.themoviedb.org/3/${CORE.MODE}/${CORE.ID}?api_key=${CORE.TMDB_KEY}`).then(r=>r.json()),
+            fetch(`https://api.themoviedb.org/3/${CORE.MODE}/${CORE.ID}/images?api_key=${CORE.TMDB_KEY}`).then(r=>r.json())
         ]);
 
         if(meta.backdrop_path) {
-            const bg = document.getElementById('bg-backdrop');
+            const bg = document.getElementById('backdrop-blur-img');
             bg.src = `https://image.tmdb.org/t/p/original${meta.backdrop_path}`;
             bg.style.opacity = '1';
         }
 
-        const logo = document.getElementById('brand-logo-img');
+        const logoNode = document.getElementById('meta-logo-static');
         const bestLogo = imgs.logos.find(l => l.file_path.endsWith('.png'));
         if(bestLogo) {
-            logo.src = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
-            logo.style.display = 'block';
+            logoNode.src = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
+            logoNode.style.display = 'block';
         }
-    } catch(e) { console.warn("Meta Fail"); }
+    } catch(e) { console.warn("Meta Link Partial"); }
 
-    const s = document.getElementById('inp-season').value;
-    const e = document.getElementById('inp-episode').value;
-    const cleanTitle = APEX.TITLE.toLowerCase().replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '.');
-
-    // Requirement: MOVIE SLUG = title.year
-    if(APEX.MODE === 'tv') {
+    const s = document.getElementById('inp-s').value;
+    const e = document.getElementById('inp-e').value;
+    const cleanTitle = CORE.TITLE.toLowerCase().replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '.');
+    
+    // SLUG LOGIC
+    if(CORE.MODE === 'tv') {
         const sP = s.toString().padStart(2, '0');
         const eP = e.toString().padStart(2, '0');
-        APEX.SLUG = `${cleanTitle}.s${sP}e${eP}`;
+        CORE.SLUG = `${cleanTitle}.s${sP}e${eP}`;
     } else {
-        APEX.SLUG = `${cleanTitle}.${APEX.YEAR}`;
+        CORE.SLUG = `${cleanTitle}.${CORE.YEAR}`;
     }
 
-    document.getElementById('loader-status').innerText = `Resolving Subtitles...`;
+    document.getElementById('status-text').innerText = `Resolving Subtitles (ID: ${CORE.ID})...`;
 
-    // FIX: SUBTITLE FETCHING LOGIC (ID BASED)
+    // SUBTITLE FETCHING LOGIC (STRICT ID-BASED)
     try {
-        let subUrl = `https://sub.wyzie.ru/search?id=${APEX.ID}`;
-        if(APEX.MODE === 'tv') {
-            subUrl += `&season=${s}&episode=${e}`;
-        }
+        let subApi = `https://sub.wyzie.ru/search?id=${CORE.ID}`;
+        if(CORE.MODE === 'tv') subApi += `&season=${s}&episode=${e}`;
         
-        const subData = await fetch(APEX.PROXY(subUrl)).then(r => r.json());
+        const subData = await fetch(CORE.PROXY(subApi)).then(r => r.json());
         if(subData && Array.isArray(subData)) {
-            APEX.SUBS_CACHE = subData.map(sub => ({
-                html: sub.lang || sub.language || 'Unknown',
-                url: APEX.PROXY(sub.url),
+            CORE.SUBS = subData.map(sub => ({
+                html: sub.lang || sub.language || 'Unknown Language',
+                url: CORE.PROXY(sub.url),
                 name: sub.lang
             }));
         }
-    } catch(err) { console.warn("Subtitle Scrape Empty"); }
+    } catch(err) { 
+        console.error("Subtitle Node Error: Server 502/Timeout"); 
+    }
 
-    document.getElementById('loader-status').innerText = "Negotiating Stream Bridge...";
+    document.getElementById('status-text').innerText = "Negotiating Stream Interface...";
 
-    const streamApi = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(APEX.SLUG)}&id=${APEX.ID}&season=${s}&episode=${e}`;
+    const streamSource = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(CORE.SLUG)}&id=${CORE.ID}&season=${s}&episode=${e}`;
     
     try {
-        const stream = await fetch(APEX.PROXY(streamApi)).then(r => r.json());
-        if(stream.m3u8_url) {
-            startApexPlayer(APEX.PROXY(stream.m3u8_url));
+        const res = await fetch(CORE.PROXY(streamSource)).then(r => r.json());
+        if(res.m3u8_url) {
+            launchElysiumPlayer(CORE.PROXY(res.m3u8_url));
         } else { throw new Error(); }
     } catch(err) {
-        alert("Quantum Failure: Link could not be established.");
+        alert("Quantum Link Failure: Stream Offline.");
         hub.style.display = 'none';
     }
 }
 
-// 3. APEX PLAYER ARCHITECTURE (FORCED SETTINGS & HLS AUDIO FIX)
-function startApexPlayer(m3u8) {
-    document.getElementById('viewport-container').style.display = 'block';
-    document.getElementById('loader-hub').style.display = 'none';
-    document.getElementById('dashboard-engine').classList.add('dashboard-hidden');
+// 3. ELYSIUM PLAYER ARCHITECTURE (FORCED VISIBILITY)
+function launchElysiumPlayer(m3u8) {
+    document.getElementById('player-canvas').style.display = 'block';
+    document.getElementById('loading-hub').style.display = 'none';
+    document.getElementById('master-control-panel').classList.add('panel-hidden');
 
-    if(APEX.PLAYER) APEX.PLAYER.destroy();
+    if(CORE.PLAYER) CORE.PLAYER.destroy();
 
-    APEX.PLAYER = new Artplayer({
-        container: '#art-target-node',
+    CORE.PLAYER = new Artplayer({
+        container: '#art-mount-point',
         url: m3u8,
         type: 'm3u8',
         autoplay: true,
         autoSize: true,
         fullscreen: true,
         setting: true,
+        pip: true,
+        playsInline: true,
         theme: '#E50914',
-        loadingShow: false, // Use our own layer
+        icons: {
+            loading: '<img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" style="width:70px; animation: spin-kf 2s linear infinite;">',
+        },
         layers: [
             {
-                name: 'original-controls',
+                name: 'elysium-controls',
                 html: `
                     <div class="mobileCenterControls_playerControlsInnerContainer__6MCmU">
-                        <button class="videasy-scale" onclick="APEX.PLAYER.backward=10">
-                            <svg viewBox="0 0 24 24" fill="none" class="videasy-icon-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.02 2.048A10 10 0 1 1 2 12H0a12 12 0 1 0 5-9.747V1H3v4a1 1 0 0 0 1 1h4V4H6a10 10 0 0 1 5.02-1.952ZM2 4v3h3v2H1a1 1 0 0 1-1-1V4h2Zm12.125 12c-.578 0-1.086-.141-1.523-.424-.43-.29-.764-.694-.999-1.215-.235-.527-.353-1.148-.353-1.861 0-.707.118-1.324.353-1.851.236-.527.568-.932.999-1.215.437-.29.945-.434 1.523-.434s1.083.145 1.513.434c.437.283.774.688 1.009 1.215.235.527.353 1.144.353 1.851 0 .713-.118 1.334-.353 1.86-.235.522-.572.927-1.009 1.216-.43.283-.935.424-1.513.424Zm0-1.35c.39 0 .696-.186.918-.56.222-.378.333-.909.333-1.59s-.111-1.208-.333-1.581c-.222-.38-.528-.57-.918-.57s-.696.19-.918.57c-.222.373-.333.9-.333 1.581 0 .681.111 1.212.333 1.59.222.374.528.56.918.56Zm-5.521 1.205v-5.139L7 11.141V9.82l3.198-.8v6.835H8.604Z" fill="currentColor"></path></svg>
+                        <button class="ctrl-icon-btn" onclick="CORE.PLAYER.backward=10">
+                            <svg viewBox="0 0 24 24" fill="none" class="ctrl-svg-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.02 2.048A10 10 0 1 1 2 12H0a12 12 0 1 0 5-9.747V1H3v4a1 1 0 0 0 1 1h4V4H6a10 10 0 0 1 5.02-1.952ZM2 4v3h3v2H1a1 1 0 0 1-1-1V4h2Zm12.125 12c-.578 0-1.086-.141-1.523-.424-.43-.29-.764-.694-.999-1.215-.235-.527-.353-1.148-.353-1.861 0-.707.118-1.324.353-1.851.236-.527.568-.932.999-1.215.437-.29.945-.434 1.523-.434s1.083.145 1.513.434c.437.283.774.688 1.009 1.215.235.527.353 1.144.353 1.851 0 .713-.118 1.334-.353 1.86-.235.522-.572.927-1.009 1.216-.43.283-.935.424-1.513.424Zm0-1.35c.39 0 .696-.186.918-.56.222-.378.333-.909.333-1.59s-.111-1.208-.333-1.581c-.222-.38-.528-.57-.918-.57s-.696.19-.918.57c-.222.373-.333.9-.333 1.581 0 .681.111 1.212.333 1.59.222.374.528.56.918.56Zm-5.521 1.205v-5.139L7 11.141V9.82l3.198-.8v6.835H8.604Z" fill="currentColor"></path></svg>
                         </button>
-                        <button id="BtnPlayToggle" class="videasy-scale" onclick="APEX.PLAYER.toggle()">
-                            <svg viewBox="0 0 384 512" class="videasy-icon-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path></svg>
+                        <button id="MasterPlayTrigger" class="ctrl-icon-btn" onclick="CORE.PLAYER.toggle()">
+                            <svg viewBox="0 0 384 512" class="ctrl-svg-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path></svg>
                         </button>
-                        <button class="videasy-scale" onclick="APEX.PLAYER.forward=10">
-                            <svg viewBox="0 0 24 24" fill="none" class="videasy-icon-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707.118-1.324-.353-1.851-.235-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
+                        <button class="ctrl-icon-btn" onclick="CORE.PLAYER.forward=10">
+                            <svg viewBox="0 0 24 24" fill="none" class="ctrl-svg-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707.118-1.324-.353-1.851-.235-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
                         </button>
-                    </div>
-                `
-            },
-            {
-                name: 'netflix-spin-layer',
-                html: `
-                    <div id="inline-spinner" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:none; z-index:10;">
-                        <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" style="width:70px; animation: nf-rotate 2s linear infinite;">
                     </div>
                 `
             }
@@ -442,16 +465,16 @@ function startApexPlayer(m3u8) {
                     const hls = new Hls();
                     hls.loadSource(url);
                     hls.attachMedia(video);
-                    APEX.HLS = hls;
+                    CORE.HLS = hls;
 
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        // 1. Audio Switcher (FIXED: Ensure manifest read)
+                        // 1. Audio Node Switcher
                         if(hls.audioTracks.length > 0) {
-                            APEX.PLAYER.setting.add({
+                            CORE.PLAYER.setting.add({
                                 name: 'audio',
-                                html: 'Audio Track',
+                                html: 'Audio Matrix',
                                 selector: hls.audioTracks.map((t, i) => ({
-                                    html: t.name || t.lang || `Audio ${i+1}`,
+                                    html: t.name || t.lang || `Stream ${i+1}`,
                                     index: i,
                                     default: i === hls.audioTrack
                                 })),
@@ -459,60 +482,66 @@ function startApexPlayer(m3u8) {
                             });
                         }
 
-                        // 2. Resolution Switcher
-                        const levels = hls.levels.map((l, i) => ({ html: `${l.height}P`, index: i }));
-                        APEX.PLAYER.setting.add({
+                        // 2. Dynamic Resolution
+                        const lvls = hls.levels.map((l, i) => ({ html: `${l.height}P`, index: i }));
+                        CORE.PLAYER.setting.add({
                             name: 'quality',
                             html: 'Resolution',
-                            selector: [{html: 'Auto', index: -1, default: true}, ...levels],
+                            selector: [{html: 'Auto-Negotiate', index: -1, default: true}, ...lvls],
                             onSelect: (item) => { hls.currentLevel = item.index; return item.html; }
                         });
 
-                        // 3. Subtitles Switcher (From Wyzie)
-                        APEX.PLAYER.setting.add({
-                            name: 'subs',
-                            html: 'Subtitles',
+                        // 3. Forced Subtitle Switcher (FIXED FOR VISIBILITY)
+                        CORE.PLAYER.setting.add({
+                            name: 'subtitle-portal',
+                            html: 'Subtitle Overlay',
                             selector: [
-                                {html: 'Disabled', url: '', default: true},
-                                ...APEX.SUBS_CACHE
+                                {html: 'Off', url: '', default: true},
+                                ...CORE.SUBS
                             ],
                             onSelect: (item) => {
                                 if(item.url) {
-                                    APEX.PLAYER.subtitle.url = item.url;
-                                    APEX.PLAYER.subtitle.show = true;
+                                    // Layer Rendering
+                                    CORE.PLAYER.subtitle.url = item.url;
+                                    CORE.PLAYER.subtitle.show = true;
+
+                                    // Native Apple Support: Inject Track
+                                    injectNativeTrack(item.url, item.html);
                                 } else {
-                                    APEX.PLAYER.subtitle.show = false;
+                                    CORE.PLAYER.subtitle.show = false;
+                                    clearNativeTracks();
                                 }
                                 return item.html;
                             }
                         });
 
-                        // 4. Subtitle Delay (Strict 1-5s)
-                        APEX.PLAYER.setting.add({
-                            name: 'sub-delay',
-                            html: 'Subtitle Delay',
+                        // 4. Time Sync (Delay)
+                        CORE.PLAYER.setting.add({
+                            name: 'sub-sync',
+                            html: 'Sync Offset',
                             selector: [
-                                {html: '-5.0s', val: -5}, {html: '-2.0s', val: -2},
-                                {html: '0.0s', val: 0, default: true},
-                                {html: '+2.0s', val: 2}, {html: '+5.0s', val: 5}
+                                {html: '-5s', val: -5}, {html: '-2s', val: -2},
+                                {html: 'Normal', val: 0, default: true},
+                                {html: '+2s', val: 2}, {html: '+5s', val: 5}
                             ],
                             onSelect: (item) => {
-                                APEX.PLAYER.subtitleOffset = item.val;
+                                CORE.PLAYER.subtitleOffset = item.val;
                                 return item.html;
                             }
                         });
 
-                        // 5. Aspect Ratio
-                        APEX.PLAYER.setting.add({
+                        // 5. Viewing Ratio
+                        CORE.PLAYER.setting.add({
                             name: 'aspect',
                             html: 'Aspect Ratio',
                             selector: [
                                 {html: 'Original', val: 'default', default: true},
-                                {html: '16:9 Wide', val: '16:9'},
-                                {html: 'Stretch Fill', val: 'fill'}
+                                {html: 'Cinema (21:9)', val: '21:9'},
+                                {html: 'Wide (16:9)', val: '16:9'},
+                                {html: 'Fill Screen', val: 'fill'}
                             ],
                             onSelect: (item) => {
-                                APEX.PLAYER.aspectRatio = item.val;
+                                CORE.PLAYER.aspectRatio = item.val;
                                 return item.html;
                             }
                         });
@@ -524,32 +553,57 @@ function startApexPlayer(m3u8) {
         }
     });
 
-    // Event Bindings
-    APEX.PLAYER.on('play', () => {
-        const b = document.querySelector('#BtnPlayToggle');
-        if(b) b.innerHTML = '<svg viewBox="0 0 320 512" class="videasy-icon-lg"><path fill="currentColor" d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z"/></svg>';
+    // Subtitle Visibility Monitor
+    CORE.PLAYER.on('subtitleUpdate', (text) => {
+        // Ensuring visibility in the layer container
+        const subBox = document.querySelector('.art-subtitle');
+        if(subBox) subBox.style.display = 'block';
     });
-    APEX.PLAYER.on('pause', () => {
-        const b = document.querySelector('#BtnPlayToggle');
-        if(b) b.innerHTML = '<svg viewBox="0 0 384 512" class="videasy-icon-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>';
+
+    // Control State Sync
+    CORE.PLAYER.on('play', () => {
+        const b = document.querySelector('#MasterPlayTrigger');
+        if(b) b.innerHTML = '<svg viewBox="0 0 320 512" class="ctrl-svg-lg"><path fill="currentColor" d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z"/></svg>';
     });
-    APEX.PLAYER.on('loading', (show) => {
-        const spin = document.getElementById('inline-spinner');
-        if(spin) spin.style.display = show ? 'block' : 'none';
+    CORE.PLAYER.on('pause', () => {
+        const b = document.querySelector('#MasterPlayTrigger');
+        if(b) b.innerHTML = '<svg viewBox="0 0 384 512" class="ctrl-svg-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>';
     });
 }
 
-function killEngine() {
-    if(APEX.PLAYER) APEX.PLAYER.destroy();
-    if(APEX.HLS) APEX.HLS.destroy();
-    document.getElementById('viewport-container').style.display = 'none';
-    document.getElementById('dashboard-engine').classList.remove('dashboard-hidden');
+// NATIVE APPLE SUBTITLE TRACK INJECTION
+function injectNativeTrack(url, label) {
+    const video = document.querySelector('video');
+    if(!video) return;
+    clearNativeTracks();
+    const track = document.createElement('track');
+    track.kind = 'subtitles';
+    track.label = label;
+    track.srclang = 'en';
+    track.src = url;
+    track.default = true;
+    video.appendChild(track);
+}
+
+function clearNativeTracks() {
+    const video = document.querySelector('video');
+    if(!video) return;
+    while (video.firstChild) {
+        video.removeChild(video.firstChild);
+    }
+}
+
+function shutdownElysium() {
+    if(CORE.PLAYER) CORE.PLAYER.destroy();
+    if(CORE.HLS) CORE.HLS.destroy();
+    document.getElementById('player-canvas').style.display = 'none';
+    document.getElementById('master-control-panel').classList.remove('panel-hidden');
     
-    // Cleanup
-    const bg = document.getElementById('bg-backdrop');
+    // Memory Purge
+    const bg = document.getElementById('backdrop-blur-img');
     bg.style.opacity = '0';
     bg.src = '';
-    APEX.SUBS_CACHE = [];
+    CORE.SUBS = [];
 }
 
 </script>
