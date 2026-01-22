@@ -3,505 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NETFLIX PRO | Ultimate Streaming Experience</title>
+    <title>NETFLIX PRO | Master Engine</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@swarmcloud/hls/hls.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/artplayer@5.0.9/dist/artplayer.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
 
     <style>
-        /* =========================================
-           1. CORE VARIABLES & RESET
-           ========================================= */
         :root {
-            --nf-red: #E50914;
-            --nf-black: #141414;
-            --nf-dark-grey: #181818;
-            --nf-light-grey: #2F2F2F;
-            --nf-white: #FFFFFF;
-            --nf-text-grey: #BCBCBC;
-            --z-loader: 9999;
-            --z-nav: 1000;
-            --z-modal: 2000;
-            --anim-speed: 0.3s;
-            --font-main: 'Inter', sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            --n-red: #E50914;
+            --n-black: #000000;
+            --n-grey: #181818;
+            --font: 'Inter', sans-serif;
         }
 
         body, html {
-            margin: 0; padding: 0;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--n-black); color: white;
+            font-family: var(--font); overflow: hidden;
+        }
+
+        /* --- 1. OG RED NETFLIX SPINNER (CSS ANIMATION) --- */
+        #loader-layer {
+            position: fixed; inset: 0; z-index: 9999;
+            background-color: #000;
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease-out;
+        }
+        /* Dark overlay to make text pop over background image */
+        #loader-layer::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,1) 90%);
+        }
+
+        .spinner-box {
+            position: relative; width: 60px; height: 60px; z-index: 10;
+        }
+        .nf-loader {
             width: 100%; height: 100%;
-            background-color: var(--nf-black);
-            color: var(--nf-white);
-            font-family: var(--font-main);
-            overflow-x: hidden;
-            scroll-behavior: smooth;
+            border: 4px solid transparent;
+            border-top-color: var(--n-red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .nf-loader::before {
+            content: ''; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px;
+            border: 4px solid transparent;
+            border-top-color: #B20710;
+            border-radius: 50%;
+            animation: spin 0.5s linear infinite reverse;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .loader-meta {
+            z-index: 10; text-align: center; margin-top: 30px;
+        }
+        #exclusive-tag {
+            color: var(--n-red); font-weight: 800; letter-spacing: 3px; font-size: 13px;
+            margin-bottom: 10px; text-transform: uppercase; text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        }
+        #loader-title {
+            font-size: 3.5vw; font-weight: 900; margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8); line-height: 1.1; text-transform: uppercase;
         }
 
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--nf-black); }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--nf-red); }
-
-        /* =========================================
-           2. GLOBAL COMPONENTS
-           ========================================= */
-        .btn {
-            border: none; padding: 0.6rem 1.4rem;
-            border-radius: 4px; font-weight: 700;
-            font-size: 1rem; cursor: pointer;
-            display: inline-flex; align-items: center; gap: 8px;
-            transition: transform 0.2s;
-        }
-        .btn:hover { transform: scale(1.05); }
-        .btn-white { background: white; color: black; }
-        .btn-grey { background: rgba(109, 109, 110, 0.7); color: white; }
-        .btn-red { background: var(--nf-red); color: white; }
-
-        .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* =========================================
-           3. RED NETFLIX SPINNER (LOADING LAYER)
-           ========================================= */
-        #global-loader {
-            position: fixed; inset: 0;
-            background: black; z-index: var(--z-loader);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            transition: opacity 0.5s ease;
-        }
-
-        .spinner-container {
-            width: 50px; height: 50px; position: relative;
-            animation: container-rotate 1568ms linear infinite;
-        }
-
-        .spinner-layer {
-            position: absolute; width: 100%; height: 100%;
-            border-color: var(--nf-red);
-            opacity: 1; animation: fill-unfill-rotate 5332ms cubic-bezier(0.4, 0.0, 0.2, 1) infinite both;
-        }
-
-        .circle-clipper {
-            display: inline-block; position: relative;
-            width: 50%; height: 100%; overflow: hidden;
-            border-color: inherit;
-        }
-
-        .circle-clipper.left { float: left; }
-        .circle-clipper.right { float: right; }
-
-        .circle {
-            width: 200%; height: 100%; border-width: 4px; border-style: solid;
-            border-color: inherit; border-bottom-color: transparent !important;
-            border-radius: 50%; animation: none; position: absolute; top: 0; right: 0; bottom: 0;
-        }
-
-        .circle-clipper.left .circle {
-            left: 0; border-right-color: transparent !important;
-            transform: rotate(129deg); animation: left-spin 1333ms cubic-bezier(0.4, 0.0, 0.2, 1) infinite both;
-        }
-        .circle-clipper.right .circle {
-            left: -100%; border-left-color: transparent !important;
-            transform: rotate(-129deg); animation: right-spin 1333ms cubic-bezier(0.4, 0.0, 0.2, 1) infinite both;
-        }
-
-        @keyframes container-rotate { to { transform: rotate(360deg); } }
-        @keyframes left-spin { from { transform: rotate(130deg); } 50% { transform: rotate(-5deg); } to { transform: rotate(130deg); } }
-        @keyframes right-spin { from { transform: rotate(-130deg); } 50% { transform: rotate(5deg); } to { transform: rotate(-130deg); } }
-
-        .loader-text {
-            margin-top: 20px; font-weight: 900; letter-spacing: 2px;
-            color: var(--nf-red); font-size: 14px; text-transform: uppercase;
-        }
-
-        /* =========================================
-           4. DASHBOARD / BROWSE UI
-           ========================================= */
-        #browse-view { width: 100%; min-height: 100vh; padding-bottom: 50px; }
-
-        /* Navbar */
-        .nav {
-            position: fixed; top: 0; width: 100%; height: 70px;
-            padding: 0 4%; display: flex; align-items: center; justify-content: space-between;
-            background: linear-gradient(180deg, rgba(0,0,0,0.7) 10%, transparent);
-            z-index: var(--z-nav); transition: background 0.3s;
-        }
-        .nav.scrolled { background: var(--nf-black); }
-        .nav-logo { color: var(--nf-red); font-size: 28px; font-weight: 900; cursor: pointer; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        .nav-menu { display: flex; gap: 20px; list-style: none; }
-        .nav-menu li { cursor: pointer; font-size: 14px; color: #e5e5e5; transition: color 0.2s; }
-        .nav-menu li:hover { color: #b3b3b3; }
-        .nav-right { display: flex; align-items: center; gap: 20px; }
-
-        /* Hero Billboard */
-        .hero {
-            position: relative; height: 85vh; width: 100%;
-            background-size: cover; background-position: center 20%;
-        }
-        .hero-overlay {
-            position: absolute; inset: 0;
-            background: linear-gradient(77deg, rgba(0,0,0,0.7) 0, transparent 85%),
-                        linear-gradient(180deg, transparent 80%, var(--nf-black) 100%);
-            display: flex; flex-direction: column; justify-content: center;
-            padding-left: 4%;
-        }
-        .hero-title { font-size: 4vw; font-weight: 900; width: 50%; line-height: 1; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .hero-desc { font-size: 1.2vw; width: 40%; margin-bottom: 2rem; line-height: 1.4; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
-        
-        /* Row System */
-        .row-section { margin: 3vw 0; padding-left: 4%; }
-        .row-title { font-size: 1.4vw; font-weight: 700; margin-bottom: 10px; color: #e5e5e5; }
-        .row-scroller {
-            display: flex; gap: 10px; overflow-x: auto; padding: 20px 0;
-            scroll-behavior: smooth;
-        }
-        .row-scroller::-webkit-scrollbar { display: none; }
-        
-        .poster-card {
-            flex: 0 0 auto; width: 200px; aspect-ratio: 2/3;
-            border-radius: 4px; cursor: pointer; position: relative;
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            background: #222; overflow: hidden;
-        }
-        .poster-card img { width: 100%; height: 100%; object-fit: cover; }
-        .poster-card:hover { transform: scale(1.1); z-index: 10; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-
-        /* =========================================
-           5. PLAYER ENGINE (ARTPLAYER + CUSTOM LAYERS)
-           ========================================= */
-        #player-view {
-            position: fixed; inset: 0; background: black;
-            z-index: 9000; display: none;
-        }
+        /* --- 2. PLAYER UI --- */
+        #app { width: 100%; height: 100%; position: relative; }
         .artplayer-app { width: 100%; height: 100%; }
 
-        /* Custom Header in Player */
-        .player-header {
+        /* Header */
+        .nf-header {
             position: absolute; top: 0; left: 0; right: 0; height: 100px;
-            padding: 0 4%; display: flex; align-items: center; gap: 20px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
-            z-index: 110; pointer-events: none; opacity: 0; transition: opacity 0.3s;
-        }
-        .art-state-show .player-header { opacity: 1; pointer-events: auto; }
-        .ph-back { font-size: 30px; cursor: pointer; transition: 0.2s; filter: drop-shadow(0 2px 4px black); }
-        .ph-back:hover { color: var(--nf-red); transform: scale(1.1); }
-        .ph-meta h1 { margin: 0; font-size: 20px; font-weight: 700; text-shadow: 0 2px 4px black; }
-        .ph-meta p { margin: 2px 0 0; font-size: 14px; color: #ccc; }
-
-        /* --- YOUR CUSTOM CENTER ICONS --- */
-        .mobileCenterControls_overlayContainer__sDIgn {
-            position: absolute; inset: 0; pointer-events: none; z-index: 50;
-            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+            z-index: 90; display: flex; align-items: center; padding: 0 4%; gap: 20px;
             opacity: 0; transition: opacity 0.3s;
         }
-        .art-state-show .mobileCenterControls_overlayContainer__sDIgn { opacity: 1; }
-        .mobileCenterControls_playerControlsInnerContainer__6MCmU {
-            display: flex; align-items: center; gap: 60px; pointer-events: auto;
+        .art-state-show .nf-header { opacity: 1; }
+        
+        .back-btn { font-size: 30px; cursor: pointer; filter: drop-shadow(0 2px 2px black); transition: 0.2s; }
+        .back-btn:hover { color: var(--n-red); transform: scale(1.1); }
+        
+        .header-info h1 { margin: 0; font-size: 18px; font-weight: 700; text-shadow: 0 1px 2px black; }
+        .header-info p { margin: 0; font-size: 13px; color: #ccc; text-shadow: 0 1px 2px black; }
+
+        /* --- 3. CUSTOM ICONS (YOUR PROVIDED SVG BLOCK) --- */
+        .mobileCenterControls_overlayContainer__sDIgn {
+            position: absolute; inset: 0; z-index: 50;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s;
         }
+        .art-state-show .mobileCenterControls_overlayContainer__sDIgn { opacity: 1; }
+        
+        .mobileCenterControls_playerControlsContainer__7aONH { pointer-events: auto; }
+        
+        .mobileCenterControls_playerControlsInnerContainer__6MCmU {
+            display: flex; align-items: center; gap: 50px; /* Space between icons */
+        }
+        
         .videasy-scale {
-            background: transparent; border: none; color: white; cursor: pointer;
+            background: none; border: none; cursor: pointer; padding: 0; color: white;
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex; align-items: center; justify-content: center;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8)); padding: 0;
+            filter: drop-shadow(0 0 15px rgba(0,0,0,0.9));
         }
-        .videasy-scale:hover { transform: scale(1.15); color: #ddd; }
+        .videasy-scale:hover { transform: scale(1.2); color: #ddd; }
         .videasy-scale:active { transform: scale(0.95); }
+        
         .videasy-icon-lg { width: 65px; height: 65px; }
-        #ButtonPlay svg { width: 95px; height: 95px; }
+        #ButtonPlay svg { width: 95px; height: 95px; } /* Play button larger */
 
-        /* Subtitle & Settings Overrides */
+        /* --- 4. SUBTITLE & CONTROLS FIXES --- */
         .art-subtitle {
-            bottom: 80px !important; text-align: center;
+            bottom: 80px !important; /* Push text up above controls */
+            font-family: var(--font) !important;
             font-size: clamp(24px, 4vw, 36px) !important;
             font-weight: 600 !important;
-            color: #fff !important;
-            text-shadow: 0 0 4px black, 0 0 4px black, 0 0 4px black !important;
+            text-shadow: 0 0 4px black, 0 0 4px black, 0 0 4px black !important; /* Readable stroke */
+            background: transparent !important;
         }
-        .art-progress-played { background: var(--nf-red) !important; }
-        .art-progress-indicator { background: var(--nf-red) !important; width: 14px; height: 14px; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
         
+        /* Red Theme Overrides */
+        .art-progress-played { background: var(--n-red) !important; }
+        .art-progress-indicator { background: var(--n-red) !important; border: 2px solid white; }
+        .art-control-icon { transition: 0.2s; }
+        .art-control-icon:hover { color: var(--n-red) !important; }
+
         /* Skip Button */
         #skip-btn {
-            position: absolute; bottom: 140px; right: 0;
+            position: absolute; bottom: 130px; right: 0;
             background: white; color: black; font-weight: 700;
-            padding: 12px 30px; border-radius: 4px 0 0 4px;
-            cursor: pointer; z-index: 120; display: none;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); font-size: 16px;
+            padding: 10px 25px; font-size: 14px;
+            cursor: pointer; z-index: 100; border-radius: 4px 0 0 4px;
+            display: none; box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         #skip-btn:hover { background: #e6e6e6; }
     </style>
 </head>
 <body>
 
-    <div id="global-loader">
-        <div class="spinner-container">
-            <div class="spinner-layer">
-                <div class="circle-clipper left"><div class="circle"></div></div>
-                <div class="circle-clipper right"><div class="circle"></div></div>
-            </div>
+    <div id="loader-layer">
+        <div class="spinner-box">
+            <div class="nf-loader"></div>
         </div>
-        <div class="loader-text">INITIALIZING ENGINE</div>
+        <div class="loader-meta">
+            <div id="exclusive-tag">NETFLIX EXCLUSIVE</div>
+            <h1 id="loader-title">INITIALIZING...</h1>
+            <p style="color:#aaa; font-size:12px; margin-top:10px; letter-spacing:1px;">SECURE 4K CONNECTION</p>
+        </div>
     </div>
 
-    <div id="browse-view">
-        <nav class="nav" id="main-nav">
-            <div class="nav-logo" onclick="location.reload()">NETFLIX</div>
-            <ul class="nav-menu">
-                <li onclick="alert('Demo: Homepage')">Home</li>
-                <li onclick="alert('Demo: TV Shows')">TV Shows</li>
-                <li onclick="alert('Demo: Movies')">Movies</li>
-                <li onclick="alert('Demo: New')">New & Popular</li>
-                <li onclick="alert('Demo: List')">My List</li>
-            </ul>
-            <div class="nav-right">
-                <i class="fas fa-search" style="font-size: 20px; cursor: pointer;" onclick="toggleSearch()"></i>
-                <div style="width: 32px; height: 32px; background: url('https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png'); background-size: cover; border-radius: 4px;"></div>
-            </div>
-        </nav>
-
-        <div class="hero" id="hero-billboard" style="background-image: url('https://image.tmdb.org/t/p/original/r9PkjItzGJowkEXQTOI77gQyFf1.jpg');">
-            <div class="hero-overlay">
-                <h1 class="hero-title" id="hero-title">Stranger Things</h1>
-                <p class="hero-desc" id="hero-desc">When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.</p>
-                <div style="display: flex; gap: 15px;">
-                    <button class="btn btn-white" onclick="routeToPlayer('tv', 66732, 1, 1, 'Stranger Things')">
-                        <i class="fas fa-play"></i> Play
-                    </button>
-                    <button class="btn btn-grey">
-                        <i class="fas fa-info-circle"></i> More Info
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div id="dashboard-rows"></div>
-    </div>
-
-    <div id="player-view">
+    <div id="app">
         <div class="artplayer-app"></div>
         
-        <div class="player-header">
-            <i class="fas fa-arrow-left ph-back" onclick="exitPlayer()"></i>
-            <div class="ph-meta">
-                <h1 id="p-title">Loading...</h1>
-                <p id="p-sub">Season 1 • Episode 1</p>
+        <div class="nf-header">
+            <i class="fas fa-arrow-left back-btn" onclick="window.history.back()"></i>
+            <div class="header-info">
+                <h1 id="header-title">Loading...</h1>
+                <p id="header-slug">S-- E--</p>
             </div>
         </div>
 
         <div id="skip-btn">SKIP INTRO</div>
-    </div>
 
-    <div id="search-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2500; align-items:center; justify-content:center; flex-direction:column;">
-        <h2 style="margin-bottom:20px;">Manual Search</h2>
-        <input type="text" id="manual-tmdb" placeholder="TMDB ID" style="padding:15px; width:300px; background:#333; border:none; color:white; border-radius:4px; font-size:18px;">
-        <select id="manual-type" style="padding:15px; margin-top:10px; background:#333; color:white; border:none; width:300px;">
-            <option value="movie">Movie</option>
-            <option value="tv">TV Show</option>
-        </select>
-        <button class="btn btn-red" style="margin-top:20px; width:300px; justify-content:center;" onclick="manualLaunch()">LAUNCH</button>
-        <div style="margin-top:20px; cursor:pointer; color:#999;" onclick="toggleSearch()">Close</div>
-    </div>
+        </div>
 
 <script>
     /**
-     * ============================================================
-     * VIDSRC MASTER ENGINE v4.0 - FULL IMPLEMENTATION
-     * ============================================================
+     * ==========================================
+     * CONFIGURATION & ENGINE
+     * ==========================================
      */
-
-    // --- CONFIGURATION ---
     const CONFIG = {
-        tmdbKey: 'a872655d4924c5850907f1f7d5494d6a',
+        tmdbKey: 'a872655d4924c5850907f1f7d5494d6a', // Public key for demo
         proxy: 'https://workingg.vercel.app/api/proxy?url=',
-        baseStream: 'https://185.237.106.169/v4/Lis-38MjEgUbLsw9uh2SEQ/1767968654/is3/fdtaux/master.m3u8'
+        stream: 'https://185.237.106.169/v4/Lis-38MjEgUbLsw9uh2SEQ/1767968654/is3/fdtaux/master.m3u8'
     };
 
-    // --- STATE MANAGEMENT ---
-    let appState = {
-        view: 'browse', // browse | player
-        art: null,
-        meta: {
-            id: null,
-            type: null,
-            season: 1,
-            episode: 1,
-            title: ''
-        }
-    };
+    let art = null;
+    let meta = { title: '', season: '', episode: '', isSeries: false, tmdbId: '' };
 
-    // --- MOCK DATABASE (To Populate Dashboard) ---
-    const DB = {
-        trending: [
-            { id: 157336, type: 'movie', title: 'Interstellar', img: 'https://image.tmdb.org/t/p/w500/gEU2QniL6E8ahDaX06e8q288UL.jpg' },
-            { id: 299536, type: 'movie', title: 'Avengers: Infinity War', img: 'https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg' },
-            { id: 1399, type: 'tv', title: 'Game of Thrones', img: 'https://image.tmdb.org/t/p/w500/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg' },
-            { id: 71446, type: 'movie', title: 'Money Heist', img: 'https://image.tmdb.org/t/p/w500/reEMJA1uzscCbkpeRJeTT2bjqUp.jpg' },
-            { id: 119051, type: 'tv', title: 'Wednesday', img: 'https://image.tmdb.org/t/p/w500/9PFonBpn40Yn7EIZz2WEyK9Po82.jpg' },
-            { id: 76600, type: 'movie', title: 'Avatar: The Way of Water', img: 'https://image.tmdb.org/t/p/w500/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg' }
-        ],
-        scifi: [
-            { id: 603, type: 'movie', title: 'The Matrix', img: 'https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg' },
-            { id: 27205, type: 'movie', title: 'Inception', img: 'https://image.tmdb.org/t/p/w500/9gk7admal4ZLvd9ZbfqFbyDSbKa.jpg' },
-            { id: 414906, type: 'movie', title: 'The Batman', img: 'https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50x9T2Zv8l9.jpg' },
-            { id: 634649, type: 'movie', title: 'Spider-Man: No Way Home', img: 'https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4GY0d.jpg' }
-        ]
-    };
-
-    // ============================================================
-    // 1. INITIALIZATION & ROUTING
-    // ============================================================
-    window.onload = () => {
+    // --- 1. THE SLUG FIXER (Regex Engine) ---
+    function parseSlug() {
         const params = new URLSearchParams(window.location.search);
+        let rawTitle = params.get('title') || '';
+        meta.tmdbId = params.get('id');
         
-        // Check for Deep Link
-        if (params.get('id') || params.get('title')) {
-            handleDeepLink(params);
+        // 1. Detect "s01e01" pattern
+        const seasonMatch = rawTitle.match(/s(\d+)e(\d+)/i);
+        
+        if (seasonMatch) {
+            meta.isSeries = true;
+            meta.season = parseInt(seasonMatch[1]);
+            meta.episode = parseInt(seasonMatch[2]);
+            
+            // 2. Clean the Title: Remove "s01e01" and "."
+            let cleanName = rawTitle.replace(/s\d+e\d+.*/i, '') // Cut off the tag
+                                    .replace(/\./g, ' ')        // Replace dots
+                                    .trim();
+            meta.title = cleanName.toUpperCase();
         } else {
-            initDashboard();
+            // Movie or manual
+            meta.title = rawTitle.replace(/\./g, ' ').toUpperCase();
         }
-
-        // Scroll listener for nav
-        window.addEventListener('scroll', () => {
-            const nav = document.getElementById('main-nav');
-            if (window.scrollY > 50) nav.classList.add('scrolled');
-            else nav.classList.remove('scrolled');
-        });
-    };
-
-    function handleDeepLink(params) {
-        // SLUG PARSING LOGIC: ?title=show.name.s01e02
-        const rawTitle = params.get('title');
-        const tmdbId = params.get('id');
         
-        if (rawTitle && !tmdbId) {
-            // Complex Slug Parse
-            const match = rawTitle.match(/(.+)\.s(\d+)e(\d+)/i);
-            if (match) {
-                const cleanTitle = match[1].replace(/\./g, ' ').toUpperCase();
-                const s = parseInt(match[2]);
-                const e = parseInt(match[3]);
-                // In real app, search TMDB by title here. 
-                // For demo, we default to player with manual data
-                routeToPlayer('tv', 0, s, e, cleanTitle); 
-            } else {
-                // Assume movie
-                const cleanTitle = rawTitle.replace(/\./g, ' ').toUpperCase();
-                routeToPlayer('movie', 0, 1, 1, cleanTitle);
+        // Manual Override via URL
+        if(params.get('season')) { meta.season = params.get('season'); meta.isSeries = true; }
+        if(params.get('episode')) { meta.episode = params.get('episode'); meta.isSeries = true; }
+    }
+
+    // --- 2. HIGH-RES POSTER FETCHER ---
+    async function fetchMetadata() {
+        if (!meta.tmdbId) return;
+
+        try {
+            const type = meta.isSeries ? 'tv' : 'movie';
+            const url = `https://api.themoviedb.org/3/${type}/${meta.tmdbId}?api_key=${CONFIG.tmdbKey}`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            // A. Set Backdrop (Original Quality)
+            if (data.backdrop_path) {
+                const bgUrl = `https://image.tmdb.org/t/p/original${data.backdrop_path}`;
+                document.getElementById('loader-layer').style.backgroundImage = `url(${bgUrl})`;
             }
-        } else if (tmdbId) {
-            // Direct ID
-            const type = params.get('type') || 'movie';
-            const s = params.get('season') || 1;
-            const e = params.get('episode') || 1;
-            routeToPlayer(type, tmdbId, s, e);
+
+            // B. Set Titles
+            const realTitle = data.title || data.name;
+            document.getElementById('loader-title').innerText = realTitle || meta.title;
+            document.getElementById('header-title').innerText = realTitle || meta.title;
+
+            // C. Set Exclusive Tag / Slug
+            if (meta.isSeries) {
+                const slugText = `SEASON ${meta.season} : EPISODE ${meta.episode}`;
+                document.getElementById('exclusive-tag').innerText = slugText;
+                document.getElementById('header-slug').innerText = slugText;
+            } else {
+                document.getElementById('exclusive-tag').innerText = "FEATURE FILM";
+                document.getElementById('header-slug').innerText = data.release_date ? data.release_date.split('-')[0] : 'Movie';
+            }
+
+        } catch (e) {
+            console.log("Meta fetch failed, using defaults");
         }
     }
 
-    // ============================================================
-    // 2. DASHBOARD LOGIC
-    // ============================================================
-    function initDashboard() {
-        document.getElementById('global-loader').style.display = 'none';
-        const container = document.getElementById('dashboard-rows');
-        
-        // Render Trending Row
-        container.innerHTML += buildRow('Trending Now', DB.trending);
-        // Render Sci-Fi Row
-        container.innerHTML += buildRow('Sci-Fi Blockbusters', DB.scifi);
-        // Render "Rewatch" (Duplicating for length/demo)
-        container.innerHTML += buildRow('Watch It Again', [...DB.scifi, ...DB.trending]);
-    }
+    // --- 3. INIT ARTPLAYER ---
+    function initPlayer() {
+        const fullProxyUrl = CONFIG.proxy + encodeURIComponent(CONFIG.stream + `?t=${Date.now()}`);
 
-    function buildRow(title, items) {
-        const cards = items.map(i => `
-            <div class="poster-card" onclick="routeToPlayer('${i.type}', ${i.id}, 1, 1, '${i.title.replace(/'/g, "")}')">
-                <img src="${i.img}" loading="lazy" alt="${i.title}">
-            </div>
-        `).join('');
-
-        return `
-            <div class="row-section">
-                <div class="row-title">${title}</div>
-                <div class="row-scroller">${cards}</div>
-            </div>
-        `;
-    }
-
-    function toggleSearch() {
-        const el = document.getElementById('search-overlay');
-        el.style.display = el.style.display === 'none' ? 'flex' : 'none';
-    }
-
-    function manualLaunch() {
-        const id = document.getElementById('manual-tmdb').value;
-        const type = document.getElementById('manual-type').value;
-        if(id) routeToPlayer(type, id, 1, 1);
-        toggleSearch();
-    }
-
-    // ============================================================
-    // 3. PLAYER LOGIC (THE HEART)
-    // ============================================================
-    async function routeToPlayer(type, id, s = 1, e = 1, titleOverride = null) {
-        // Show Loader
-        const loader = document.getElementById('global-loader');
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
-        
-        appState.meta = { type, id, season: s, episode: e, title: titleOverride };
-
-        // 1. Fetch Metadata (if ID exists)
-        if (id !== 0) {
-            try {
-                const url = `https://api.themoviedb.org/3/${type}/${id}?api_key=${CONFIG.tmdbKey}`;
-                const res = await fetch(url);
-                const data = await res.json();
-                appState.meta.title = data.title || data.name;
-                // Optional: Update loader BG with backdrop
-                if(data.backdrop_path) {
-                    // Preload bg?
-                }
-            } catch (err) { console.log('Meta fetch failed, using defaults'); }
-        }
-
-        // 2. Switch Views
-        document.getElementById('browse-view').style.display = 'none';
-        document.getElementById('player-view').style.display = 'block';
-
-        // 3. Update Player Header
-        document.getElementById('p-title').innerText = appState.meta.title || 'Unknown Title';
-        document.getElementById('p-sub').innerText = type === 'tv' 
-            ? `Season ${s} • Episode ${e}` 
-            : 'Feature Film';
-
-        // 4. Initialize ArtPlayer
-        initArtPlayer();
-    }
-
-    function exitPlayer() {
-        if(appState.art) appState.art.destroy();
-        document.getElementById('player-view').style.display = 'none';
-        document.getElementById('browse-view').style.display = 'block';
-        document.getElementById('main-nav').classList.remove('hidden');
-    }
-
-    function initArtPlayer() {
-        // Construct Stream URL (Proxy + Timestamp to prevent cache)
-        const streamUrl = `${CONFIG.proxy}${encodeURIComponent(CONFIG.baseStream)}?t=${Date.now()}`;
-
-        appState.art = new Artplayer({
+        art = new Artplayer({
             container: '.artplayer-app',
-            url: streamUrl,
+            url: fullProxyUrl,
             type: 'm3u8',
             theme: '#E50914',
             autoSize: false,
@@ -510,40 +264,32 @@
             setting: true,
             pip: true,
             lock: true,
-            autoPlayback: true,
+            fastForward: true, // Long press on mobile
             autoOrientation: true,
             
-            // --- CUSTOM LAYERS (YOUR ICONS) ---
+            // --- INJECT YOUR CUSTOM ICONS HERE ---
             layers: [
                 {
-                    name: 'center-controls',
+                    name: 'custom-controls',
                     html: `
                         <div class="mobileCenterControls_overlayContainer__sDIgn">
                             <div class="mobileCenterControls_playerControlsContainer__7aONH">
                                 <div class="mobileCenterControls_playerControlsInnerContainer__6MCmU">
-                                    <button class="videasy-scale" id="custom-rw" data-tooltip="Backward 10s">
+                                    <button id="btn-back" class="videasy-scale" data-tooltip="Backward 10s">
                                         <svg viewBox="0 0 24 24" fill="none" class="videasy-icon-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.02 2.048A10 10 0 1 1 2 12H0a12 12 0 1 0 5-9.747V1H3v4a1 1 0 0 0 1 1h4V4H6a10 10 0 0 1 5.02-1.952ZM2 4v3h3v2H1a1 1 0 0 1-1-1V4h2Zm12.125 12c-.578 0-1.086-.141-1.523-.424-.43-.29-.764-.694-.999-1.215-.235-.527-.353-1.148-.353-1.861 0-.707.118-1.324.353-1.851.236-.527.568-.932.999-1.215.437-.29.945-.434 1.523-.434s1.083.145 1.513.434c.437.283.774.688 1.009 1.215.235.527.353 1.144.353 1.851 0 .713-.118 1.334-.353 1.86-.235.522-.572.927-1.009 1.216-.43.283-.935.424-1.513.424Zm0-1.35c.39 0 .696-.186.918-.56.222-.378.333-.909.333-1.59s-.111-1.208-.333-1.581c-.222-.38-.528-.57-.918-.57s-.696.19-.918.57c-.222.373-.333.9-.333 1.581 0 .681.111 1.212.333 1.59.222.374.528.56.918.56Zm-5.521 1.205v-5.139L7 11.141V9.82l3.198-.8v6.835H8.604Z" fill="currentColor"></path></svg>
                                     </button>
-                                    <button class="videasy-scale" id="custom-play" data-tooltip="Play">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="videasy-icon-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path></svg>
+                                    <button id="ButtonPlay" class="videasy-scale" data-tooltip="Play">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 384 512" class="videasy-icon-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path></svg>
                                     </button>
-                                    <button class="videasy-scale" id="custom-ff" data-tooltip="Forward 10s">
+                                    <button id="btn-fwd" class="videasy-scale" data-tooltip="Forward 10s">
                                         <svg viewBox="0 0 24 24" fill="none" class="videasy-icon-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707-.118-1.324-.353-1.851-.235-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    `
+                        </div>`,
                 }
             ],
-            
-            // Remove Default Controls that conflict
-            icons: {
-                loading: '<div style="display:none"></div>',
-                state: '<div style="display:none"></div>'
-            },
 
-            // Custom HLS Handler with Quality/Audio
             customType: {
                 m3u8: function (video, url, art) {
                     if (Hls.isSupported()) {
@@ -553,36 +299,38 @@
                         art.hls = hls;
 
                         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                            // 1. Build Quality Menu
-                            const levels = hls.levels.map((l, i) => ({ 
-                                html: l.height + 'p', 
-                                level: i 
-                            }));
+                            // 1. QUALITY SELECTION
                             art.setting.add({
                                 name: 'quality',
                                 html: 'Quality',
-                                selector: [{ default: true, html: 'Auto', level: -1 }, ...levels],
+                                selector: [
+                                    { default: true, html: 'Auto', level: -1 },
+                                    ...hls.levels.map((l, i) => ({ html: l.height + 'p', level: i }))
+                                ],
                                 onSelect: (item) => {
                                     hls.currentLevel = item.level;
                                     return item.html;
                                 }
                             });
 
-                            // 2. Build Audio Menu
-                            if(hls.audioTracks.length > 0) {
+                            // 2. AUDIO TRACK SWITCHER (Fix for missing feature)
+                            if (hls.audioTracks.length > 0) {
                                 art.setting.add({
                                     name: 'audio',
                                     html: 'Audio',
-                                    selector: hls.audioTracks.map((t, i) => ({ html: t.name || `Track ${i+1}`, index: i })),
+                                    selector: hls.audioTracks.map((t, i) => ({
+                                        html: t.name || `Language ${i+1}`,
+                                        index: i
+                                    })),
                                     onSelect: (item) => {
                                         hls.audioTrack = item.index;
                                         return item.html;
                                     }
                                 });
                             }
-                            
-                            // Hide Loader
-                            const loader = document.getElementById('global-loader');
+
+                            // 3. REMOVE LOADER SMOOTHLY
+                            const loader = document.getElementById('loader-layer');
                             loader.style.opacity = '0';
                             setTimeout(() => loader.style.display = 'none', 500);
                         });
@@ -590,63 +338,83 @@
                 }
             },
             
+            // CLEAN INTERFACE
+            icons: {
+                loading: '<div style="display:none"></div>', // Hide default loader
+                state: '<div style="display:none"></div>' // Hide default center play
+            },
+            
+            // --- SUBTITLE SETTINGS PANEL ---
             settings: [
                 {
-                    html: 'Subtitles & Sync',
+                    html: 'Subtitle Config',
                     icon: '<i class="fas fa-closed-captioning"></i>',
                     selector: [
-                        { html: 'Load External VTT', action: 'load' },
-                        { html: 'Sync +0.5s', action: 'plus' },
-                        { html: 'Sync -0.5s', action: 'minus' }
+                        { html: 'Import Sub (URL)', action: 'url' },
+                        { html: 'Delay +0.5s', action: 'delay_p' },
+                        { html: 'Delay -0.5s', action: 'delay_m' },
                     ],
                     onSelect: (item) => {
-                        if(item.action === 'load') {
-                            const url = prompt("Paste VTT/SRT URL:");
-                            if(url) art.subtitle.url = `${CONFIG.proxy}${encodeURIComponent(url)}`;
+                        if (item.action === 'url') {
+                            const url = prompt("Paste Subtitle URL:");
+                            if(url) art.subtitle.url = CONFIG.proxy + encodeURIComponent(url);
+                        } else if (item.action === 'delay_p') {
+                            art.subtitle.offset += 0.5;
+                            art.notice.show = `Offset: ${art.subtitle.offset}s`;
+                        } else if (item.action === 'delay_m') {
+                            art.subtitle.offset -= 0.5;
+                            art.notice.show = `Offset: ${art.subtitle.offset}s`;
                         }
-                        if(item.action === 'plus') art.subtitle.offset += 0.5;
-                        if(item.action === 'minus') art.subtitle.offset -= 0.5;
-                        return item.html;
+                        return 'Subtitle Config';
                     }
                 }
             ]
         });
 
-        // --- BIND CUSTOM ICONS TO EVENTS ---
+        // --- 4. BIND CUSTOM ICONS & EVENTS ---
         art.on('ready', () => {
-            const btnPlay = document.getElementById('custom-play');
-            const svgContainer = btnPlay.querySelector('svg');
+            const btnBack = document.getElementById('btn-back');
+            const btnPlay = document.getElementById('ButtonPlay');
+            const btnFwd = document.getElementById('btn-fwd');
+            const skipBtn = document.getElementById('skip-btn');
             
-            // Icon Paths
-            const pPlay = `<path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path>`;
-            const pPause = `<path fill="currentColor" d="M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z"/>`;
+            // Play/Pause Icons
+            const playPath = `<path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path>`;
+            const pausePath = `<path fill="currentColor" d="M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z"/>`;
 
-            // Click Handlers
-            document.getElementById('custom-rw').onclick = () => art.currentTime -= 10;
-            document.getElementById('custom-ff').onclick = () => art.currentTime += 10;
+            btnBack.onclick = () => art.currentTime -= 10;
+            btnFwd.onclick = () => art.currentTime += 10;
             btnPlay.onclick = () => art.toggle();
+            skipBtn.onclick = () => art.currentTime = 85;
 
-            // State Listeners
+            // Update Play Button Icon
             art.on('play', () => {
-                svgContainer.innerHTML = pPause;
-                svgContainer.setAttribute('viewBox', '0 0 448 512');
+                btnPlay.querySelector('svg').innerHTML = pausePath;
+                btnPlay.querySelector('svg').setAttribute('viewBox', '0 0 448 512');
             });
+            
             art.on('pause', () => {
-                svgContainer.innerHTML = pPlay;
-                svgContainer.setAttribute('viewBox', '0 0 384 512');
+                btnPlay.querySelector('svg').innerHTML = playPath;
+                btnPlay.querySelector('svg').setAttribute('viewBox', '0 0 384 512');
             });
 
-            // Skip Button Logic
+            // Skip Intro Logic
             art.on('video:timeupdate', () => {
-                const btn = document.getElementById('skip-btn');
-                if(art.currentTime > 10 && art.currentTime < 85) btn.style.display = 'block';
-                else btn.style.display = 'none';
+                if(art.currentTime > 10 && art.currentTime < 85) {
+                    skipBtn.style.display = 'block';
+                } else {
+                    skipBtn.style.display = 'none';
+                }
             });
-            document.getElementById('skip-btn').onclick = () => {
-                art.currentTime = 85;
-            };
         });
     }
+
+    // --- LAUNCH ---
+    window.onload = async () => {
+        parseSlug();
+        await fetchMetadata();
+        initPlayer();
+    };
 
 </script>
 </body>
