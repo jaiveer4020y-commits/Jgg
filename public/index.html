@@ -2,183 +2,124 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CINEMA TITAN MAGNUM OPUS | V19.0 FINAL</title>
+    <title>CINEMA TITAN V21.0 | GOLIATH BUILD</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.1.1/dist/artplayer.css">
     <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
     <script src="https://unpkg.com/artplayer@5.1.1/dist/artplayer.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
 
     <style>
         /* ================================================================
-        1. TITAN CORE AESTHETICS (NEO-NETFLIX DARK)
-        ================================================================
-        */
+        1. GOLIATH CORE STYLING
+        ================================================================ */
         :root {
             --n-red: #E50914;
             --n-black: #050505;
-            --glass: rgba(15, 15, 15, 0.95);
-            --shadow: 0 0 30px rgba(229, 9, 20, 0.3);
+            --sub-size: 28px;
+            --sub-color: #ffffff;
         }
 
-        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-        
         body, html {
             margin: 0; padding: 0; width: 100vw; height: 100vh;
             background-color: #000; color: #fff;
             font-family: 'Inter', sans-serif; overflow: hidden;
-            user-select: none;
+            user-select: none; -webkit-tap-highlight-color: transparent;
         }
 
-        /* ================================================================
-        2. ADVANCED SEARCH TERMINAL UI
-        ================================================================
-        */
+        /* DASHBOARD - THE TERMINAL */
         #titan-terminal {
-            position: fixed; inset: 0; z-index: 100;
-            background: radial-gradient(circle at center, #1a0505 0%, #000 100%);
+            position: fixed; inset: 0; z-index: 500;
+            background: radial-gradient(circle at center, #220707 0%, #000 100%);
             display: flex; align-items: center; justify-content: center;
-            transition: transform 1.2s cubic-bezier(0.8, 0, 0.2, 1), opacity 0.8s;
+            transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s;
         }
 
-        .terminal-exit { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+        .terminal-inactive { transform: translateY(-100%); opacity: 0; pointer-events: none; }
 
-        .titan-pod {
-            width: 95%; max-width: 550px; padding: 50px;
-            background: var(--glass); border-radius: 40px;
+        .goliath-card {
+            width: 90%; max-width: 550px; padding: 45px;
+            background: rgba(15, 15, 15, 0.98); border-radius: 35px;
             border: 1px solid rgba(255,255,255,0.08);
             box-shadow: 0 50px 100px rgba(0,0,0,0.9);
-            animation: pod-rise 0.8s ease-out;
+            text-align: center;
         }
 
-        @keyframes pod-rise { from { opacity: 0; transform: translateY(30px); } }
-
-        .titan-title {
-            font-family: 'Outfit', sans-serif; font-size: 3rem; font-weight: 900;
-            text-align: center; color: var(--n-red); margin-bottom: 35px;
-            text-transform: uppercase; letter-spacing: -2px;
-            text-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
+        .goliath-brand {
+            font-family: 'Outfit', sans-serif; font-size: 2.8rem; font-weight: 900;
+            color: var(--n-red); margin-bottom: 35px; text-transform: uppercase;
+            letter-spacing: -1px; text-shadow: 0 0 15px rgba(229, 9, 20, 0.4);
         }
 
-        .mode-switch {
-            display: flex; gap: 10px; margin-bottom: 30px;
-            background: #000; padding: 8px; border-radius: 20px;
-        }
-
-        .mode-btn {
-            flex: 1; padding: 15px; border: none; border-radius: 15px;
-            background: transparent; color: #555; font-weight: 800;
-            text-transform: uppercase; cursor: pointer; transition: 0.3s;
-            font-size: 12px; letter-spacing: 1px;
-        }
-
-        .mode-btn.active { background: var(--n-red); color: #fff; box-shadow: var(--shadow); }
-
-        .input-stack { margin-bottom: 25px; position: relative; }
-        .input-stack label {
-            display: block; font-size: 11px; font-weight: 900; color: var(--n-red);
-            text-transform: uppercase; margin-bottom: 12px; letter-spacing: 3px;
-        }
+        .q-input-wrap { margin-bottom: 25px; text-align: left; }
+        .q-input-wrap label { display: block; font-size: 11px; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 2px; }
 
         .titan-input {
             width: 100%; padding: 20px; background: #000; border: 1px solid #222;
-            border-radius: 18px; color: #fff; font-size: 16px; transition: 0.4s;
+            border-radius: 18px; color: #fff; font-size: 16px; transition: 0.3s;
         }
+        .titan-input:focus { border-color: var(--n-red); box-shadow: 0 0 15px rgba(229,9,20,0.2); outline: none; }
 
-        .titan-input:focus { border-color: var(--n-red); box-shadow: 0 0 0 5px rgba(229,9,20,0.15); }
-
-        .portal-results {
-            position: absolute; width: 100%; max-height: 350px; background: #0d0d0d;
-            top: 105%; left: 0; z-index: 500; border-radius: 20px; overflow-y: auto;
-            display: none; border: 1px solid #1a1a1a; box-shadow: 0 40px 80px rgba(0,0,0,1);
+        .titan-btn-init {
+            width: 100%; padding: 22px; background: var(--n-red); color: #fff;
+            border: none; border-radius: 18px; font-weight: 900; font-size: 17px;
+            text-transform: uppercase; letter-spacing: 3px; cursor: pointer;
+            transition: 0.4s; box-shadow: 0 15px 30px rgba(229,9,20,0.3);
         }
-
-        .portal-item {
-            display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid #111;
-            cursor: pointer; align-items: center; transition: 0.3s;
-        }
-        .portal-item:hover { background: #161616; padding-left: 20px; }
-        .portal-item img { width: 45px; height: 65px; border-radius: 8px; object-fit: cover; }
-        .portal-item div { font-weight: 700; font-size: 14px; }
-
-        .btn-init {
-            width: 100%; padding: 25px; background: var(--n-red); color: #fff;
-            border: none; border-radius: 20px; font-weight: 900; font-size: 18px;
-            text-transform: uppercase; letter-spacing: 5px; cursor: pointer;
-            transition: 0.4s; box-shadow: var(--shadow);
-        }
-        .btn-init:hover { transform: translateY(-3px); filter: brightness(1.2); }
+        .titan-btn-init:hover { transform: scale(1.02); filter: brightness(1.2); }
 
         /* ================================================================
-        3. OG NETFLIX SPINNER & LOADING HUD
-        ================================================================
-        */
-        #titan-loading {
-            position: fixed; inset: 0; z-index: 900; background: #000;
-            display: none; align-items: center; justify-content: center; flex-direction: column;
-        }
-
-        #poster-bg {
-            position: absolute; inset: 0; width: 100%; height: 100%;
-            object-fit: cover; opacity: 0; transition: opacity 1.5s;
-            filter: brightness(0.4); /* NO BLUR */
-        }
-
-        .loading-vortex {
-            z-index: 10; text-align: center; display: flex;
-            flex-direction: column; align-items: center; gap: 35px;
-        }
-
-        #vortex-logo { max-width: 320px; max-height: 150px; object-fit: contain; display: none; margin-bottom: 20px; }
-
-        /* THE REAL OG NETFLIX SPINNER */
-        .netflix-spinner {
-            width: 100px; height: 100px; position: relative;
-        }
-        .netflix-spinner::before {
-            content: ""; box-sizing: border-box; position: absolute;
-            inset: 0; border-radius: 50%;
-            border: 4px solid rgba(229, 9, 20, 0.15);
-            border-top-color: var(--n-red);
-            animation: netflix-rotate 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
-        }
+        2. OFFICIAL NETFLIX SPINNER SYSTEM
+        ================================================================ */
         @keyframes netflix-rotate {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
 
-        #boot-msg {
-            font-size: 13px; color: var(--n-red); font-weight: 900;
-            text-transform: uppercase; letter-spacing: 6px;
+        #loading-veil {
+            position: fixed; inset: 0; z-index: 1000; background: #000;
+            display: none; align-items: center; justify-content: center;
+        }
+
+        #backdrop-blur {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0.4; filter: brightness(0.6);
         }
 
         /* ================================================================
-        4. ARTPLAYER TITAN VIEWPORT & LAYER-MATRIX
-        ================================================================
-        */
-        #titan-viewport { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; }
+        3. ARTPLAYER GOLIATH VIEWPORT
+        ================================================================ */
+        #goliath-viewport { position: fixed; inset: 0; background: #000; z-index: 1500; display: none; }
 
-        /* ELYSIUM SUBTITLE LAYER (FIXES NULL ERROR) */
-        .elysium-subtitle-box {
+        .btn-close-viewport {
+            position: absolute; top: 40px; left: 40px; z-index: 3000;
+            cursor: pointer; background: rgba(0,0,0,0.6); padding: 15px;
+            border-radius: 50%; transition: 0.3s;
+        }
+        .btn-close-viewport:hover { background: var(--n-red); transform: rotate(-90deg); }
+
+        /* MANUAL SUBTITLE MATRIX (THE "LOCK-STYLE" LAYER) */
+        .goliath-subtitle-matrix {
             position: absolute; bottom: 12%; left: 0; right: 0;
-            pointer-events: none; z-index: 2000; text-align: center;
-            display: flex; justify-content: center; padding: 0 8%;
+            display: flex; justify-content: center; pointer-events: none;
+            z-index: 2500; text-align: center; padding: 0 10%;
         }
 
-        .elysium-sub-text {
-            background: rgba(0, 0, 0, 0.85);
-            color: #ffffff;
-            padding: 6px 16px;
-            border-radius: 8px;
-            font-size: clamp(20px, 4vw, 36px);
+        #goliath-sub-render {
+            background: rgba(0, 0, 0, 0.8);
+            color: var(--sub-color);
+            font-size: var(--sub-size);
+            padding: 8px 18px;
+            border-radius: 10px;
             font-weight: 600;
             line-height: 1.4;
-            text-shadow: 0 2px 4px rgba(0,0,0,1);
-            display: none; /* Managed via SubtitleUpdate */
+            display: none;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
-        /* TITAN CENTER CONTROLS - AUTO HIDDEN ON LOADING */
+        /* CENTER ICONS SYSTEM */
         .mobileCenterControls_playerControlsInnerContainer__6MCmU {
             position: absolute; inset: 0; display: flex; align-items: center;
             justify-content: center; gap: 15vw; pointer-events: none;
@@ -187,248 +128,159 @@
         .art-hover .mobileCenterControls_playerControlsInnerContainer__6MCmU,
         .art-state-paused .mobileCenterControls_playerControlsInnerContainer__6MCmU { opacity: 1; }
 
-        /* HIDE CONTROLS WHEN LOADING STATE IS ACTIVE */
+        /* MANDATORY HIDE ON LOADING */
         .art-state-loading .mobileCenterControls_playerControlsInnerContainer__6MCmU {
             display: none !important;
         }
 
-        .titan-ctrl {
-            background: transparent !important; border: none; width: 65px; height: 65px; 
-            display: flex; align-items: center; justify-content: center; 
-            color: #fff; cursor: pointer; pointer-events: auto; 
-            transition: 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .icon-titan-old {
+            background: transparent !important; border: none; width: 65px; height: 65px;
+            color: #fff; cursor: pointer; pointer-events: auto; transition: 0.2s;
+            filter: drop-shadow(0 0 15px rgba(0,0,0,0.5));
         }
-        .titan-ctrl:hover { transform: scale(1.3); color: var(--n-red); }
-
-        #TitanPlayBtn { width: 100px; height: 100px; }
-        #TitanPlayBtn svg { width: 55px; height: 55px; }
-
-        .btn-exit-titan {
-            position: absolute; top: 40px; left: 40px; z-index: 3000;
-            cursor: pointer; background: rgba(0,0,0,0.5); padding: 15px;
-            border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
-            transition: 0.3s; backdrop-filter: blur(10px);
-        }
-        .btn-exit-titan:hover { background: var(--n-red); transform: translateX(-5px); }
+        .icon-titan-old:hover { transform: scale(1.2); color: var(--n-red); }
 
     </style>
 </head>
 <body>
 
 <div id="titan-terminal">
-    <div class="titan-pod">
-        <div class="titan-title">Titan Cinema</div>
+    <div class="goliath-card">
+        <div class="goliath-brand">Goliath Cinema</div>
         
-        <div class="mode-switch">
-            <button class="mode-btn active" id="m-tv" onclick="switchTitanMode('tv')">TV Episodes</button>
-            <button class="mode-btn" id="m-movie" onclick="switchTitanMode('movie')">Movie Film</button>
-        </div>
-
-        <div class="input-stack">
+        <div class="q-input-wrap">
             <label>Neuro-Search Uplink</label>
-            <input type="text" id="titan-search" class="titan-input" placeholder="Enter title name..." autocomplete="off">
-            <div id="portal-results" class="portal-results"></div>
+            <input type="text" id="target-title" class="titan-input" placeholder="Enter Movie or Show Name...">
         </div>
 
-        <div id="tv-logic-grid">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="input-stack">
-                    <label>Season</label>
-                    <input type="number" id="s-val" class="titan-input" value="1" min="1">
-                </div>
-                <div class="input-stack">
-                    <label>Episode</label>
-                    <input type="number" id="e-val" class="titan-input" value="1" min="1">
-                </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+            <div class="q-input-wrap">
+                <label>Season</label>
+                <input type="number" id="s-num" class="titan-input" value="1">
+            </div>
+            <div class="q-input-wrap">
+                <label>Episode</label>
+                <input type="number" id="e-num" class="titan-input" value="1">
             </div>
         </div>
 
-        <button class="btn-init" onclick="initTitanBoot()">Initialize Link</button>
+        <button class="titan-btn-init" onclick="igniteGoliath()">Initiate Protocol</button>
     </div>
 </div>
 
-<div id="titan-loading">
-    <img id="poster-bg" src="">
-    <div class="loading-vortex">
-        <img id="vortex-logo" src="">
-        <div class="netflix-spinner"></div>
-        <div id="boot-msg">Calibrating Neural Link...</div>
-    </div>
+<div id="loading-veil">
+    <img id="backdrop-blur" src="">
+    <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" style="width:80px; z-index:10; animation: netflix-rotate 1.2s linear infinite;">
 </div>
 
-<div id="titan-viewport">
-    <div class="btn-exit-titan" onclick="killTitan()">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-    </div>
-    
-    <div class="elysium-subtitle-box">
-        <div class="elysium-sub-text" id="titan-sub-node"></div>
+<div id="goliath-viewport">
+    <div class="btn-close-viewport" onclick="terminateGoliath()">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
     </div>
 
-    <div id="art-titan-mount" style="width:100%; height:100%;"></div>
+    <div class="goliath-subtitle-matrix">
+        <div id="goliath-sub-render"></div>
+    </div>
+
+    <div id="art-canvas" style="width:100%; height:100%;"></div>
 </div>
 
 <script>
 /**
- * CINEMA TITAN MAGNUM OPUS - V19.0
- * Features: Corrected Subtitle URL, Audio Switcher Fix, Manual Layer Logic, Netflix Buffering.
+ * CINEMA TITAN V21.0 - GOLIATH BUILD
+ * Features: Absolute Audio Switching, Manual Layer Subs, Netflix Spinner Only.
  */
 
-const TITAN = {
-    TMDB: '463dcd7993ab31d92eb586802fdeee6a',
+const GOLIATH = {
     PROXY: (u) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`,
-    MODE: 'tv',
-    ID: null,
-    TITLE: '',
-    YEAR: '',
-    SLUG: '',
+    TMDB: '463dcd7993ab31d92eb586802fdeee6a',
+    MEDIA: { id: null, type: 'tv', title: '', year: '' },
     PLAYER: null,
     HLS: null,
     SUBS: []
 };
 
-// 1. NEURO SEARCH SYSTEM
-const tSearch = document.getElementById('titan-search');
-const tPortal = document.getElementById('portal-results');
+async function igniteGoliath() {
+    const q = document.getElementById('target-title').value;
+    if(!q) return alert("Alert: Target title required.");
 
-tSearch.addEventListener('input', async (e) => {
-    const q = e.target.value;
-    if(q.length < 2) { tPortal.style.display = 'none'; return; }
+    const veil = document.getElementById('loading-veil');
+    veil.style.display = 'flex';
 
     try {
-        const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TITAN.TMDB}&query=${encodeURIComponent(q)}`);
-        const d = await r.json();
-        tPortal.innerHTML = '';
-        if(d.results.length > 0) {
-            tPortal.style.display = 'block';
-            d.results.slice(0, 10).forEach(item => {
-                if(item.media_type !== 'tv' && item.media_type !== 'movie') return;
-                const yr = (item.release_date || item.first_air_date || '').split('-')[0];
-                const div = document.createElement('div');
-                div.className = 'portal-item';
-                div.innerHTML = `
-                    <img src="https://image.tmdb.org/t/p/w92${item.poster_path}" onerror="this.src='https://via.placeholder.com/92x138/000/fff?text=?'">
-                    <div>${item.title || item.name} (${yr || 'N/A'})</div>
-                `;
-                div.onclick = () => {
-                    TITAN.ID = item.id;
-                    TITAN.TITLE = item.title || item.name;
-                    TITAN.YEAR = yr;
-                    TITAN.MODE = item.media_type;
-                    tSearch.value = TITAN.TITLE;
-                    tPortal.style.display = 'none';
-                    switchTitanMode(TITAN.MODE);
-                };
-                tPortal.appendChild(div);
-            });
-        }
-    } catch(err) { console.warn("Search Portal Error"); }
-});
+        // 1. Data Recovery
+        const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${GOLIATH.TMDB}&query=${encodeURIComponent(q)}`).then(res=>res.json());
+        const data = r.results[0];
+        GOLIATH.MEDIA.id = data.id;
+        GOLIATH.MEDIA.type = data.media_type || 'tv';
+        GOLIATH.MEDIA.title = data.title || data.name;
+        GOLIATH.MEDIA.year = (data.release_date || data.first_air_date || '').split('-')[0];
 
-function switchTitanMode(m) {
-    TITAN.MODE = m;
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`m-${m}`).classList.add('active');
-    document.getElementById('tv-logic-grid').style.display = m === 'tv' ? 'block' : 'none';
-}
+        if(data.backdrop_path) document.getElementById('backdrop-blur').src = `https://image.tmdb.org/t/p/original${data.backdrop_path}`;
 
-// 2. TITAN BOOT SEQUENCE (SUBTITLE URL FIX)
-async function initTitanBoot() {
-    if(!TITAN.ID) return alert("Titan Alert: Target not found.");
+        const s = document.getElementById('s-num').value;
+        const e = document.getElementById('e-num').value;
+        const slug = `${GOLIATH.MEDIA.title.toLowerCase().replace(/[^a-z0-9]/g,'.')}.${GOLIATH.MEDIA.type === 'tv' ? `s${s.padStart(2,'0')}e${e.padStart(2,'0')}` : GOLIATH.MEDIA.year}`;
 
-    const hub = document.getElementById('titan-loading');
-    hub.style.display = 'flex';
-    document.getElementById('boot-msg').innerText = "Establishing Link...";
+        // 2. Subtitle Mapping (Fixed URL)
+        try {
+            let subUrl = `https://sub.wyzie.ru/search?id=${GOLIATH.MEDIA.id}`;
+            if(GOLIATH.MEDIA.type === 'tv') subUrl += `&season=${s}&episode=${e}`;
+            
+            const subRes = await fetch(GOLIATH.PROXY(subUrl)).then(res => res.json());
+            if(Array.isArray(subRes)) {
+                GOLIATH.SUBS = subRes.map(i => ({ html: i.lang || 'Subtitle', url: GOLIATH.PROXY(i.url) }));
+            }
+        } catch(e) {}
 
-    // Meta & Poster
-    try {
-        const [meta, imgs] = await Promise.all([
-            fetch(`https://api.themoviedb.org/3/${TITAN.MODE}/${TITAN.ID}?api_key=${TITAN.TMDB}`).then(r=>r.json()),
-            fetch(`https://api.themoviedb.org/3/${TITAN.MODE}/${TITAN.ID}/images?api_key=${TITAN.TMDB}`).then(r=>r.json())
-        ]);
-        if(meta.backdrop_path) {
-            const bg = document.getElementById('poster-bg');
-            bg.src = `https://image.tmdb.org/t/p/original${meta.backdrop_path}`;
-            bg.style.opacity = '1';
-        }
-        const logo = document.getElementById('vortex-logo');
-        const bestLogo = imgs.logos.find(l => l.file_path.endsWith('.png'));
-        if(bestLogo) {
-            logo.src = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
-            logo.style.display = 'block';
-        }
-    } catch(e) { }
-
-    const s = document.getElementById('s-val').value;
-    const e = document.getElementById('e-val').value;
-    const cleanT = TITAN.TITLE.toLowerCase().replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '.');
-    
-    TITAN.SLUG = TITAN.MODE === 'tv' ? `${cleanT}.s${s.padStart(2, '0')}e${e.padStart(2, '0')}` : `${cleanT}.${TITAN.YEAR}`;
-
-    // SUBTITLE RESOLVER - FIXING THE MAPPING
-    document.getElementById('boot-msg').innerText = "Resolving Subtitle Matrix...";
-    try {
-        let subApi = `https://sub.wyzie.ru/search?id=${TITAN.ID}`;
-        if(TITAN.MODE === 'tv') subApi += `&season=${s}&episode=${e}`;
+        // 3. Stream Link Initialization
+        const api = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(slug)}&id=${GOLIATH.MEDIA.id}&season=${s}&episode=${e}`;
+        const streamData = await fetch(GOLIATH.PROXY(api)).then(res => res.json());
         
-        const subData = await fetch(TITAN.PROXY(subApi)).then(r => r.json());
-        if(subData && Array.isArray(subData)) {
-            TITAN.SUBS = subData.map(item => ({
-                html: item.lang || 'Subtitle',
-                url: TITAN.PROXY(item.url),
-                name: item.lang
-            }));
+        if(streamData.m3u8_url) {
+            bootGoliathPlayer(GOLIATH.PROXY(streamData.m3u8_url));
+        } else {
+            alert("Goliath: Channel Unavailable.");
+            veil.style.display = 'none';
         }
-    } catch(err) { console.error("Subtitle Protocol Offline"); }
-
-    document.getElementById('boot-msg').innerText = "Establishing Stream Tunnel...";
-    const api = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(TITAN.SLUG)}&id=${TITAN.ID}&season=${s}&episode=${e}`;
-    
-    try {
-        const res = await fetch(TITAN.PROXY(api)).then(r => r.json());
-        if(res.m3u8_url) {
-            bootTitanPlayer(TITAN.PROXY(res.m3u8_url));
-        } else { throw new Error(); }
     } catch(err) {
-        alert("Titan Error: Stream Link Down.");
-        hub.style.display = 'none';
+        veil.style.display = 'none';
+        alert("Goliath: Fatal Protocol Crash.");
     }
 }
 
-// 3. TITAN PLAYER ARCHITECTURE (AUDIO & LAYER FIX)
-function bootTitanPlayer(url) {
-    document.getElementById('titan-viewport').style.display = 'block';
-    document.getElementById('titan-loading').style.display = 'none';
-    document.getElementById('titan-terminal').classList.add('terminal-exit');
+function bootGoliathPlayer(url) {
+    document.getElementById('goliath-viewport').style.display = 'block';
+    document.getElementById('loading-veil').style.display = 'none';
+    document.getElementById('titan-terminal').classList.add('terminal-inactive');
 
-    if(TITAN.PLAYER) TITAN.PLAYER.destroy();
+    if(GOLIATH.PLAYER) GOLIATH.PLAYER.destroy();
 
-    TITAN.PLAYER = new Artplayer({
-        container: '#art-titan-mount',
+    GOLIATH.PLAYER = new Artplayer({
+        container: '#art-canvas',
         url: url,
         type: 'm3u8',
         autoplay: true,
-        autoSize: true,
         fullscreen: true,
         setting: true,
         theme: '#E50914',
+        // THE ONLY SPINNER REQUESTED
         icons: {
-            loading: '<div class="netflix-spinner"></div>',
-            state: '<img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" style="width:70px; animation: netflix-rotate 1.5s linear infinite;">'
+            loading: '<img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" style="width:75px; animation: netflix-rotate 1.2s linear infinite;">',
         },
         layers: [
             {
-                name: 'titan-controls',
+                name: 'goliath-controls',
                 html: `
                     <div class="mobileCenterControls_playerControlsInnerContainer__6MCmU">
-                        <button class="titan-ctrl" onclick="TITAN.PLAYER.backward=10">
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="40"><path d="M12.5 3c-4.97 0-9 4.03-9 9H1l4 4 4-4H6.5c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5c-1.51 0-2.88-.61-3.88-1.59l-1.42 1.43C8.16 18.31 9.98 19 12 19c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/></svg>
+                        <button class="icon-titan-old" onclick="GOLIATH.PLAYER.backward=10">
+                            <svg viewBox="0 0 24 24" width="45" fill="white"><path d="M12.5 3c-4.97 0-9 4.03-9 9H1l4 4 4-4H6.5c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5c-1.51 0-2.88-.61-3.88-1.59l-1.42 1.43C8.16 18.31 9.98 19 12 19c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/></svg>
                         </button>
-                        <button id="TitanPlayBtn" class="titan-ctrl" onclick="TITAN.PLAYER.toggle()">
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="60"><path d="M8 5v14l11-7z"/></svg>
+                        <button id="GoliathCenterBtn" class="icon-titan-old" style="width:100px; height:100px;" onclick="GOLIATH.PLAYER.toggle()">
+                            <svg viewBox="0 0 24 24" width="75" fill="white"><path d="M8 5v14l11-7z"/></svg>
                         </button>
-                        <button class="titan-ctrl" onclick="TITAN.PLAYER.forward=10">
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="40"><path d="M11.5 3c4.97 0 9 4.03 9 9h2.5l-4 4-4-4H17.5c0-3.03-2.47-5.5-5.5-5.5s-5.5 2.47-5.5 5.5 2.47 5.5 5.5 5.5c1.51 0 2.88-.61 3.88-1.59l1.42 1.43C15.84 18.31 14.02 19 12 19c-4.97 0-9-4.03-9-9s4.03-9 9-9z"/></svg>
+                        <button class="icon-titan-old" onclick="GOLIATH.PLAYER.forward=10">
+                            <svg viewBox="0 0 24 24" width="45" fill="white"><path d="M11.5 3c4.97 0 9 4.03 9 9h2.5l-4 4-4-4H17.5c0-3.03-2.47-5.5-5.5-5.5s-5.5 2.47-5.5 5.5 2.47 5.5 5.5 5.5c1.51 0 2.88-.61 3.88-1.59l1.42 1.43C15.84 18.31 14.02 19 12 19c-4.97 0-9-4.03-9-9s4.03-9 9-9z"/></svg>
                         </button>
                     </div>
                 `
@@ -437,31 +289,19 @@ function bootTitanPlayer(url) {
         customType: {
             m3u8: function(video, url) {
                 if (Hls.isSupported()) {
-                    const hls = new Hls({
-                        enableWorker: true,
-                        lowLatencyMode: true
-                    });
+                    const hls = new Hls();
                     hls.loadSource(url);
                     hls.attachMedia(video);
-                    TITAN.HLS = hls;
+                    GOLIATH.HLS = hls;
 
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        // 1. Resolution Matrix
-                        const lvls = hls.levels.map((l, i) => ({ html: `${l.height}P`, index: i }));
-                        TITAN.PLAYER.setting.add({
-                            name: 'quality',
-                            html: 'Resolution',
-                            selector: [{html: 'Auto-Negotiate', index: -1, default: true}, ...lvls],
-                            onSelect: (item) => { hls.currentLevel = item.index; return item.html; }
-                        });
-
-                        // 2. AUDIO TRACK SELECTOR (FORCED INJECTION)
+                        // 1. DYNAMIC AUDIO SWITCHER FIX
                         if(hls.audioTracks.length > 0) {
-                            TITAN.PLAYER.setting.add({
-                                name: 'audio',
+                            GOLIATH.PLAYER.setting.add({
+                                name: 'audio-tracks',
                                 html: 'Audio Selection',
                                 selector: hls.audioTracks.map((t, i) => ({
-                                    html: t.name || t.lang || `Audio ${i+1}`,
+                                    html: t.name || t.lang || `Track ${i+1}`,
                                     index: i,
                                     default: i === hls.audioTrack
                                 })),
@@ -472,31 +312,39 @@ function bootTitanPlayer(url) {
                             });
                         }
 
-                        // 3. SUBTITLE MATRIX (LAYER SYNC)
-                        TITAN.PLAYER.setting.add({
-                            name: 'subs',
-                            html: 'Subtitle Matrix',
-                            selector: [{html: 'Off', url: '', default: true}, ...TITAN.SUBS],
+                        // 2. SUBTITLE SELECTOR
+                        GOLIATH.PLAYER.setting.add({
+                            name: 'goliath-subs',
+                            html: 'Subtitles',
+                            selector: [{html: 'Off', url: '', default: true}, ...GOLIATH.SUBS],
                             onSelect: (item) => {
                                 if(item.url) {
-                                    TITAN.PLAYER.subtitle.url = item.url;
-                                    TITAN.PLAYER.subtitle.show = true;
-                                    injectAppleTrack(item.url, item.html);
+                                    GOLIATH.PLAYER.subtitle.url = item.url;
+                                    GOLIATH.PLAYER.subtitle.show = true;
+                                    forceAppleTrack(item.url, item.html);
                                 } else {
-                                    TITAN.PLAYER.subtitle.show = false;
-                                    document.getElementById('titan-sub-node').style.display = 'none';
-                                    clearAppleTracks();
+                                    GOLIATH.PLAYER.subtitle.show = false;
+                                    document.getElementById('goliath-sub-render').style.display = 'none';
                                 }
                                 return item.html;
                             }
                         });
 
-                        // 4. Advanced Playback
-                        TITAN.PLAYER.setting.add({
-                            name: 'speed',
-                            html: 'Playback Rate',
-                            selector: [{html: '0.5x', val: 0.5}, {html: '0.75x', val: 0.75}, {html: 'Normal', val: 1, default: true}, {html: '1.25x', val: 1.25}, {html: '1.5x', val: 1.5}, {html: '2x', val: 2}],
-                            onSelect: (item) => { video.playbackRate = item.val; return item.html; }
+                        // 3. MANUAL SUBTITLE STYLING
+                        GOLIATH.PLAYER.setting.add({
+                            name: 'sub-style',
+                            html: 'Subtitle Matrix Style',
+                            selector: [
+                                {html: 'Small / Yellow', size: '20px', color: '#ffea00'},
+                                {html: 'Medium / White', size: '28px', color: '#fff', default: true},
+                                {html: 'Large / White', size: '38px', color: '#fff'}
+                            ],
+                            onSelect: (item) => {
+                                const el = document.getElementById('goliath-sub-render');
+                                el.style.fontSize = item.size;
+                                el.style.color = item.color;
+                                return item.html;
+                            }
                         });
                     });
                 }
@@ -504,54 +352,45 @@ function bootTitanPlayer(url) {
         }
     });
 
-    // THE "NULL" FIX: Manual Layer Observer
-    TITAN.PLAYER.on('subtitleUpdate', (text) => {
-        const node = document.getElementById('titan-sub-node');
+    // THE GOLIATH MANUAL RENDERER (ELIMINATES NULL ERRORS)
+    GOLIATH.PLAYER.on('subtitleUpdate', (text) => {
+        const matrix = document.getElementById('goliath-sub-render');
         if(text) {
-            node.innerHTML = text;
-            node.style.display = 'inline-block';
+            matrix.innerHTML = text;
+            matrix.style.display = 'inline-block';
         } else {
-            node.style.display = 'none';
+            matrix.style.display = 'none';
         }
     });
 
-    // Control State Synchronization
-    TITAN.PLAYER.on('play', () => {
-        document.querySelector('#TitanPlayBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="60"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    // ICON SYNC
+    GOLIATH.PLAYER.on('play', () => {
+        document.querySelector('#GoliathCenterBtn').innerHTML = '<svg viewBox="0 0 24 24" width="75" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
     });
-    TITAN.PLAYER.on('pause', () => {
-        document.querySelector('#TitanPlayBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="60"><path d="M8 5v14l11-7z"/></svg>';
+    GOLIATH.PLAYER.on('pause', () => {
+        document.querySelector('#GoliathCenterBtn').innerHTML = '<svg viewBox="0 0 24 24" width="75" fill="white"><path d="M8 5v14l11-7z"/></svg>';
     });
 }
 
-// APPLE NATIVE SUBTITLE BRIDGE
-function injectAppleTrack(url, label) {
+function forceAppleTrack(url, label) {
     const v = document.querySelector('video');
     if(!v) return;
-    clearAppleTracks();
+    const old = v.querySelectorAll('track');
+    old.forEach(t => t.remove());
     const track = document.createElement('track');
     track.kind = 'subtitles';
     track.label = label;
-    track.srclang = 'en';
     track.src = url;
     track.default = true;
     v.appendChild(track);
 }
 
-function clearAppleTracks() {
-    const v = document.querySelector('video');
-    if(!v) return;
-    const tracks = v.querySelectorAll('track');
-    tracks.forEach(t => t.remove());
-}
-
-function killTitan() {
-    if(TITAN.PLAYER) TITAN.PLAYER.destroy();
-    if(TITAN.HLS) TITAN.HLS.destroy();
-    document.getElementById('titan-viewport').style.display = 'none';
-    document.getElementById('titan-terminal').classList.remove('terminal-exit');
-    document.getElementById('poster-bg').style.opacity = '0';
-    document.getElementById('titan-sub-node').style.display = 'none';
+function terminateGoliath() {
+    if(GOLIATH.PLAYER) GOLIATH.PLAYER.destroy();
+    if(GOLIATH.HLS) GOLIATH.HLS.destroy();
+    document.getElementById('goliath-viewport').style.display = 'none';
+    document.getElementById('titan-terminal').classList.remove('terminal-inactive');
+    document.getElementById('goliath-sub-render').style.display = 'none';
 }
 
 </script>
