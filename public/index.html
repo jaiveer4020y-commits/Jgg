@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CINEMA QUANTUM | V16.0 ZENITH STABLE</title>
+    <title>CINEMA QUANTUM OMNIA | V17.0 ULTIMATE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.3.0/dist/artplayer.css">
@@ -12,55 +12,571 @@
 
     <style>
         /* ================================================================
-        1. ZENITH CORE DESIGN (ZCD)
+        1. OMNIA DESIGN SYSTEM
         ================================================================
         */
         :root {
-            --zenith-red: #E50914;
-            --zenith-black: #000000;
-            --panel-bg: rgba(8, 8, 8, 0.98);
-            --accent-glow: 0 0 40px rgba(229, 9, 20, 0.5);
-            --font-head: 'Outfit', sans-serif;
-            --font-body: 'Inter', sans-serif;
+            --omnia-red: #E50914;
+            --omnia-black: #050505;
+            --panel-gradient: linear-gradient(145deg, #111 0%, #000 100%);
+            --font-display: 'Outfit', sans-serif;
+            --font-main: 'Inter', sans-serif;
+            --netflix-shadow: 0 0 25px rgba(229, 9, 20, 0.4);
         }
 
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; outline: none !important; }
         
         body, html {
             margin: 0; padding: 0; width: 100vw; height: 100vh;
-            background-color: var(--zenith-black); color: #fff;
-            font-family: var(--font-body); overflow: hidden;
+            background-color: var(--omnia-black); color: #fff;
+            font-family: var(--font-main); overflow: hidden;
             user-select: none;
         }
 
         /* ================================================================
-        2. INTERFACE ELEMENTS
+        2. DASHBOARD TERMINAL
         ================================================================
         */
-        #dashboard-terminal {
+        #master-terminal {
             position: fixed; inset: 0; z-index: 100;
-            background: radial-gradient(circle at center, #1a0202 0%, #000 100%);
+            background: radial-gradient(circle at center, #1e0505 0%, #000 100%);
             display: flex; align-items: center; justify-content: center;
-            transition: transform 1s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.6s;
+            transition: transform 1.2s cubic-bezier(0.8, 0, 0.2, 1), opacity 0.8s;
         }
 
-        .terminal-hidden { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+        .terminal-exit { transform: translateY(-100%); opacity: 0; pointer-events: none; }
 
-        .quantum-pod {
-            width: 92%; max-width: 550px; padding: 60px;
-            background: var(--panel-bg); border-radius: 45px;
-            border: 1px solid rgba(255,255,255,0.06);
-            box-shadow: 0 50px 100px rgba(0,0,0,0.9);
-            animation: pod-slide 0.8s ease-out;
+        .omnia-card {
+            width: 90%; max-width: 580px; padding: 50px;
+            background: var(--panel-gradient); border-radius: 40px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 60px 120px rgba(0,0,0,1);
+            animation: card-entry 1s ease-out;
         }
 
-        @keyframes pod-slide { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes card-entry { from { opacity: 0; transform: scale(0.95) translateY(20px); } }
 
-        .pod-title {
-            font-family: var(--font-head); font-size: 3.5rem; font-weight: 900;
-            text-align: center; color: var(--zenith-red); margin-bottom: 40px;
-            text-transform: uppercase; letter-spacing: -3px; text-shadow: var(--accent-glow);
+        .brand-label {
+            font-family: var(--font-display); font-size: 3rem; font-weight: 900;
+            text-align: center; color: var(--omnia-red); margin-bottom: 35px;
+            text-transform: uppercase; letter-spacing: -2px; text-shadow: var(--netflix-shadow);
         }
+
+        .toggle-row {
+            display: flex; gap: 10px; margin-bottom: 30px;
+            background: #000; padding: 8px; border-radius: 20px;
+        }
+
+        .toggle-btn {
+            flex: 1; padding: 15px; border: none; border-radius: 15px;
+            background: transparent; color: #666; font-weight: 800;
+            text-transform: uppercase; cursor: pointer; transition: 0.3s;
+            font-size: 12px; letter-spacing: 2px;
+        }
+
+        .toggle-btn.active { background: var(--omnia-red); color: #fff; box-shadow: var(--netflix-shadow); }
+
+        .field-box { margin-bottom: 25px; position: relative; }
+        .field-box label {
+            display: block; font-size: 11px; font-weight: 900; color: var(--omnia-red);
+            text-transform: uppercase; margin-bottom: 12px; letter-spacing: 3px;
+        }
+
+        .omnia-input {
+            width: 100%; padding: 20px; background: #0a0a0a; border: 1px solid #222;
+            border-radius: 18px; color: #fff; font-size: 16px; transition: 0.4s;
+        }
+
+        .omnia-input:focus { border-color: var(--omnia-red); box-shadow: 0 0 0 5px rgba(229,9,20,0.1); }
+
+        .search-portal {
+            position: absolute; width: 100%; max-height: 350px; background: #0d0d0d;
+            top: 105%; left: 0; z-index: 500; border-radius: 20px; overflow-y: auto;
+            display: none; border: 1px solid #1a1a1a; box-shadow: 0 40px 80px rgba(0,0,0,1);
+        }
+
+        .portal-entry {
+            display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid #111;
+            cursor: pointer; align-items: center; transition: 0.3s;
+        }
+
+        .portal-entry:hover { background: #161616; transform: scale(1.02); }
+        .portal-entry img { width: 40px; height: 60px; border-radius: 8px; object-fit: cover; }
+        .portal-entry div { font-weight: 700; font-size: 14px; }
+
+        .init-btn {
+            width: 100%; padding: 24px; background: var(--omnia-red); color: #fff;
+            border: none; border-radius: 20px; font-weight: 900; font-size: 18px;
+            text-transform: uppercase; letter-spacing: 5px; cursor: pointer;
+            transition: 0.4s; box-shadow: var(--netflix-shadow);
+        }
+
+        .init-btn:hover { transform: translateY(-3px); filter: brightness(1.2); }
+
+        /* ================================================================
+        3. LOADING OVERLAY (CRISP POSTER)
+        ================================================================
+        */
+        #loading-hub {
+            position: fixed; inset: 0; z-index: 900; background: #000;
+            display: none; align-items: center; justify-content: center; flex-direction: column;
+        }
+
+        #poster-back-layer {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0; transition: opacity 2s;
+            filter: brightness(0.4); /* NO BLUR PER REQUEST */
+        }
+
+        .loading-stack {
+            z-index: 10; text-align: center; display: flex;
+            flex-direction: column; align-items: center; gap: 40px;
+        }
+
+        #hero-logo {
+            max-width: 320px; max-height: 150px; object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); display: none;
+        }
+
+        /* NETFLIX SPINNER CSS */
+        .netflix-loader {
+            width: 80px; height: 80px; border-radius: 50%;
+            border: 4px solid rgba(229, 9, 20, 0.2);
+            border-top-color: var(--omnia-red);
+            animation: n-spin 0.8s linear infinite;
+        }
+        @keyframes n-spin { to { transform: rotate(360deg); } }
+
+        #load-status {
+            font-size: 13px; color: var(--omnia-red); font-weight: 900;
+            text-transform: uppercase; letter-spacing: 6px;
+        }
+
+        /* ================================================================
+        4. ARTPLAYER VIEWPORT & OMNIA LAYERS
+        ================================================================
+        */
+        #player-canvas { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; }
+
+        /* OMNIA SUBTITLE CONTAINER LAYER */
+        .omnia-subtitle-container {
+            position: absolute; bottom: 12%; left: 0; right: 0;
+            pointer-events: none; z-index: 1000; text-align: center;
+            display: flex; justify-content: center; padding: 0 10%;
+        }
+
+        .omnia-subtitle-text {
+            background: rgba(0, 0, 0, 0.75);
+            color: #ffffff;
+            padding: 4px 14px;
+            border-radius: 6px;
+            font-size: clamp(20px, 4vw, 34px);
+            font-weight: 600;
+            line-height: 1.4;
+            text-shadow: 0 2px 4px rgba(0,0,0,1);
+            display: none; /* Controlled via JS */
+        }
+
+        /* CUSTOM CENTER ICONS */
+        .mobileCenterControls_playerControlsInnerContainer__6MCmU {
+            position: absolute; inset: 0; display: flex; align-items: center;
+            justify-content: center; gap: 12vw; pointer-events: none;
+            opacity: 0; transition: opacity 0.4s; z-index: 150;
+        }
+        .art-hover .mobileCenterControls_playerControlsInnerContainer__6MCmU,
+        .art-state-paused .mobileCenterControls_playerControlsInnerContainer__6MCmU { opacity: 1; }
+
+        .omni-ctrl-btn {
+            background: transparent !important; border: none; width: 60px; height: 60px; 
+            display: flex; align-items: center; justify-content: center; 
+            color: #fff; cursor: pointer; pointer-events: auto; 
+            transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .omni-ctrl-btn:hover { transform: scale(1.25); color: var(--omnia-red); }
+        .omni-svg-lg { width: 34px; height: 34px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
+
+        #OmniaPlayBtn { width: 90px; height: 90px; }
+        #OmniaPlayBtn .omni-svg-lg { width: 50px; height: 50px; }
+
+        .navigator-exit {
+            position: absolute; top: 40px; left: 40px; z-index: 10001;
+            cursor: pointer; background: rgba(0,0,0,0.5); padding: 15px;
+            border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.3s; backdrop-filter: blur(10px);
+        }
+        .navigator-exit:hover { background: var(--omnia-red); transform: translateX(-5px); }
+
+    </style>
+</head>
+<body>
+
+<div id="master-terminal">
+    <div class="omnia-card">
+        <div class="brand-label">Omnia Cinema</div>
+        
+        <div class="toggle-row">
+            <button class="toggle-btn active" id="t-tv" onclick="setMode('tv')">TV Series</button>
+            <button class="toggle-btn" id="t-movie" onclick="setMode('movie')">Feature Film</button>
+        </div>
+
+        <div class="field-box">
+            <label>Neuro-Search Uplink</label>
+            <input type="text" id="search-query" class="omnia-input" placeholder="Search title name..." autocomplete="off">
+            <div id="portal-data" class="search-portal"></div>
+        </div>
+
+        <div id="tv-logic-section">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="field-box">
+                    <label>Season</label>
+                    <input type="number" id="s-val" class="omnia-input" value="1" min="1">
+                </div>
+                <div class="field-box">
+                    <label>Episode</label>
+                    <input type="number" id="e-val" class="omnia-input" value="1" min="1">
+                </div>
+            </div>
+        </div>
+
+        <button class="init-btn" onclick="startOmniaBoot()">Connect Terminal</button>
+    </div>
+</div>
+
+<div id="loading-hub">
+    <img id="poster-back-layer" src="">
+    <div class="loading-stack">
+        <img id="hero-logo" src="">
+        <div class="netflix-loader"></div>
+        <div id="load-status">Synchronizing Stream...</div>
+    </div>
+</div>
+
+<div id="player-canvas">
+    <div class="navigator-exit" onclick="destroyOmnia()">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    
+    <div class="omnia-subtitle-container">
+        <div class="omnia-subtitle-text" id="sub-display-node"></div>
+    </div>
+
+    <div id="art-player-mount" style="width:100%; height:100%;"></div>
+</div>
+
+<script>
+/**
+ * CINEMA QUANTUM OMNIA ENGINE v17.0
+ * Fixed: Subtitle URL, Native Apple Support, Subtitle Visibility, Custom Red Loader.
+ */
+
+const OMNIA = {
+    TMDB_KEY: '463dcd7993ab31d92eb586802fdeee6a',
+    PROXY: (u) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`,
+    MODE: 'tv',
+    ID: null,
+    TITLE: '',
+    YEAR: '',
+    SLUG: '',
+    PLAYER: null,
+    HLS: null,
+    SUB_BUFFER: []
+};
+
+// 1. NEURO SEARCH BRIDGE
+const sInput = document.getElementById('search-query');
+const sPortal = document.getElementById('portal-data');
+
+sInput.addEventListener('input', async (e) => {
+    const val = e.target.value;
+    if(val.length < 2) { sPortal.style.display = 'none'; return; }
+
+    try {
+        const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${OMNIA.TMDB_KEY}&query=${encodeURIComponent(val)}`);
+        const data = await r.json();
+        
+        sPortal.innerHTML = '';
+        if(data.results.length > 0) {
+            sPortal.style.display = 'block';
+            data.results.slice(0, 10).forEach(item => {
+                if(item.media_type !== 'tv' && item.media_type !== 'movie') return;
+                const yr = (item.release_date || item.first_air_date || '').split('-')[0];
+                const div = document.createElement('div');
+                div.className = 'portal-entry';
+                div.innerHTML = `
+                    <img src="https://image.tmdb.org/t/p/w92${item.poster_path}" onerror="this.src='https://via.placeholder.com/92x138/000/fff?text=?'">
+                    <div>${item.title || item.name} (${yr || 'N/A'})</div>
+                `;
+                div.onclick = () => {
+                    OMNIA.ID = item.id;
+                    OMNIA.TITLE = item.title || item.name;
+                    OMNIA.YEAR = yr;
+                    OMNIA.MODE = item.media_type;
+                    sInput.value = OMNIA.TITLE;
+                    sPortal.style.display = 'none';
+                    setMode(OMNIA.MODE);
+                };
+                sPortal.appendChild(div);
+            });
+        }
+    } catch(err) { console.warn("Search Node Failure"); }
+});
+
+function setMode(m) {
+    OMNIA.MODE = m;
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`t-${m}`).classList.add('active');
+    document.getElementById('tv-logic-section').style.display = m === 'tv' ? 'block' : 'none';
+}
+
+// 2. BOOT SEQUENCE (SUBTITLE URL REPAIR)
+async function startOmniaBoot() {
+    if(!OMNIA.ID) return alert("System Alert: Identify target first.");
+
+    const hub = document.getElementById('loading-hub');
+    hub.style.display = 'flex';
+    document.getElementById('load-status').innerText = "Establishing Identity...";
+
+    // Metadata Retrieval
+    try {
+        const [meta, imgs] = await Promise.all([
+            fetch(`https://api.themoviedb.org/3/${OMNIA.MODE}/${OMNIA.ID}?api_key=${OMNIA.TMDB_KEY}`).then(r=>r.json()),
+            fetch(`https://api.themoviedb.org/3/${OMNIA.MODE}/${OMNIA.ID}/images?api_key=${OMNIA.TMDB_KEY}`).then(r=>r.json())
+        ]);
+
+        if(meta.backdrop_path) {
+            const bg = document.getElementById('poster-back-layer');
+            bg.src = `https://image.tmdb.org/t/p/original${meta.backdrop_path}`;
+            bg.style.opacity = '1';
+        }
+
+        const logoNode = document.getElementById('hero-logo');
+        const bestLogo = imgs.logos.find(l => l.file_path.endsWith('.png'));
+        if(bestLogo) {
+            logoNode.src = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
+            logoNode.style.display = 'block';
+        }
+    } catch(e) { console.warn("Meta Data Link Partial"); }
+
+    const s = document.getElementById('s-val').value;
+    const e = document.getElementById('e-val').value;
+    const cleanTitle = OMNIA.TITLE.toLowerCase().replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '.');
+    
+    if(OMNIA.MODE === 'tv') {
+        OMNIA.SLUG = `${cleanTitle}.s${s.padStart(2, '0')}e${e.padStart(2, '0')}`;
+    } else {
+        OMNIA.SLUG = `${cleanTitle}.${OMNIA.YEAR}`;
+    }
+
+    // CORRECTED SUBTITLE URL MAPPING
+    document.getElementById('load-status').innerText = "Fetching Subtitle Manifest...";
+    try {
+        let subApi = `https://sub.wyzie.ru/search?id=${OMNIA.ID}`;
+        if(OMNIA.MODE === 'tv') subApi += `&season=${s}&episode=${e}`;
+        
+        const subData = await fetch(OMNIA.PROXY(subApi)).then(r => r.json());
+        if(subData && Array.isArray(subData)) {
+            OMNIA.SUB_BUFFER = subData.map(sub => ({
+                html: sub.lang || sub.language || 'Unknown Language',
+                url: OMNIA.PROXY(sub.url),
+                label: sub.lang
+            }));
+        }
+    } catch(err) { console.error("Subtitle Server 502/Timeout"); }
+
+    document.getElementById('load-status').innerText = "Opening Streaming Channel...";
+    const streamSource = `https://u-1-1azw.onrender.com/api/get-stream?title=${encodeURIComponent(OMNIA.SLUG)}&id=${OMNIA.ID}&season=${s}&episode=${e}`;
+    
+    try {
+        const res = await fetch(OMNIA.PROXY(streamSource)).then(r => r.json());
+        if(res.m3u8_url) {
+            initOmniaPlayer(OMNIA.PROXY(res.m3u8_url));
+        } else { throw new Error(); }
+    } catch(err) {
+        alert("Quantum Disconnect: Source not found.");
+        hub.style.display = 'none';
+    }
+}
+
+// 3. OMNIA PLAYER ARCHITECTURE (FIXED LAYERS)
+function initOmniaPlayer(m3u8) {
+    document.getElementById('player-canvas').style.display = 'block';
+    document.getElementById('loading-hub').style.display = 'none';
+    document.getElementById('master-terminal').classList.add('terminal-exit');
+
+    if(OMNIA.PLAYER) OMNIA.PLAYER.destroy();
+
+    OMNIA.PLAYER = new Artplayer({
+        container: '#art-player-mount',
+        url: m3u8,
+        type: 'm3u8',
+        autoplay: true,
+        autoSize: true,
+        fullscreen: true,
+        setting: true,
+        theme: '#E50914',
+        // REPLACING ARTPLAYER DEFAULT LOADER WITH NETFLIX RED SPINNER
+        icons: {
+            loading: '<div class="netflix-loader"></div>',
+            state: '<img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png" style="width:60px; animation: n-spin 1.5s linear infinite;">'
+        },
+        layers: [
+            {
+                name: 'omnia-ui-core',
+                html: `
+                    <div class="mobileCenterControls_playerControlsInnerContainer__6MCmU">
+                        <button class="omni-ctrl-btn" onclick="OMNIA.PLAYER.backward=10">
+                            <svg viewBox="0 0 24 24" fill="none" class="omni-svg-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.02 2.048A10 10 0 1 1 2 12H0a12 12 0 1 0 5-9.747V1H3v4a1 1 0 0 0 1 1h4V4H6a10 10 0 0 1 5.02-1.952ZM2 4v3h3v2H1a1 1 0 0 1-1-1V4h2Zm12.125 12c-.578 0-1.086-.141-1.523-.424-.43-.29-.764-.694-.999-1.215-.235-.527-.353-1.148-.353-1.861 0-.707.118-1.324.353-1.851.236-.527.568-.932.999-1.215.437-.29.945-.434 1.523-.434s1.083.145 1.513.434c.437.283.774.688 1.009 1.215.235.527.353 1.144.353 1.851 0 .713-.118 1.334-.353 1.86-.235.522-.572.927-1.009 1.216-.43.283-.935.424-1.513.424Zm0-1.35c.39 0 .696-.186.918-.56.222-.378.333-.909.333-1.59s-.111-1.208-.333-1.581c-.222-.38-.528-.57-.918-.57s-.696.19-.918.57c-.222.373-.333.9-.333 1.581 0 .681.111 1.212.333 1.59.222.374.528.56.918.56Zm-5.521 1.205v-5.139L7 11.141V9.82l3.198-.8v6.835H8.604Z" fill="currentColor"></path></svg>
+                        </button>
+                        <button id="OmniaPlayBtn" class="omni-ctrl-btn" onclick="OMNIA.PLAYER.toggle()">
+                            <svg viewBox="0 0 384 512" class="omni-svg-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path></svg>
+                        </button>
+                        <button class="omni-ctrl-btn" onclick="OMNIA.PLAYER.forward=10">
+                            <svg viewBox="0 0 24 24" fill="none" class="omni-svg-lg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.444 3.685A10 10 0 0 1 18 4h-2v2h4a1 1 0 0 0 1-1V1h-2v1.253A12 12 0 1 0 24 12h-2A10 10 0 1 1 6.444 3.685ZM22 4v3h-3v2h4a1 1 0 0 0 1-1V4h-2Zm-9.398 11.576c.437.283.945.424 1.523.424s1.083-.141 1.513-.424c.437-.29.774-.694 1.009-1.215.235-.527.353-1.148.353-1.861 0-.707.118-1.324-.353-1.851-.235-.527-.572-.932-1.009-1.215-.43-.29-.935-.434-1.513-.434-.578 0-1.086.145-1.523.434-.43.283-.764.688-.999 1.215-.235.527-.353 1.144-.353 1.851 0 .713.118 1.334.353 1.86.236.522.568.927.999 1.216Zm2.441-1.485c-.222.373-.528.56-.918.56s-.696-.187-.918-.56c-.222-.38-.333-.91-.333-1.591 0-.681.111-1.208.333-1.581.222-.38.528-.57.918-.57s.696.19.918.57c.222.373.333.9.333 1.581 0 .681-.111 1.212-.333 1.59Zm-6.439-3.375v5.14h1.594V9.018L7 9.82v1.321l1.604-.424Z" fill="currentColor"></path></svg>
+                        </button>
+                    </div>
+                `
+            }
+        ],
+        customType: {
+            m3u8: function(video, url) {
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
+                    OMNIA.HLS = hls;
+
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        // 1. Quality Matrix
+                        const lvls = hls.levels.map((l, i) => ({ html: `${l.height}P`, index: i }));
+                        OMNIA.PLAYER.setting.add({
+                            name: 'quality',
+                            html: 'Resolution',
+                            selector: [{html: 'Auto-Negotiate', index: -1, default: true}, ...lvls],
+                            onSelect: (item) => { hls.currentLevel = item.index; return item.html; }
+                        });
+
+                        // 2. Audio Matrix Switcher (FIXED)
+                        if(hls.audioTracks.length > 0) {
+                            OMNIA.PLAYER.setting.add({
+                                name: 'audio',
+                                html: 'Audio Track',
+                                selector: hls.audioTracks.map((t, i) => ({
+                                    html: t.name || t.lang || `Stream ${i+1}`,
+                                    index: i,
+                                    default: i === hls.audioTrack
+                                })),
+                                onSelect: (item) => { hls.audioTrack = item.index; return item.html; }
+                            });
+                        }
+
+                        // 3. Subtitle Node Controller (FIXED NULL)
+                        OMNIA.PLAYER.setting.add({
+                            name: 'sub-node',
+                            html: 'Subtitles',
+                            selector: [
+                                {html: 'Off', url: '', default: true},
+                                ...OMNIA.SUB_BUFFER
+                            ],
+                            onSelect: (item) => {
+                                if(item.url) {
+                                    OMNIA.PLAYER.subtitle.url = item.url;
+                                    OMNIA.PLAYER.subtitle.show = true;
+                                    injectAppleTrack(item.url, item.html);
+                                } else {
+                                    OMNIA.PLAYER.subtitle.show = false;
+                                    document.getElementById('sub-display-node').style.display = 'none';
+                                    clearAppleTracks();
+                                }
+                                return item.html;
+                            }
+                        });
+
+                        // 4. Time Sync
+                        OMNIA.PLAYER.setting.add({
+                            name: 'sync',
+                            html: 'Sync Offset',
+                            selector: [
+                                {html: '-5s', val: -5}, {html: '-2s', val: -2},
+                                {html: 'Normal', val: 0, default: true},
+                                {html: '+2s', val: 2}, {html: '+5s', val: 5}
+                            ],
+                            onSelect: (item) => { OMNIA.PLAYER.subtitleOffset = item.val; return item.html; }
+                        });
+
+                        // 5. Playback Speed
+                        OMNIA.PLAYER.setting.add({
+                            name: 'speed',
+                            html: 'Playback Rate',
+                            selector: [
+                                {html: '0.5x', val: 0.5}, {html: '0.75x', val: 0.75},
+                                {html: 'Normal', val: 1, default: true},
+                                {html: '1.25x', val: 1.25}, {html: '1.5x', val: 1.5}, {html: '2x', val: 2}
+                            ],
+                            onSelect: (item) => { video.playbackRate = item.val; return item.html; }
+                        });
+                    });
+                }
+            }
+        }
+    });
+
+    // Subtitle Visibility Handler (Omnia Internal Layer Injection)
+    OMNIA.PLAYER.on('subtitleUpdate', (text) => {
+        const node = document.getElementById('sub-display-node');
+        if(text) {
+            node.innerHTML = text;
+            node.style.display = 'inline-block';
+        } else {
+            node.style.display = 'none';
+        }
+    });
+
+    // Control State Synchronization
+    OMNIA.PLAYER.on('play', () => {
+        document.querySelector('#OmniaPlayBtn').innerHTML = '<svg viewBox="0 0 320 512" class="omni-svg-lg"><path fill="currentColor" d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z"/></svg>';
+    });
+    OMNIA.PLAYER.on('pause', () => {
+        document.querySelector('#OmniaPlayBtn').innerHTML = '<svg viewBox="0 0 384 512" class="omni-svg-lg" style="transform: translateX(5%);"><path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>';
+    });
+}
+
+// 4. APPLE NATIVE SUPPORT (SAFE TRACK INJECTION)
+function injectAppleTrack(url, label) {
+    const video = document.querySelector('video');
+    if(!video) return;
+    clearAppleTracks();
+    const track = document.createElement('track');
+    track.kind = 'subtitles';
+    track.label = label;
+    track.srclang = 'en';
+    track.src = url;
+    track.default = true;
+    video.appendChild(track);
+}
+
+function clearAppleTracks() {
+    const video = document.querySelector('video');
+    if(!video) return;
+    while (video.firstChild) {
+        video.removeChild(video.firstChild);
+    }
+}
+
+function destroyOmnia() {
+    if(OMNIA.PLAYER) OMNIA.PLAYER.destroy();
+    if(OMNIA.HLS) OMNIA.HLS.destroy();
+    document.getElementById('player-canvas').style.display = 'none';
+    document.getElementById('master-terminal').classList.remove('terminal-exit');
+    
+    // Cleanup Memory
+    document.getElementById('poster-back-layer').style.opacity = '0';
+    document.getElementById('sub-display-node').style.display = 'none';
+    OMNIA.SUB_BUFFER = [];
+}
+
+</script>
+</body>
+</html>        }
 
         .mode-selector {
             display: flex; gap: 12px; margin-bottom: 35px;
