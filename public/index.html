@@ -2,27 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TITAN V35.0 | THE MONOLITH</title>
+    <title>TITAN V36.0 | ETERNITY</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <link rel="stylesheet" href="https://unpkg.com/artplayer@5.1.1/dist/artplayer.css">
     <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
     <script src="https://unpkg.com/artplayer@5.1.1/dist/artplayer.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@800;900&family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
 
     <style>
-        /* --- CORE VARIABLES --- */
+        /* --- CORE SYSTEM VARIABLES --- */
         :root {
             --titan-red: #E50914;
-            --titan-black: #050505;
-            --titan-glass: rgba(20, 20, 20, 0.95);
-            --titan-border: rgba(255, 255, 255, 0.15);
-            --titan-text: #e5e5e5;
-            --font-head: 'Outfit', sans-serif;
-            --font-body: 'Inter', sans-serif;
+            --titan-dark: #0a0a0a;
+            --titan-glass: rgba(10, 10, 10, 0.85);
+            --titan-border: 1px solid rgba(255, 255, 255, 0.1);
+            --font-display: 'Cinzel', serif;
+            --font-ui: 'Inter', sans-serif;
         }
 
         /* --- GLOBAL RESET --- */
@@ -30,236 +27,206 @@
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: #000; color: #fff;
-            font-family: var(--font-body); overflow: hidden;
+            font-family: var(--font-ui); overflow: hidden;
         }
 
-        /* --- Z-INDEX HIERARCHY ---
-           100: Dashboard
-           200: Search Results
-           5000: Loading Layer
-           6000: Player Terminal
-           7000: Subtitles
-           8000: Controls
-           9000: Debug/Alerts
-        */
-
-        /* --- 1. DASHBOARD ARCHITECTURE --- */
+        /* --- 1. TITAN DASHBOARD --- */
         #titan-dashboard {
             position: fixed; inset: 0; z-index: 100;
-            background: radial-gradient(circle at 50% 20%, #1a0505 0%, #000 80%);
+            background: radial-gradient(circle at top center, #1f0505 0%, #000 70%);
             display: flex; flex-direction: column; align-items: center;
-            padding: 40px 20px; overflow-y: auto; opacity: 1;
-            transition: opacity 0.5s ease-in-out;
+            padding: 40px 20px; overflow-y: auto;
+            transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        #titan-dashboard.hidden { opacity: 0; pointer-events: none; display: none; }
+        #titan-dashboard.offline { opacity: 0; pointer-events: none; display: none; }
 
-        .dashboard-header {
-            width: 100%; max-width: 1200px; margin-bottom: 40px; text-align: center;
+        .dashboard-head {
+            text-align: center; margin-bottom: 50px; z-index: 2;
         }
-        .titan-brand {
-            font-family: var(--font-head); font-size: 4rem; font-weight: 900;
-            color: var(--titan-red); text-transform: uppercase; letter-spacing: -2px;
-            margin: 0; text-shadow: 0 10px 30px rgba(229, 9, 20, 0.3);
+        .titan-logo {
+            font-family: var(--font-display); font-size: 3.5rem; color: var(--titan-red);
+            text-shadow: 0 0 30px rgba(229, 9, 20, 0.4); margin: 0; letter-spacing: 2px;
         }
-        .titan-tag {
-            color: #666; font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-top: 10px;
+        .titan-ver {
+            font-size: 0.8rem; letter-spacing: 4px; color: #666; text-transform: uppercase; margin-top: 10px;
         }
 
-        /* IFRAME GRID (The User Request) */
-        .preview-matrix {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 30px; width: 100%; max-width: 1200px; margin-bottom: 50px;
+        /* SEARCH MODULE */
+        .search-module { position: relative; width: 100%; max-width: 600px; margin-bottom: 50px; z-index: 10; }
+        .titan-search-bar {
+            width: 100%; padding: 22px 30px; border-radius: 50px;
+            background: rgba(255,255,255,0.08); border: var(--titan-border);
+            color: #fff; font-size: 16px; font-weight: 600;
+            backdrop-filter: blur(15px); transition: 0.3s;
         }
-        .preview-unit {
-            background: #111; border-radius: 20px; overflow: hidden;
-            border: 1px solid #222; position: relative;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-        .preview-unit:hover { transform: translateY(-5px); border-color: var(--titan-red); }
-        
-        .unit-frame-wrapper {
-            width: 100%; height: 220px; background: #000; position: relative; pointer-events: none; /* Disables interaction with iframe */
-        }
-        .unit-frame-wrapper iframe {
-            width: 100%; height: 100%; border: none; opacity: 0.7; scale: 1; transform-origin: center;
+        .titan-search-bar:focus {
+            background: #000; border-color: var(--titan-red);
+            box-shadow: 0 0 40px rgba(229, 9, 20, 0.2);
         }
         
-        .unit-meta {
-            padding: 20px; background: linear-gradient(to bottom, #161616, #0a0a0a);
-            display: flex; justify-content: space-between; align-items: center;
+        #search-dropdown {
+            position: absolute; top: 115%; left: 10px; right: 10px;
+            background: #080808; border: var(--titan-border);
+            border-radius: 20px; overflow: hidden; max-height: 0;
+            transition: max-height 0.3s ease; box-shadow: 0 30px 80px #000;
         }
-        .unit-title { font-weight: 700; font-size: 18px; color: #fff; margin: 0; }
-        .unit-badge {
-            background: var(--titan-red); color: #fff; padding: 4px 10px;
-            border-radius: 6px; font-size: 11px; font-weight: 900; text-transform: uppercase;
+        #search-dropdown.active { max-height: 400px; overflow-y: auto; padding: 10px 0; }
+        
+        .result-row {
+            display: flex; align-items: center; gap: 15px; padding: 12px 20px;
+            cursor: pointer; border-bottom: 1px solid #111; transition: 0.2s;
         }
-        .click-shield {
-            position: absolute; inset: 0; cursor: pointer; z-index: 5;
-        }
+        .result-row:hover { background: #161616; padding-left: 25px; }
+        .result-poster { width: 45px; height: 68px; border-radius: 4px; object-fit: cover; background: #222; }
+        .result-meta h4 { margin: 0; font-size: 15px; font-weight: 700; color: #eee; }
+        .result-meta span { font-size: 12px; color: var(--titan-red); font-weight: 900; text-transform: uppercase; }
 
-        /* SEARCH BAR */
-        .search-dock { width: 100%; max-width: 600px; position: relative; margin-bottom: 40px; }
-        .titan-input {
-            width: 100%; padding: 20px 25px; background: rgba(255,255,255,0.05);
-            border: 1px solid #333; border-radius: 50px; color: #fff;
-            font-size: 16px; font-weight: 600; backdrop-filter: blur(10px);
-            transition: 0.3s;
+        /* PORTAL PREVIEW GRID (THE IFRAMES) */
+        .portal-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px; width: 100%; max-width: 1200px; padding-bottom: 50px;
         }
-        .titan-input:focus { border-color: var(--titan-red); background: rgba(0,0,0,0.8); box-shadow: 0 0 30px rgba(229,9,20,0.2); }
-        .search-results {
-            position: absolute; top: 110%; left: 15px; right: 15px;
-            background: #0f0f0f; border: 1px solid #222; border-radius: 20px;
-            max-height: 400px; overflow-y: auto; z-index: 200; display: none;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+        .portal-card {
+            background: #000; border-radius: 20px; overflow: hidden;
+            border: var(--titan-border); position: relative; height: 260px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); transition: transform 0.4s ease;
         }
-        .res-row {
-            display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid #1a1a1a;
-            cursor: pointer; transition: 0.2s;
+        .portal-card:hover { transform: translateY(-10px); border-color: var(--titan-red); }
+        
+        .portal-frame {
+            width: 100%; height: 100%; border: none; pointer-events: none; /* User clicks the overlay, not the iframe */
+            opacity: 0.6; transform: scale(1.01); transition: opacity 0.3s;
         }
-        .res-row:hover { background: #1f1f1f; }
-        .res-poster { width: 50px; height: 75px; border-radius: 4px; object-fit: cover; background: #222; }
-        .res-info h4 { margin: 0 0 5px 0; font-size: 15px; color: #fff; }
-        .res-info span { font-size: 12px; color: #777; font-weight: 600; }
+        .portal-card:hover .portal-frame { opacity: 0.9; }
+        
+        .portal-overlay {
+            position: absolute; inset: 0; background: linear-gradient(to top, #000 0%, transparent 80%);
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 20px;
+            cursor: pointer; z-index: 5;
+        }
+        .portal-title { font-size: 1.2rem; font-weight: 900; margin: 0; text-transform: uppercase; }
+        .portal-sub { color: #888; font-size: 0.8rem; font-weight: 600; margin-top: 5px; }
 
-        /* --- 2. LOADING LAYER (PREMIUM) --- */
-        #loading-layer {
-            position: fixed; inset: 0; z-index: 5000; background: #000;
-            display: none; align-items: center; justify-content: center;
+        /* --- 2. TITAN LOADING PROTOCOL --- */
+        #titan-loader {
+            position: fixed; inset: 0; z-index: 8000; background: #000;
+            display: none; align-items: center; justify-content: center; flex-direction: column;
         }
         #load-backdrop {
             position: absolute; inset: 0; width: 100%; height: 100%;
-            object-fit: cover; opacity: 0.3; filter: blur(20px) brightness(0.7);
-            transition: opacity 1s;
+            object-fit: cover; opacity: 0.3; filter: blur(15px);
         }
-        .load-content {
-            position: relative; z-index: 5002; width: 100%; max-width: 500px;
-            display: flex; flex-direction: column; align-items: center; text-align: center;
-        }
-        #load-logo {
-            width: 80%; max-height: 180px; object-fit: contain; margin-bottom: 50px;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));
-            animation: breathe 3s ease-in-out infinite;
-        }
-        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+        .load-content { position: relative; z-index: 8001; text-align: center; width: 100%; }
+        #load-logo { width: 60%; max-width: 300px; height: auto; margin-bottom: 40px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0.8; transform: scale(1); } }
 
-        /* THE OG NETFLIX SPINNER (Pixel Perfect) */
-        .netflix-loader {
-            position: relative; width: 60px; height: 60px;
+        /* THE OG NETFLIX SPINNER */
+        .nf-spinner {
+            width: 70px; height: 70px; margin: 0 auto;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-top-color: var(--titan-red); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
-        .netflix-loader:before {
-            content: ''; position: absolute; inset: 0; border-radius: 50%;
-            border: 5px solid transparent; border-top-color: var(--titan-red);
-            animation: netflix-spin 1s linear infinite;
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .load-status {
+            margin-top: 25px; color: #666; font-size: 12px; letter-spacing: 3px; font-weight: 700;
         }
-        .netflix-loader:after {
-            content: ''; position: absolute; inset: 0; border-radius: 50%;
-            border: 5px solid rgba(229, 9, 20, 0.1);
-        }
-        @keyframes netflix-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* --- 3. PLAYER TERMINAL --- */
-        #player-terminal {
-            position: fixed; inset: 0; z-index: 6000; background: #000; display: none;
+        #titan-terminal {
+            position: fixed; inset: 0; z-index: 9000; background: #000; display: none;
         }
-        .titan-back-btn {
-            position: absolute; top: 30px; left: 30px; z-index: 8000;
-            width: 45px; height: 45px; border-radius: 50%;
-            background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.2);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; backdrop-filter: blur(5px); transition: 0.2s;
-        }
-        .titan-back-btn:hover { background: var(--titan-red); border-color: var(--titan-red); transform: scale(1.1); }
-        .titan-back-btn svg { width: 24px; height: 24px; fill: #fff; }
+        
+        /* PREVIEW MODE STYLES (When running inside iframe) */
+        body.preview-mode #titan-dashboard { display: none !important; }
+        body.preview-mode #titan-terminal { display: block !important; }
+        body.preview-mode .exit-btn { display: none !important; } /* Hide exit button in dashboard previews */
 
-        /* MANUAL SUBTITLE CONTAINER (User Specific Requirement) */
+        .exit-btn {
+            position: absolute; top: 40px; left: 40px; z-index: 9500;
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+        }
+        .exit-btn:hover { background: var(--titan-red); transform: rotate(90deg); }
+
+        /* FORCED SUBTITLE CONTAINER */
         .SubtitleVideoCaption_mobileSubtitleContainer__vo_7_ {
-            position: absolute; bottom: 10% !important; left: 50% !important;
-            width: 85% !important; transform: translateX(-50%) !important;
-            display: flex !important; flex-direction: column !important;
-            align-items: center !important; justify-content: flex-end !important;
-            z-index: 7000 !important; pointer-events: none;
+            position: absolute; bottom: 12% !important; left: 50% !important;
+            transform: translateX(-50%) !important; width: 90% !important;
+            display: flex !important; justify-content: center !important; text-align: center;
+            z-index: 9200 !important; pointer-events: none;
         }
-        .titan-sub-text {
-            display: inline-block; background: rgba(0,0,0,0.6);
-            padding: 4px 12px; border-radius: 6px;
-            color: #fff; font-family: var(--font-body); font-weight: 700;
-            font-size: 1.5rem; text-align: center;
-            text-shadow: 0 2px 4px #000; line-height: 1.4;
-            transition: all 0.1s;
+        .manual-sub-box {
+            background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 8px;
+            color: #fff; font-size: 24px; font-weight: 700; font-family: var(--font-ui);
+            text-shadow: 0 2px 5px rgba(0,0,0,0.9); display: none;
         }
-        @media (max-width: 768px) { .titan-sub-text { font-size: 1.1rem; bottom: 15%; } }
-
     </style>
 </head>
 <body>
 
-    <div id="titan-dashboard">
-        <div class="dashboard-header">
-            <h1 class="titan-brand">TITAN OMNI</h1>
-            <div class="titan-tag">V35.0 MONOLITH BUILD</div>
-        </div>
-
-        <div class="search-dock">
-            <input type="text" id="search-in" class="titan-input" placeholder="Search Movies or TV Shows..." autocomplete="off">
-            <div id="search-out" class="search-results"></div>
-        </div>
-
-        <div class="preview-matrix">
-            <div class="preview-unit">
-                <div class="click-shield" onclick="forceRoute('/tv/1399/1/1')"></div>
-                <div class="unit-frame-wrapper">
-                    <iframe src="/tv/1399/1/1" scrolling="no"></iframe>
-                </div>
-                <div class="unit-meta">
-                    <h3 class="unit-title">Game of Thrones</h3>
-                    <span class="unit-badge">S01 E01</span>
-                </div>
-            </div>
-
-            <div class="preview-unit">
-                <div class="click-shield" onclick="forceRoute('/movie/671')"></div>
-                <div class="unit-frame-wrapper">
-                    <iframe src="/movie/671" scrolling="no"></iframe>
-                </div>
-                <div class="unit-meta">
-                    <h3 class="unit-title">Harry Potter</h3>
-                    <span class="unit-badge">MOVIE</span>
-                </div>
-            </div>
-            
-             <div class="preview-unit">
-                <div class="click-shield" onclick="forceRoute('/tv/93405/1/1')"></div>
-                <div class="unit-frame-wrapper">
-                     <iframe src="/tv/93405/1/1" scrolling="no"></iframe>
-                </div>
-                <div class="unit-meta">
-                    <h3 class="unit-title">Squid Game</h3>
-                    <span class="unit-badge">S01 E01</span>
-                </div>
-            </div>
-        </div>
+<div id="titan-dashboard">
+    <div class="dashboard-head">
+        <h1 class="titan-logo">TITAN OMNI</h1>
+        <div class="titan-ver">ETERNITY PROTOCOL V36.0</div>
     </div>
 
-    <div id="loading-layer">
-        <img id="load-backdrop" src="">
-        <div class="load-content">
-            <img id="load-logo" src="">
-            <div class="netflix-loader"></div>
-            <p id="load-status" style="margin-top:20px; font-size:12px; color:#666; letter-spacing:3px;">ESTABLISHING CONNECTION</p>
-        </div>
+    <div class="search-module">
+        <input type="text" id="search-input" class="titan-search-bar" placeholder="Enter Command / Title..." autocomplete="off">
+        <div id="search-dropdown"></div>
     </div>
 
-    <div id="player-terminal">
-        <div class="titan-back-btn" onclick="systemReboot()">
-            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    <div class="portal-grid">
+        <div class="portal-card">
+            <div class="portal-overlay" onclick="commandLaunch('/tv/1399/1/1')">
+                <h3 class="portal-title">Game of Thrones</h3>
+                <div class="portal-sub">RESUME: S01 E01</div>
+            </div>
+            <iframe class="portal-frame" src="/tv/1399/1/1"></iframe>
         </div>
-        <div id="art-mount" style="width:100%; height:100%;"></div>
+
+        <div class="portal-card">
+            <div class="portal-overlay" onclick="commandLaunch('/movie/671')">
+                <h3 class="portal-title">Harry Potter</h3>
+                <div class="portal-sub">PLAY MOVIE</div>
+            </div>
+            <iframe class="portal-frame" src="/movie/671"></iframe>
+        </div>
         
-        <div class="SubtitleVideoCaption_mobileSubtitleContainer__vo_7_">
-            <span id="titan-subtitle-render" class="titan-sub-text" style="display:none;"></span>
+         <div class="portal-card">
+            <div class="portal-overlay" onclick="commandLaunch('/tv/93405/1/1')">
+                <h3 class="portal-title">Squid Game</h3>
+                <div class="portal-sub">PLAY SERIES</div>
+            </div>
+            <iframe class="portal-frame" src="/tv/93405/1/1"></iframe>
         </div>
     </div>
+</div>
 
-    <script src="/index.js"></script>
+<div id="titan-loader">
+    <img id="load-backdrop" src="">
+    <div class="load-content">
+        <img id="load-logo" src="">
+        <div class="nf-spinner"></div>
+        <div id="load-text" class="load-status">INITIALIZING STREAM...</div>
+    </div>
+</div>
+
+<div id="titan-terminal">
+    <div class="exit-btn" onclick="terminateSession()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </div>
+    
+    <div id="art-container" style="width:100%; height:100%;"></div>
+
+    <div class="SubtitleVideoCaption_mobileSubtitleContainer__vo_7_">
+        <span id="titan-sub-render" class="manual-sub-box"></span>
+    </div>
+</div>
+
+<script src="/index.js"></script>
 </body>
 </html>
