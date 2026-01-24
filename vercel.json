@@ -1,11 +1,7 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
-    {
-      "source": "/:slug*",
-      "destination": "/index.html"
-    }
+    { "source": "/movie/:id", "destination": "/index.html" },
+    { "source": "/tv/:id/:s/:e", "destination": "/index.html" },
+    { "source": "/:id/:s/:e", "destination": "/index.html" }
   ]
 }
-
