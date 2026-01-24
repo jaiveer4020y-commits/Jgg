@@ -1,121 +1,137 @@
 /**
- * TITAN V29.0 SUPREME ARCHITECT CORE
+ * TITAN V30.0 - OMNIPOTENT ARCHIVE LOGIC
  */
 
-const SUPREME = {
+const ARCHIVE = {
     TMDB: '463dcd7993ab31d92eb586802fdeee6a',
     OMDB: '85eb6482',
-    PROXY: (u) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`,
-    STATE: { id: null, mode: 'tv', title: '', year: '' },
+    PROXY: (url) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(url)}`,
+    STATE: { id: null, type: 'tv', title: '', year: '' },
     PLAYER: null,
     HLS: null,
     SUBS: []
 };
 
-// 1. SEARCH SYSTEM
-const search = document.getElementById('main-search');
-const results = document.getElementById('search-results');
+// --- 1. SEARCH & METADATA ENGINE ---
+const queryInput = document.getElementById('query-input');
+const matrix = document.getElementById('search-matrix');
 
-search.addEventListener('input', async (e) => {
+queryInput.addEventListener('input', async (e) => {
     const q = e.target.value;
-    if (q.length < 2) { results.style.display = 'none'; return; }
+    if(q.length < 2) { matrix.style.display = 'none'; return; }
 
-    const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${SUPREME.TMDB}&query=${q}`).then(res => res.json());
-    
-    results.innerHTML = '';
-    results.style.display = 'block';
-    
-    r.results.slice(0, 6).forEach(item => {
-        if (item.media_type === 'person') return;
+    const r = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${ARCHIVE.TMDB}&query=${q}`).then(r => r.json());
+    const results = r.results || [];
+
+    matrix.innerHTML = '';
+    matrix.style.display = 'block';
+
+    results.slice(0, 6).forEach(item => {
+        if(item.media_type !== 'movie' && item.media_type !== 'tv') return;
         const div = document.createElement('div');
-        div.className = 'res-item';
+        div.className = 'res-row';
         const img = item.poster_path ? `https://image.tmdb.org/t/p/w92${item.poster_path}` : 'https://via.placeholder.com/92x138/000/fff?text=?';
-        div.innerHTML = `<img src="${img}"><div><b style="font-size:18px">${item.title || item.name}</b><br><small style="color:#666">${(item.release_date || item.first_air_date || '').split('-')[0]}</small></div>`;
-        
+        div.innerHTML = `
+            <img src="${img}">
+            <div>
+                <b style="font-size:16px;">${item.title || item.name}</b><br>
+                <small style="color:#555;">${(item.release_date || item.first_air_date || '').split('-')[0]}</small>
+            </div>
+        `;
         div.onclick = () => {
-            SUPREME.STATE = {
+            ARCHIVE.STATE = {
                 id: item.id,
-                mode: item.media_type,
+                type: item.media_type,
                 title: item.title || item.name,
                 year: (item.release_date || item.first_air_date || '').split('-')[0]
             };
-            search.value = SUPREME.STATE.title;
-            results.style.display = 'none';
-            document.getElementById('tv-controls').style.display = SUPREME.STATE.mode === 'tv' ? 'flex' : 'none';
-            bootSequence();
+            queryInput.value = ARCHIVE.STATE.title;
+            matrix.style.display = 'none';
+            setMode(ARCHIVE.STATE.type);
         };
-        results.appendChild(div);
+        matrix.appendChild(div);
     });
 });
 
-// 2. BOOT SEQUENCE (EXCLUSIVE METADATA)
-async function bootSequence() {
-    const lyr = document.getElementById('loading-layer');
-    lyr.style.display = 'flex';
+function setMode(m) {
+    ARCHIVE.STATE.type = m;
+    document.querySelectorAll('.m-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`mode-${m}`).classList.add('active');
+    document.getElementById('tv-logic').style.display = m === 'tv' ? 'grid' : 'none';
+}
+
+// --- 2. DEEP SLUG & LAUNCH SEQUENCE ---
+async function initiateLaunch() {
+    if(!ARCHIVE.STATE.id) return alert("Select a title first.");
 
     const s = document.getElementById('s-val').value;
     const e = document.getElementById('e-val').value;
 
-    try {
-        // Fetch High-End Backdrop and OG Metadata
-        const meta = await fetch(`https://api.themoviedb.org/3/${SUPREME.STATE.mode}/${SUPREME.STATE.id}?api_key=${SUPREME.TMDB}`).then(r => r.json());
-        document.getElementById('loading-backdrop').src = `https://image.tmdb.org/t/p/original${meta.backdrop_path}`;
-        document.getElementById('exclusive-title').innerText = SUPREME.STATE.title;
+    const lyr = document.getElementById('loading-lyr');
+    lyr.style.display = 'flex';
 
-        // DENOTED SLUG GENERATION
+    try {
+        // Fetch IMDB-style OG Metadata for Loading Layer
+        const meta = await fetch(`https://api.themoviedb.org/3/${ARCHIVE.STATE.type}/${ARCHIVE.STATE.id}?api_key=${ARCHIVE.TMDB}`).then(r => r.json());
+        document.getElementById('og-backdrop').src = `https://image.tmdb.org/t/p/original${meta.backdrop_path}`;
+        document.getElementById('og-title').innerText = ARCHIVE.STATE.title;
+
+        // Generate Denoted Slug
         let slug;
-        if (SUPREME.STATE.mode === 'tv') {
-            slug = `${SUPREME.STATE.title.toLowerCase().replace(/[^a-z0-9]/g,'.')}.s${s.padStart(2,'0')}e${e.padStart(2,'0')}`;
+        if(ARCHIVE.STATE.type === 'tv') {
+            slug = `${ARCHIVE.STATE.title.toLowerCase().replace(/[^a-z0-9]/g,'.')}.s${s.padStart(2,'0')}e${e.padStart(2,'0')}`;
         } else {
-            slug = `${SUPREME.STATE.title.toLowerCase().replace(/[^a-z0-9]/g,'.')}.${SUPREME.STATE.year}`;
+            slug = `${ARCHIVE.STATE.title.toLowerCase().replace(/[^a-z0-9]/g,'.')}.${ARCHIVE.STATE.year}`;
         }
 
-        // FETCH SUBS & STREAM
-        const subUrl = `https://sub.wyzie.ru/search?id=${SUPREME.STATE.id}${SUPREME.STATE.mode === 'tv' ? `&season=${s}&episode=${e}` : ''}`;
-        const streamUrl = `https://u-1-1azw.onrender.com/api/get-stream?title=${slug}&id=${SUPREME.STATE.id}&season=${s}&episode=${e}`;
+        console.log("Denoted Slug Params:", `?title=${slug}&id=${ARCHIVE.STATE.id}&season=${s}&episode=${e}`);
 
-        const [subRes, streamRes] = await Promise.all([
-            fetch(SUPREME.PROXY(subUrl)).then(r => r.json()),
-            fetch(SUPREME.PROXY(streamUrl)).then(r => r.json())
+        // Fetch Subtitles and Stream
+        const subApi = `https://sub.wyzie.ru/search?id=${ARCHIVE.STATE.id}${ARCHIVE.STATE.type === 'tv' ? `&season=${s}&episode=${e}` : ''}`;
+        const streamApi = `https://u-1-1azw.onrender.com/api/get-stream?title=${slug}&id=${ARCHIVE.STATE.id}&season=${s}&episode=${e}`;
+
+        const [sRes, mRes] = await Promise.all([
+            fetch(ARCHIVE.PROXY(subApi)).then(r => r.json()),
+            fetch(ARCHIVE.PROXY(streamApi)).then(r => r.json())
         ]);
 
-        SUPREME.SUBS = Array.isArray(subRes) ? subRes : [];
-        
-        if (streamRes.m3u8_url) {
-            initSupremePlayer(SUPREME.PROXY(streamRes.m3u8_url));
+        ARCHIVE.SUBS = Array.isArray(sRes) ? sRes : [];
+
+        if(mRes.m3u8_url) {
+            startSupremePlayer(ARCHIVE.PROXY(mRes.m3u8_url));
         } else {
-            alert("Transmission Error: No Stream Found.");
+            alert("Stream not found for this slug.");
             lyr.style.display = 'none';
         }
 
-    } catch (err) {
+    } catch(err) {
         lyr.style.display = 'none';
     }
 }
 
-// 3. THE SUPREME ARTPLAYER
-function initSupremePlayer(m3u8) {
-    document.getElementById('player-container').style.display = 'block';
-    document.getElementById('loading-layer').style.display = 'none';
-    document.getElementById('titan-ui').classList.add('ui-hide');
+// --- 3. THE SUPREME ARTPLAYER SYSTEM ---
+function startSupremePlayer(url) {
+    document.getElementById('player-terminal').style.display = 'block';
+    document.getElementById('loading-lyr').style.display = 'none';
+    document.getElementById('master-ui').classList.add('ui-collapsed');
 
-    if (SUPREME.PLAYER) SUPREME.PLAYER.destroy();
+    if(ARCHIVE.PLAYER) ARCHIVE.PLAYER.destroy();
 
-    SUPREME.PLAYER = new Artplayer({
+    ARCHIVE.PLAYER = new Artplayer({
         container: '#art-mount',
-        url: m3u8,
+        url: url,
         type: 'm3u8',
         autoplay: true,
         fullscreen: true,
         setting: true,
+        theme: '#E50914',
         flip: true,
         playbackRate: true,
         aspectRatio: true,
-        theme: '#E50914',
         settings: [
             {
                 html: 'Subtitle Delay',
-                width: 250,
+                width: 200,
                 tooltip: '0s',
                 selector: [
                     { html: '-5s', value: -5 },
@@ -127,27 +143,27 @@ function initSupremePlayer(m3u8) {
                     { html: '+5s', value: 5 },
                 ],
                 onSelect: function (item) {
-                    SUPREME.PLAYER.subtitleOffset = item.value;
+                    ARCHIVE.PLAYER.subtitleOffset = item.value;
                     return item.html;
                 },
-            },
+            }
         ],
         layers: [
             {
-                name: 'manual-sub-container',
-                html: `<div class="SubtitleVideoCaption_mobileSubtitleContainer__vo_7_"><p id="supreme-sub-render"></p></div>`
+                name: 'manual-sub-layer',
+                html: `<div class="SubtitleVideoCaption_mobileSubtitleContainer__vo_7_"><p id="titan-render"></p></div>`
             },
             {
-                name: 'og-controls',
+                name: 'netflix-icons',
                 html: `
                     <div class="mobileCenterControls_playerControlsInnerContainer__6MCmU">
-                        <button class="btn-supreme" onclick="SUPREME.PLAYER.backward=10">
+                        <button class="og-icon-btn" onclick="ARCHIVE.PLAYER.backward=10">
                             <svg width="60" viewBox="0 0 24 24" fill="white"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/><text x="10" y="15" font-size="4" font-weight="900" fill="white">10</text></svg>
                         </button>
-                        <button id="p-toggle" class="btn-supreme" style="width:100px;" onclick="SUPREME.PLAYER.toggle()">
+                        <button id="p-main" class="og-icon-btn" style="width:100px;" onclick="ARCHIVE.PLAYER.toggle()">
                             <svg width="80" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
                         </button>
-                        <button class="btn-supreme" onclick="SUPREME.PLAYER.forward=10">
+                        <button class="og-icon-btn" onclick="ARCHIVE.PLAYER.forward=10">
                             <svg width="60" viewBox="0 0 24 24" fill="white"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="10" y="15" font-size="4" font-weight="900" fill="white">10</text></svg>
                         </button>
                     </div>
@@ -160,44 +176,41 @@ function initSupremePlayer(m3u8) {
                     const hls = new Hls();
                     hls.loadSource(url);
                     hls.attachMedia(video);
-                    SUPREME.HLS = hls;
+                    ARCHIVE.HLS = hls;
 
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        // 1. Audio Switcher
+                        // 1. Audio Switcher (Manifest Deep Scan)
                         if (hls.audioTracks.length) {
-                            SUPREME.PLAYER.setting.add({
-                                name: 'audio', html: 'Audio Language',
-                                selector: hls.audioTracks.map((t, i) => ({
-                                    html: t.name || t.lang || `Track ${i+1}`,
-                                    index: i
-                                })),
+                            ARCHIVE.PLAYER.setting.add({
+                                name: 'audio', html: 'Audio',
+                                selector: hls.audioTracks.map((t, i) => ({ html: t.name || t.lang || `Audio ${i+1}`, index: i })),
                                 onSelect: (item) => { hls.audioTrack = item.index; return item.html; }
                             });
                         }
 
                         // 2. Quality Switcher
                         if (hls.levels.length) {
-                            SUPREME.PLAYER.setting.add({
-                                name: 'quality', html: 'Resolution',
+                            ARCHIVE.PLAYER.setting.add({
+                                name: 'quality', html: 'Quality',
                                 selector: [{ html: 'Auto', index: -1 }, ...hls.levels.map((l, i) => ({ html: `${l.height}P`, index: i }))],
                                 onSelect: (item) => { hls.currentLevel = item.index; return item.html; }
                             });
                         }
 
-                        // 3. Subtitle Language Mapping
-                        SUPREME.PLAYER.setting.add({
+                        // 3. Subtitle Mapper (Network Request Fix)
+                        ARCHIVE.PLAYER.setting.add({
                             name: 'subs', html: 'Subtitles',
-                            selector: [{ html: 'Off', url: '' }, ...SUPREME.SUBS.map(s => ({ 
+                            selector: [{ html: 'Off', url: '' }, ...ARCHIVE.SUBS.map(s => ({ 
                                 html: s.lang || 'Unknown', 
-                                url: SUPREME.PROXY(s.url) 
+                                url: ARCHIVE.PROXY(s.url) 
                             }))],
                             onSelect: (item) => {
                                 if (item.url) {
-                                    SUPREME.PLAYER.subtitle.url = item.url;
-                                    SUPREME.PLAYER.subtitle.show = true;
+                                    ARCHIVE.PLAYER.subtitle.url = item.url;
+                                    ARCHIVE.PLAYER.subtitle.show = true;
                                 } else {
-                                    SUPREME.PLAYER.subtitle.show = false;
-                                    document.getElementById('supreme-sub-render').style.display = 'none';
+                                    ARCHIVE.PLAYER.subtitle.show = false;
+                                    document.getElementById('titan-render').style.display = 'none';
                                 }
                                 return item.html;
                             }
@@ -208,9 +221,9 @@ function initSupremePlayer(m3u8) {
         }
     });
 
-    // Forced Subtitle Renderer to Div
-    SUPREME.PLAYER.on('subtitleUpdate', (text) => {
-        const el = document.getElementById('supreme-sub-render');
+    // Forced Render to Specific Div
+    ARCHIVE.PLAYER.on('subtitleUpdate', (text) => {
+        const el = document.getElementById('titan-render');
         if (text) {
             el.innerHTML = text;
             el.style.display = 'block';
@@ -219,13 +232,13 @@ function initSupremePlayer(m3u8) {
         }
     });
 
-    SUPREME.PLAYER.on('play', () => { document.getElementById('p-toggle').innerHTML = '<svg width="80" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'; });
-    SUPREME.PLAYER.on('pause', () => { document.getElementById('p-toggle').innerHTML = '<svg width="80" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>'; });
+    ARCHIVE.PLAYER.on('play', () => { document.getElementById('p-main').innerHTML = '<svg width="80" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'; });
+    ARCHIVE.PLAYER.on('pause', () => { document.getElementById('p-main').innerHTML = '<svg width="80" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>'; });
 }
 
-function destroyPlayer() {
-    if (SUPREME.PLAYER) SUPREME.PLAYER.destroy();
-    if (SUPREME.HLS) SUPREME.HLS.destroy();
-    document.getElementById('player-container').style.display = 'none';
-    document.getElementById('titan-ui').classList.remove('ui-hide');
+function killTitan() {
+    if (ARCHIVE.PLAYER) ARCHIVE.PLAYER.destroy();
+    if (ARCHIVE.HLS) ARCHIVE.HLS.destroy();
+    document.getElementById('player-terminal').style.display = 'none';
+    document.getElementById('master-ui').classList.remove('ui-collapsed');
 }
