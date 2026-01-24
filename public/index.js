@@ -1,172 +1,160 @@
 /**
- * TITAN V31.0 - PATHFINDER ENGINE
+ * TITAN V32.0 - SUPREME PATHFINDER CORE
  */
 
-const TITAN = {
-    TMDB: '463dcd7993ab31d92eb586802fdeee6a',
+const CONFIG = {
+    TMDB_KEY: '463dcd7993ab31d92eb586802fdeee6a',
     PROXY: (u) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(u)}`,
-    STATE: { id: null, type: 'tv', title: '', s: 1, e: 1, year: '' },
     PLAYER: null,
     HLS: null
 };
 
-// --- CORE: URL LISTENER (THE FIX) ---
-window.addEventListener('DOMContentLoaded', () => {
+// --- INITIAL URL SCANNER ---
+window.onload = function() {
     const path = window.location.pathname.split('/').filter(Boolean);
-    
-    // Check for patterns like /1399/1/1 or /movie/671
     if (path.length > 0) {
-        document.getElementById('titan-dashboard').classList.add('dashboard-hidden');
-        
-        if (path[0] === 'movie') {
-            TITAN.STATE.type = 'movie';
-            TITAN.STATE.id = path[1];
-        } else if (path.length >= 3) {
-            TITAN.STATE.type = 'tv';
-            TITAN.STATE.id = path[0];
-            TITAN.STATE.s = path[1];
-            TITAN.STATE.e = path[2];
-        } else {
-            TITAN.STATE.type = 'movie';
-            TITAN.STATE.id = path[0];
-        }
-        
-        if (TITAN.STATE.id) runPathfinder();
+        document.getElementById('titan-dashboard').classList.add('db-hidden');
+        processPath(path);
     }
-});
+};
 
-// --- SEARCH ENGINE ---
-document.getElementById('search-input').addEventListener('input', async (e) => {
-    const q = e.target.value;
-    const resBox = document.getElementById('search-results');
-    if (q.length < 2) { resBox.style.display = 'none'; return; }
+async function processPath(path) {
+    let id, s, e, type;
 
-    const data = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TITAN.TMDB}&query=${q}`).then(r => r.json());
-    resBox.innerHTML = '';
-    resBox.style.display = 'block';
+    if (path[0] === 'movie') {
+        type = 'movie'; id = path[1];
+    } else {
+        id = path[0]; s = path[1]; e = path[2];
+        type = s ? 'tv' : 'movie';
+    }
 
-    (data.results || []).slice(0, 5).forEach(item => {
-        if (item.media_type === 'person') return;
-        const div = document.createElement('div');
-        div.className = 'res-item';
-        div.innerHTML = `<img src="https://image.tmdb.org/t/p/w92${item.poster_path}"><div><b>${item.title || item.name}</b></div>`;
-        div.onclick = () => {
-            TITAN.STATE.id = item.id;
-            TITAN.STATE.type = item.media_type;
-            TITAN.STATE.title = item.title || item.name;
-            document.getElementById('search-input').value = TITAN.STATE.title;
-            resBox.style.display = 'none';
-        };
-        resBox.appendChild(div);
-    });
-});
-
-async function manualLaunch() {
-    if (!TITAN.STATE.id) return alert("Select a title.");
-    runPathfinder();
+    if (id) runSupremeEngine(id, type, s, e);
 }
 
-// --- MASTER BOOT LOGIC ---
-async function runPathfinder() {
-    const lyr = document.getElementById('loading-layer');
+// --- MASTER ENGINE ---
+async function runSupremeEngine(id, type, s, e) {
+    const lyr = document.getElementById('loading-lyr');
     lyr.style.display = 'flex';
 
     try {
-        // 1. Fetch IMDb Exclusive Metadata
-        const meta = await fetch(`https://api.themoviedb.org/3/${TITAN.STATE.type}/${TITAN.STATE.id}?api_key=${TITAN.TMDB}`).then(r => r.json());
-        TITAN.STATE.title = meta.title || meta.name;
-        TITAN.STATE.year = (meta.release_date || meta.first_air_date || '').split('-')[0];
-
-        document.getElementById('og-backdrop').src = `https://image.tmdb.org/t/p/original${meta.backdrop_path}`;
-        document.getElementById('og-title').innerText = TITAN.STATE.title;
-
-        // 2. Slug Denoter
-        let slug;
-        if (TITAN.STATE.type === 'tv') {
-            slug = `${TITAN.STATE.title.toLowerCase().replace(/[^a-z0-9]/g,'.')}.s${String(TITAN.STATE.s).padStart(2,'0')}e${String(TITAN.STATE.e).padStart(2,'0')}`;
+        // 1. Fetch High-Fidelity Official Title Logo
+        const images = await fetch(`https://api.themoviedb.org/3/${type}/${id}/images?api_key=${CONFIG.TMDB_KEY}`).then(r => r.json());
+        const details = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${CONFIG.TMDB_KEY}`).then(r => r.json());
+        
+        // Find English Transparent Logo
+        const logo = images.logos?.find(l => l.iso_639_1 === 'en' && l.file_path.endsWith('.png')) || images.logos?.[0];
+        if (logo) {
+            document.getElementById('exclusive-logo').src = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
         } else {
-            slug = `${TITAN.STATE.title.toLowerCase().replace(/[^a-z0-9]/g,'.')}.${TITAN.STATE.year}`;
+            // Fallback to text logo if no PNG found
+            document.getElementById('exclusive-logo').style.display = 'none';
         }
 
-        // 3. Network Requests
-        const subApi = `https://sub.wyzie.ru/search?id=${TITAN.STATE.id}${TITAN.STATE.type === 'tv' ? `&season=${TITAN.STATE.s}&episode=${TITAN.STATE.e}` : ''}`;
-        const streamApi = `https://u-1-1azw.onrender.com/api/get-stream?title=${slug}&id=${TITAN.STATE.id}&season=${TITAN.STATE.s}&episode=${TITAN.STATE.e}`;
+        const title = details.title || details.name;
+        const year = (details.release_date || details.first_air_date || '').split('-')[0];
+
+        // 2. Generate Denoted Slug
+        let slug;
+        if (type === 'tv') {
+            slug = `${title.toLowerCase().replace(/[^a-z0-9]/g,'.')}.s${String(s).padStart(2,'0')}e${String(e).padStart(2,'0')}`;
+        } else {
+            slug = `${title.toLowerCase().replace(/[^a-z0-9]/g,'.')}.${year}`;
+        }
+
+        // 3. Fetch Subs & Stream
+        const subApi = `https://sub.wyzie.ru/search?id=${id}${type === 'tv' ? `&season=${s}&episode=${e}` : ''}`;
+        const streamApi = `https://u-1-1azw.onrender.com/api/get-stream?title=${slug}&id=${id}&season=${s}&episode=${e}`;
 
         const [subs, stream] = await Promise.all([
-            fetch(TITAN.PROXY(subApi)).then(r => r.json()),
-            fetch(TITAN.PROXY(streamApi)).then(r => r.json())
+            fetch(CONFIG.PROXY(subApi)).then(r => r.json()),
+            fetch(CONFIG.PROXY(streamApi)).then(r => r.json())
         ]);
 
         if (stream.m3u8_url) {
-            bootArt(TITAN.PROXY(stream.m3u8_url), subs);
+            launchArt(CONFIG.PROXY(stream.m3u8_url), subs);
         } else {
             alert("No stream found for slug: " + slug);
             lyr.style.display = 'none';
         }
-    } catch (e) {
+    } catch (err) {
+        console.error(err);
         lyr.style.display = 'none';
     }
 }
 
-// --- SUPREME PLAYER ---
-function bootArt(m3u8, subList) {
+// --- SUPREME ARTPLAYER ---
+function launchArt(m3u8, subs) {
     document.getElementById('player-shell').style.display = 'block';
-    document.getElementById('loading-layer').style.display = 'none';
+    document.getElementById('loading-lyr').style.display = 'none';
 
-    if (TITAN.PLAYER) TITAN.PLAYER.destroy();
+    if (CONFIG.PLAYER) CONFIG.PLAYER.destroy();
 
-    TITAN.PLAYER = new Artplayer({
+    CONFIG.PLAYER = new Artplayer({
         container: '#art-mount',
         url: m3u8,
         type: 'm3u8',
         autoplay: true,
         fullscreen: true,
         setting: true,
+        theme: '#E50914',
         aspectRatio: true,
         playbackRate: true,
-        theme: '#E50914',
         settings: [
             {
                 html: 'Subtitle Delay',
-                tooltip: '0s',
                 selector: [-5, -2, -1, 0, 1, 2, 5].map(v => ({ html: v + 's', value: v, default: v === 0 })),
-                onSelect: (v) => { TITAN.PLAYER.subtitleOffset = v.value; return v.html; }
+                onSelect: (v) => { CONFIG.PLAYER.subtitleOffset = v.value; return v.html; }
             }
         ],
         layers: [{
             name: 'sub-layer',
-            html: `<div class="SubtitleVideoCaption_mobileSubtitleContainer__vo_7_"><p id="titan-sub-text"></p></div>`
+            html: `<div class="SubtitleVideoCaption_mobileSubtitleContainer__vo_7_"><p id="titan-sub-p"></p></div>`
+        }, {
+            name: 'nf-controls',
+            html: `
+                <div class="mobileCenterControls_playerControlsInnerContainer__6MCmU">
+                    <button class="og-icon" onclick="CONFIG.PLAYER.backward=10">
+                        <svg width="60" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                    </button>
+                    <button id="main-play" class="og-icon" onclick="CONFIG.PLAYER.toggle()">
+                        <svg width="80" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <button class="og-icon" onclick="CONFIG.PLAYER.forward=10">
+                        <svg width="60" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/></svg>
+                    </button>
+                </div>
+            `
         }],
         customType: {
             m3u8: function(video, url) {
                 const hls = new Hls();
                 hls.loadSource(url);
                 hls.attachMedia(video);
-                TITAN.HLS = hls;
+                CONFIG.HLS = hls;
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    // Audio Switcher
+                    // Audio
                     if (hls.audioTracks.length) {
-                        TITAN.PLAYER.setting.add({
+                        CONFIG.PLAYER.setting.add({
                             name: 'audio', html: 'Audio',
                             selector: hls.audioTracks.map((t, i) => ({ html: t.name || t.lang || `Track ${i+1}`, index: i })),
                             onSelect: (item) => { hls.audioTrack = item.index; return item.html; }
                         });
                     }
-                    // Quality Switcher
+                    // Quality
                     if (hls.levels.length) {
-                        TITAN.PLAYER.setting.add({
+                        CONFIG.PLAYER.setting.add({
                             name: 'quality', html: 'Quality',
                             selector: [{html: 'Auto', index: -1}, ...hls.levels.map((l, i) => ({ html: `${l.height}P`, index: i }))],
                             onSelect: (item) => { hls.currentLevel = item.index; return item.html; }
                         });
                     }
-                    // Subtitle Mapper (Fix Unknown Language)
-                    TITAN.PLAYER.setting.add({
+                    // Subtitles
+                    CONFIG.PLAYER.setting.add({
                         name: 'subs', html: 'Subtitles',
-                        selector: [{html: 'Off', url: ''}, ...subList.map(s => ({ html: s.lang || s.language || 'Sub', url: TITAN.PROXY(s.url) }))],
+                        selector: [{html: 'Off', url: ''}, ...subs.map(s => ({ html: s.lang || s.language || 'Sub', url: CONFIG.PROXY(s.url) }))],
                         onSelect: (item) => {
-                            if (item.url) { TITAN.PLAYER.subtitle.url = item.url; TITAN.PLAYER.subtitle.show = true; }
-                            else { TITAN.PLAYER.subtitle.show = false; document.getElementById('titan-sub-text').style.display='none'; }
+                            if (item.url) { CONFIG.PLAYER.subtitle.url = item.url; CONFIG.PLAYER.subtitle.show = true; }
+                            else { CONFIG.PLAYER.subtitle.show = false; document.getElementById('titan-sub-p').style.display='none'; }
                             return item.html;
                         }
                     });
@@ -175,18 +163,20 @@ function bootArt(m3u8, subList) {
         }
     });
 
-    // Forced Render to Div Container
-    TITAN.PLAYER.on('subtitleUpdate', (t) => {
-        const p = document.getElementById('titan-sub-text');
+    CONFIG.PLAYER.on('subtitleUpdate', (t) => {
+        const p = document.getElementById('titan-sub-p');
         if (t) { p.innerHTML = t; p.style.display = 'block'; }
         else p.style.display = 'none';
     });
+
+    CONFIG.PLAYER.on('play', () => { document.getElementById('main-play').innerHTML = '<svg width="80" viewBox="0 0 24 24" fill="white"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'; });
+    CONFIG.PLAYER.on('pause', () => { document.getElementById('main-play').innerHTML = '<svg width="80" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>'; });
 }
 
-function killEverything() {
-    if (TITAN.PLAYER) TITAN.PLAYER.destroy();
-    if (TITAN.HLS) TITAN.HLS.destroy();
+function terminate() {
+    if (CONFIG.PLAYER) CONFIG.PLAYER.destroy();
+    if (CONFIG.HLS) CONFIG.HLS.destroy();
     document.getElementById('player-shell').style.display = 'none';
-    document.getElementById('titan-dashboard').classList.remove('dashboard-hidden');
+    document.getElementById('titan-dashboard').classList.remove('db-hidden');
     window.history.pushState({}, '', '/');
 }
