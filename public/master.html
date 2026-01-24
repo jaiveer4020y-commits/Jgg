@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="TITAN SINGULARITY STREAMING PROTOCOL">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>TITAN V40.0 | SINGULARITY</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/artplayer@5.1.1/dist/artplayer.css">
+    <script src="https://unpkg.com/hls.js@1.5.17/dist/hls.min.js"></script>
+    <script src="https://unpkg.com/artplayer@5.1.1/dist/artplayer.js"></script>
+
+    <style>
+        /* =======================================================================
+            TITAN V40.0 - CSS ARCHITECTURE
+            =======================================================================
+        */
+        :root {
+            --titan-red: #E50914;
+            --titan-dark: #050505;
+            --titan-surface: #121212;
+            --titan-overlay: rgba(0, 0, 0, 0.85);
+            --titan-border: 1px solid rgba(255, 255, 255, 0.1);
+            --titan-glow: 0 0 20px rgba(229, 9, 20, 0.4);
+            
+            --font-primary: 'Inter', sans-serif;
+            --font-display: 'Cinzel', serif;
+            --font-code: 'Space Mono', monospace;
+            
+            --z-dashboard: 100;
+            --z-search: 200;
+            --z-loader: 8000;
+            --z-player: 9000;
+            --z-subtitles: 9500;
+            --z-debug: 9999;
+        }
+
+        /* RESET & BASE */
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #000; color: #fff;
+            font-family: var(--font-primary); overflow: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* UTILITIES */
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
+        .fade-enter { opacity: 0; transition: opacity 0.5s ease; }
+        .fade-enter-active { opacity: 1; }
+        .btn-reset { background: none; border: none; padding: 0; cursor: pointer; color: inherit; }
+
+        /* =======================================================================
+            MODULE 1: THE DASHBOARD
+            =======================================================================
+        */
+        #titan-dashboard {
+            position: fixed; inset: 0; z-index: var(--z-dashboard);
+            background: radial-gradient(circle at 50% 10%, #1a0505 0%, #000 90%);
+            overflow-y: auto; padding: 40px 20px;
+            display: flex; flex-direction: column; align-items: center;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+        }
+
+        .hero-section {
+            text-align: center; margin-bottom: 60px; position: relative;
+        }
+        
+        .titan-brand {
+            font-family: var(--font-display); font-size: 4rem; font-weight: 900;
+            color: var(--titan-red); margin: 0; letter-spacing: 4px;
+            text-shadow: var(--titan-glow); text-transform: uppercase;
+        }
+        
+        .titan-status {
+            font-family: var(--font-code); font-size: 0.8rem; color: #666;
+            margin-top: 15px; letter-spacing: 2px;
+            border: 1px solid #333; padding: 5px 15px; border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* SEARCH INTERFACE */
+        .search-container {
+            width: 100%; max-width: 650px; position: relative; margin-bottom: 60px;
+            z-index: 10;
+        }
+        
+        .titan-input {
+            width: 100%; background: rgba(255, 255, 255, 0.05);
+            border: var(--titan-border); padding: 25px 35px;
+            border-radius: 100px; color: #fff; font-size: 18px; font-weight: 500;
+            backdrop-filter: blur(20px); transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .titan-input:focus {
+            background: #000; border-color: var(--titan-red);
+            box-shadow: var(--titan-glow); transform: scale(1.02);
+        }
+        
+        .search-results-panel {
+            position: absolute; top: 120%; left: 10px; right: 10px;
+            background: #0a0a0a; border: var(--titan-border); border-radius: 20px;
+            max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.9);
+        }
+        
+        .search-results-panel.active { max-height: 500px; overflow-y: auto; padding: 10px 0; }
+        
+        .result-item {
+            display: flex; gap: 20px; padding: 15px 25px; cursor: pointer;
+            transition: background 0.2s; border-bottom: 1px solid #111;
+        }
+        
+        .result-item:hover { background: #151515; }
+        
+        .result-poster {
+            width: 50px; height: 75px; object-fit: cover; border-radius: 4px;
+            background: #222;
+        }
+        
+        .result-info h4 { margin: 0 0 5px 0; font-size: 16px; color: #eee; }
+        
+        .result-tags {
+            font-size: 11px; font-weight: 800; text-transform: uppercase;
+            color: var(--titan-red); letter-spacing: 1px;
+        }
+
+        /* PORTAL GRID (IFRAMES) */
+        .portal-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 40px; width: 100%; max-width: 1200px; padding-bottom: 100px;
+        }
+        
+        .portal-unit {
+            background: #000; border-radius: 24px; overflow: hidden;
+            border: var(--titan-border); position: relative; height: 280px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+        
+        .portal-unit:hover {
+            transform: translateY(-12px) scale(1.02);
+            border-color: var(--titan-red);
+            box-shadow: var(--titan-glow);
+        }
+        
+        .portal-viewport {
+            width: 100%; height: 100%; position: relative; pointer-events: none;
+        }
+        
+        .portal-viewport iframe {
+            width: 100%; height: 100%; border: none; opacity: 0.5;
+            transform: scale(1.05); transition: opacity 0.5s;
+        }
+        
+        .portal-unit:hover iframe { opacity: 0.8; }
+        
+        .portal-overlay {
+            position: absolute; inset: 0; z-index: 5;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 60%);
+            display: flex; flex-direction: column; justify-content: flex-end;
+            padding: 30px; cursor: pointer;
+        }
+        
+        .portal-title {
+            font-size: 1.4rem; font-weight: 800; text-transform: uppercase;
+            margin: 0 0 5px 0; font-family: var(--font-display);
+        }
+        
+        .portal-meta {
+            font-size: 0.8rem; font-family: var(--font-code); color: #888;
+        }
+
+        /* =======================================================================
+            MODULE 2: LOADING SYSTEM
+            =======================================================================
+        */
+        #titan-loader {
+            position: fixed; inset: 0; z-index: var(--z-loader);
+            background: #000; display: none; align-items: center; justify-content: center;
+        }
+        
+        #loader-backdrop {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0.4; filter: blur(20px) brightness(0.6);
+            transition: opacity 1s;
+        }
+        
+        .loader-interface {
+            position: relative; z-index: 2; display: flex; flex-direction: column;
+            align-items: center; width: 100%; max-width: 400px;
+        }
+        
+        #loader-logo {
+            width: 80%; max-height: 200px; object-fit: contain; margin-bottom: 50px;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
+            animation: breathe 4s ease-in-out infinite;
+        }
+        
+        /* NETFLIX SPINNER REPLICA */
+        .titan-spinner {
+            width: 60px; height: 60px; position: relative;
+            animation: rotate 1s linear infinite;
+        }
+        
+        .titan-spinner::before {
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            border: 4px solid transparent; border-top-color: var(--titan-red);
+        }
+        
+        .titan-spinner::after {
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            border: 4px solid rgba(255,255,255,0.1); z-index: -1;
+        }
+        
+        .loader-text {
+            margin-top: 30px; font-family: var(--font-code); font-size: 12px;
+            letter-spacing: 4px; color: #888; text-transform: uppercase;
+            animation: blink 2s infinite;
+        }
+
+        /* =======================================================================
+            MODULE 3: PLAYER TERMINAL
+            =======================================================================
+        */
+        #titan-player {
+            position: fixed; inset: 0; z-index: var(--z-player);
+            background: #000; display: none;
+        }
+        
+        .control-dock {
+            position: absolute; top: 30px; left: 30px; z-index: 9100;
+        }
+        
+        .btn-exit {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(10px); transition: all 0.3s;
+        }
+        
+        .btn-exit:hover {
+            background: var(--titan-red); border-color: var(--titan-red);
+            transform: rotate(90deg) scale(1.1);
+        }
+
+        /* =======================================================================
+            MODULE 4: MANUAL SUBTITLE SYSTEM (USER REQUIREMENT)
+            =======================================================================
+        */
+        .SubtitleVideoCaption_mobileSubtitleContainer__vo_7_ {
+            position: absolute; 
+            bottom: 80px !important; 
+            left: 50% !important;
+            transform: translateX(-50%) !important; 
+            width: 90% !important;
+            max-width: 800px;
+            display: flex !important; 
+            justify-content: center !important; 
+            align-items: flex-end !important;
+            z-index: var(--z-subtitles) !important; 
+            pointer-events: none;
+            text-align: center;
+        }
+        
+        #manual-subtitle-text {
+            background: rgba(0, 0, 0, 0.75);
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: var(--font-primary);
+            font-size: clamp(16px, 4vw, 26px); /* Responsive Font Size */
+            font-weight: 700;
+            line-height: 1.4;
+            text-shadow: 0 2px 4px #000;
+            display: none; /* Controlled by JS */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* PREVIEW MODE OVERRIDES (When inside iframe) */
+        body.is-preview #titan-dashboard { display: none !important; }
+        body.is-preview #titan-player { display: block !important; }
+        body.is-preview .btn-exit { display: none !important; }
+        
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    </style>
+</head>
+<body>
+
+    <div id="debug-log" style="display:none; position:fixed; bottom:0; left:0; width:100%; height:150px; background:rgba(0,0,0,0.9); z-index:9999; color:#0f0; font-family:monospace; font-size:10px; overflow-y:auto; padding:10px;"></div>
+
+    <div id="titan-dashboard">
+        <header class="hero-section">
+            <h1 class="titan-brand">TITAN OMNI</h1>
+            <div class="titan-status">SYSTEM ONLINE • V40.0</div>
+        </header>
+
+        <div class="search-container">
+            <input type="text" id="master-search" class="titan-input" placeholder="Initiate Search Protocol..." autocomplete="off">
+            <div id="search-output" class="search-results-panel"></div>
+        </div>
+
+        <div class="portal-grid">
+            <article class="portal-unit">
+                <div class="portal-overlay" onclick="TITAN.router.push('/tv/1399/1/1')">
+                    <h2 class="portal-title">Game of Thrones</h2>
+                    <div class="portal-meta">WATCH: S01 E01</div>
+                </div>
+                <div class="portal-viewport">
+                    <iframe src="?id=1399&type=tv&s=1&e=1&preview=true" scrolling="no"></iframe>
+                </div>
+            </article>
+
+            <article class="portal-unit">
+                <div class="portal-overlay" onclick="TITAN.router.push('/movie/671')">
+                    <h2 class="portal-title">Harry Potter</h2>
+                    <div class="portal-meta">WATCH: MOVIE</div>
+                </div>
+                <div class="portal-viewport">
+                    <iframe src="?id=671&type=movie&preview=true" scrolling="no"></iframe>
+                </div>
+            </article>
+
+            <article class="portal-unit">
+                <div class="portal-overlay" onclick="TITAN.router.push('/tv/93405/1/1')">
+                    <h2 class="portal-title">Squid Game</h2>
+                    <div class="portal-meta">WATCH: S01 E01</div>
+                </div>
+                <div class="portal-viewport">
+                    <iframe src="?id=93405&type=tv&s=1&e=1&preview=true" scrolling="no"></iframe>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <div id="titan-loader">
+        <img id="loader-backdrop" src="" alt="backdrop">
+        <div class="loader-interface">
+            <img id="loader-logo" src="" alt="logo">
+            <div class="titan-spinner"></div>
+            <div id="loader-status" class="loader-text">CONNECTING...</div>
+        </div>
+    </div>
+
+    <div id="titan-player">
+        <div class="control-dock">
+            <button class="btn-reset btn-exit" onclick="TITAN.core.shutdown()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div id="artplayer-root" style="width:100%; height:100%;"></div>
+        
+        <div class="SubtitleVideoCaption_mobileSubtitleContainer__vo_7_">
+            <span id="manual-subtitle-text"></span>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * TITAN V40.0 - JAVASCRIPT CORE
+         * "The Singularity Build"
+         * * Includes:
+         * 1. Query String & Path Parsing (Hybrid Router)
+         * 2. TMDB Metadata Fetcher
+         * 3. Stream API Handshake
+         * 4. ArtPlayer + HLS Configuration
+         * 5. Manual Subtitle Injection Logic
+         */
+
+        const TITAN = {
+            config: {
+                tmdbKey: '463dcd7993ab31d92eb586802fdeee6a',
+                endpoints: {
+                    stream: 'https://u-1-1azw.onrender.com/api/get-stream',
+                    subs: 'https://sub.wyzie.ru/search',
+                    proxy: (url) => `https://workingg.vercel.app/api/proxy?url=${encodeURIComponent(url)}`
+                }
+            },
+            state: {
+                active: false,
+                isPreview: false,
+                player: null,
+                hls: null
+            },
+            
+            // --- LOGGING UTILITY ---
+            log: (msg) => {
+                console.log(`[TITAN]: ${msg}`);
+                const dbg = document.getElementById('debug-log');
+                dbg.innerHTML += `<div>> ${msg}</div>`;
+                dbg.scrollTop = dbg.scrollHeight;
+            },
+
+            // --- 1. ROUTER ---
+            router: {
+                init: () => {
+                    TITAN.log("Initializing Router...");
+                    
+                    // CHECK 1: Are we in an iframe? (Preview Mode)
+                    // If window.self !== window.top, we are inside a dashboard card.
+                    if (window.self !== window.top) {
+                        TITAN.state.isPreview = true;
+                        document.body.classList.add('is-preview');
+                        TITAN.log("Preview Mode Detected.");
+                    }
+
+                    // CHECK 2: Parse URL for ID/Type
+                    // Supports both /tv/123/1/1 path and ?id=123 query params
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const pathSegments = window.location.pathname.split('/').filter(Boolean);
+
+                    let params = {};
+
+                    if (urlParams.has('id')) {
+                        // Query Param Mode (Used by portals)
+                        params = {
+                            id: urlParams.get('id'),
+                            type: urlParams.get('type') || 'movie',
+                            s: urlParams.get('s') || 1,
+                            e: urlParams.get('e') || 1
+                        };
+                    } else if (pathSegments.length > 0) {
+                        // Path Mode
+                        if (pathSegments[0] === 'movie') {
+                            params = { id: pathSegments[1], type: 'movie' };
+                        } else if (pathSegments[0] === 'tv') {
+                            params = { id: pathSegments[1], type: 'tv', s: pathSegments[2], e: pathSegments[3] };
+                        } else if (!isNaN(pathSegments[0])) {
+                            // Legacy /1399/1/1
+                            if (pathSegments.length >= 3) {
+                                params = { id: pathSegments[0], type: 'tv', s: pathSegments[1], e: pathSegments[2] };
+                            } else {
+                                params = { id: pathSegments[0], type: 'movie' };
+                            }
+                        }
+                    }
+
+                    if (params.id) {
+                        TITAN.core.boot(params);
+                    } else {
+                        TITAN.log("Standing by on Dashboard.");
+                    }
+                },
+
+                push: (path) => {
+                    history.pushState({}, '', path);
+                    window.location.reload();
+                }
+            },
+
+            // --- 2. CORE ENGINE ---
+            core: {
+                boot: async (p) => {
+                    const loader = document.getElementById('titan-loader');
+                    const status = document.getElementById('loader-status');
+                    
+                    // Only show loader if NOT in preview mode (keeps portals clean)
+                    if (!TITAN.state.isPreview) {
+                        loader.style.display = 'flex';
+                    }
+
+                    try {
+                        TITAN.log(`Booting ID: ${p.id} Type: ${p.type}`);
+                        
+                        // A. FETCH METADATA
+                        status.innerText = "AUTHENTICATING...";
+                        const metaUrl = `https://api.themoviedb.org/3/${p.type}/${p.id}?api_key=${TITAN.config.tmdbKey}`;
+                        const imgUrl = `https://api.themoviedb.org/3/${p.type}/${p.id}/images?api_key=${TITAN.config.tmdbKey}`;
+                        
+                        const [meta, imgs] = await Promise.all([
+                            fetch(metaUrl).then(r => r.json()),
+                            fetch(imgUrl).then(r => r.json())
+                        ]);
+
+                        // B. UI ASSETS (Backdrop & Logo)
+                        const title = meta.title || meta.name;
+                        const year = (meta.release_date || meta.first_air_date || '').split('-')[0];
+                        
+                        if(meta.backdrop_path) {
+                            document.getElementById('loader-backdrop').src = `https://image.tmdb.org/t/p/original${meta.backdrop_path}`;
+                        }
+                        
+                        // Find best PNG logo
+                        const logo = imgs.logos?.find(l => l.iso_639_1 === 'en' && l.file_path.endsWith('.png')) || imgs.logos?.[0];
+                        if (logo) {
+                            document.getElementById('loader-logo').src = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
+                            document.getElementById('loader-logo').style.display = 'block';
+                        } else {
+                            document.getElementById('loader-logo').style.display = 'none';
+                        }
+
+                        // C. CALCULATE SLUG & FETCH STREAMS
+                        status.innerText = "ESTABLISHING UPLINK...";
+                        const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]/g, '.');
+                        let slug;
+                        
+                        if (p.type === 'tv') {
+                            slug = `${cleanTitle}.s${String(p.s).padStart(2,'0')}e${String(p.e).padStart(2,'0')}`;
+                        } else {
+                            slug = `${cleanTitle}.${year}`;
+                        }
+                        
+                        TITAN.log(`Slug: ${slug}`);
+
+                        const streamApi = `${TITAN.config.endpoints.stream}?title=${slug}&id=${p.id}&season=${p.s || 1}&episode=${p.e || 1}`;
+                        const subApi = `${TITAN.config.endpoints.subs}?id=${p.id}${p.type==='tv' ? `&season=${p.s}&episode=${p.e}` : ''}`;
+
+                        const [sData, subData] = await Promise.all([
+                            fetch(TITAN.config.endpoints.proxy(streamApi)).then(r => r.json()),
+                            fetch(TITAN.config.endpoints.proxy(subApi)).then(r => r.json()).catch(() => [])
+                        ]);
+
+                        if (sData.m3u8_url) {
+                            TITAN.core.launch(TITAN.config.endpoints.proxy(sData.m3u8_url), subData);
+                        } else {
+                            throw new Error("Stream Not Found");
+                        }
+
+                    } catch (error) {
+                        TITAN.log(`Error: ${error.message}`);
+                        if (!TITAN.state.isPreview) {
+                            status.innerText = "CONNECTION FAILED";
+                            status.style.color = "red";
+                            setTimeout(() => {
+                                loader.style.display = 'none';
+                                alert("TITAN ERROR: Content unavailable or API timeout.");
+                            }, 2000);
+                        }
+                    }
+                },
+
+                launch: (url, subs) => {
+                    const playerContainer = document.getElementById('titan-player');
+                    const loader = document.getElementById('titan-loader');
+                    
+                    loader.style.display = 'none';
+                    playerContainer.style.display = 'block';
+
+                    if (TITAN.state.player) TITAN.state.player.destroy();
+
+                    // Process Subtitles for ArtPlayer Settings
+                    const subList = Array.isArray(subs) ? subs.map(s => ({
+                        html: s.lang || s.language || 'Unknown',
+                        url: TITAN.config.endpoints.proxy(s.url),
+                    })) : [];
+
+                    // INIT ARTPLAYER
+                    const art = new Artplayer({
+                        container: '#artplayer-root',
+                        url: url,
+                        type: 'm3u8',
+                        theme: '#E50914',
+                        autoplay: true,
+                        muted: TITAN.state.isPreview, // Mute if preview
+                        fullscreen: !TITAN.state.isPreview,
+                        fullscreenWeb: true,
+                        autoSize: true,
+                        playbackRate: true,
+                        aspectRatio: true,
+                        setting: true,
+                        pip: true,
+                        lock: true,
+                        
+                        // Subtitle Offset Setting
+                        settings: [
+                            {
+                                html: 'Subtitle Offset',
+                                width: 250,
+                                selector: [
+                                    { html: '-2s', value: -2 },
+                                    { html: '-1s', value: -1 },
+                                    { html: '0s', value: 0, default: true },
+                                    { html: '+1s', value: 1 },
+                                    { html: '+2s', value: 2 },
+                                ],
+                                onSelect: (item) => {
+                                    art.subtitleOffset = item.value;
+                                    return item.html;
+                                }
+                            }
+                        ],
+
+                        customType: {
+                            m3u8: function(video, url) {
+                                const hls = new Hls();
+                                hls.loadSource(url);
+                                hls.attachMedia(video);
+                                TITAN.state.hls = hls;
+                                
+                                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                                    // Audio Tracks
+                                    if(hls.audioTracks.length > 0) {
+                                        art.setting.add({
+                                            name: 'audio', html: 'Audio',
+                                            selector: hls.audioTracks.map((t, i) => ({ html: t.name, index: i })),
+                                            onSelect: (item) => { hls.audioTrack = item.index; return item.html; }
+                                        });
+                                    }
+                                    
+                                    // Quality Levels
+                                    if(hls.levels.length > 1) {
+                                        art.setting.add({
+                                            name: 'quality', html: 'Quality',
+                                            selector: hls.levels.map((l, i) => ({ html: `${l.height}p`, index: i })),
+                                            onSelect: (item) => { hls.currentLevel = item.index; return item.html; }
+                                        });
+                                    }
+                                    
+                                    // Subtitle Selection
+                                    if (subList.length > 0) {
+                                        art.setting.add({
+                                            name: 'subs', html: 'Subtitles',
+                                            selector: [{html: 'Off', url: ''}, ...subList],
+                                            onSelect: (item) => {
+                                                if(item.url) {
+                                                    art.subtitle.url = item.url;
+                                                    art.subtitle.show = true; 
+                                                } else {
+                                                    art.subtitle.show = false;
+                                                    TITAN.core.updateSub('');
+                                                }
+                                                return item.html;
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    });
+
+                    // --- MANUAL SUBTITLE HACK ---
+                    // Intercept the subtitleUpdate event and force it into our div
+                    art.on('subtitleUpdate', (text) => {
+                        TITAN.core.updateSub(text);
+                    });
+
+                    TITAN.state.player = art;
+                },
+
+                updateSub: (text) => {
+                    const el = document.getElementById('manual-subtitle-text');
+                    if (text && text.trim() !== '') {
+                        el.innerHTML = text;
+                        el.style.display = 'inline-block';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                },
+
+                shutdown: () => {
+                    if (TITAN.state.player) TITAN.state.player.destroy();
+                    if (TITAN.state.hls) TITAN.state.hls.destroy();
+                    
+                    document.getElementById('titan-player').style.display = 'none';
+                    history.pushState({}, '', '/');
+                    window.location.reload();
+                }
+            },
+
+            // --- 3. SEARCH MODULE ---
+            search: {
+                init: () => {
+                    const input = document.getElementById('master-search');
+                    const output = document.getElementById('search-output');
+                    let timeout;
+
+                    input.addEventListener('input', (e) => {
+                        clearTimeout(timeout);
+                        const q = e.target.value.trim();
+                        
+                        if (q.length < 2) {
+                            output.classList.remove('active');
+                            return;
+                        }
+
+                        timeout = setTimeout(async () => {
+                            const url = `https://api.themoviedb.org/3/search/multi?api_key=${TITAN.config.tmdbKey}&query=${q}`;
+                            const res = await fetch(url).then(r => r.json());
+                            
+                            output.innerHTML = '';
+                            output.classList.add('active');
+
+                            (res.results || []).slice(0, 10).forEach(item => {
+                                if (item.media_type !== 'movie' && item.media_type !== 'tv') return;
+
+                                const el = document.createElement('div');
+                                el.className = 'result-item';
+                                el.innerHTML = `
+                                    <img class="result-poster" src="https://image.tmdb.org/t/p/w92${item.poster_path || ''}">
+                                    <div class="result-info">
+                                        <h4>${item.title || item.name}</h4>
+                                        <div class="result-tags">${item.media_type} • ${(item.release_date || item.first_air_date || 'N/A').split('-')[0]}</div>
+                                    </div>
+                                `;
+                                el.onclick = () => TITAN.router.push(
+                                    item.media_type === 'movie' ? `/movie/${item.id}` : `/tv/${item.id}/1/1`
+                                );
+                                output.appendChild(el);
+                            });
+                        }, 300);
+                    });
+                }
+            }
+        };
+
+        // --- SYSTEM IGNITION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            TITAN.router.init();
+            TITAN.search.init();
+        });
+
+    </script>
+</body>
+</html>
