@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MoviesGod Player</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/artplayer@5.3.0/dist/artplayer.css">
+
+<style>
+html,body {
+  margin:0;
+  background:black;
+  height:100%;
+}
+#app {
+  position:relative;
+  height:100vh;
+}
+
+/* Netflix spinner */
+#spinner {
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:50;
+  background:black;
+}
+#spinner img {
+  width:64px;
+  height:64px;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform:rotate(0deg); }
+  to { transform:rotate(360deg); }
+}
+
+/* Subtitle overlay (MANUAL) */
+#subtitle-overlay {
+  position:absolute;
+  bottom:12%;
+  left:50%;
+  transform:translateX(-50%);
+  width:90%;
+  text-align:center;
+  z-index:40;
+  pointer-events:none;
+}
+#subtitle-overlay p {
+  color:#fcf4f4;
+  font-size:23px;
+  text-shadow:0 2px 4px rgba(0,0,0,0.9);
+  margin:0;
+}
+
+#player {
+  width:100%;
+  height:100%;
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+  <div id="spinner">
+    <img src="https://assets.nflxext.com/en_us/pages/wiplayer/site-spinner.png">
+  </div>
+
+  <div id="subtitle-overlay"></div>
+
+  <div id="player"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8"></script>
+<script src="https://cdn.jsdelivr.net/npm/artplayer@5.3.0"></script>
+
+<script>
+/* ===========================
+   SLUG PARSING
+=========================== */
+const parts = location.pathname.split('/');
+const title = parts[2];               // game.of.thrones.s01e01
+const imdb  = parts[3];               // 1399
+const season = parts[4];
+const episode = parts[5];
+
+/* ===========================
+   SUBTITLE ENGINE (MANUAL)
+=========================== */
+let subtitles = [];
+
+function parseVTT(text) {
+  const lines = text.split('\n');
+  let current = null;
+  const result = [];
+
+  for (let line of lines) {
+    line = line.trim();
+    if (line.includes('-->')) {
+      const [start, end] = line.split(' --> ');
+      current = {
+        start: toSeconds(start),
+        end: toSeconds(end),
+        text: ''
+      };
+    } else if (current && line) {
+      current.text += line + '\n';
+    } else if (current && !line) {
+      result.push(current);
+      current = null;
+    }
+  }
+  return result;
+}
+
+function toSeconds(t) {
+  const [h,m,s] = t.replace(',', '.').split(':');
+  return (+h)*3600 + (+m)*60 + parseFloat(s);
+}
+
+function renderSubtitle(time) {
+  const el = document.getElementById('subtitle-overlay');
+  const sub = subtitles.find(s => time >= s.start && time <= s.end);
+  el.innerHTML = sub ? `<p>${sub.text}</p>` : '';
+}
+
+/* ===========================
+   BOOT
+=========================== */
+async function boot() {
+
+  /* STREAM */
+  const streamRes = await fetch(
+    `https://workingg.vercel.app/api/proxy?url=` +
+    encodeURIComponent(`https://u-1-1azw.onrender.com/api/get-stream?title=${title}`)
+  ).then(r=>r.json());
+
+  const m3u8 = streamRes.m3u8_url;
+
+  /* SUBTITLES */
+  const subRes = await fetch(
+    `https://workingg.vercel.app/api/proxy?url=` +
+    encodeURIComponent(`https://sub.wyzie.ru/search?id=${imdb}&season=${season}&episode=${episode}`)
+  ).then(r=>r.json());
+
+  if (subRes.subtitles?.length) {
+    const vtt = await fetch(subRes.subtitles[0].url).then(r=>r.text());
+    subtitles = parseVTT(vtt);
+  }
+
+  /* PLAYER */
+  const art = new Artplayer({
+    container: '#player',
+    url: m3u8,
+    autoplay: true,
+    setting: true,
+    pip: true,
+    fullscreen: true,
+    fullscreenWeb: true,
+    playbackRate: true,
+    aspectRatio: true,
+    hotkey: true,
+    customType: {
+      m3u8(video, url) {
+        if (Hls.isSupported()) {
+          const hls = new Hls({ maxBufferLength: 30 });
+          hls.loadSource(url);
+          hls.attachMedia(video);
+        }
+      }
+    }
+  });
+
+  art.on('ready', () => {
+    document.getElementById('spinner').style.display = 'none';
+  });
+
+  art.on('video:timeupdate', () => {
+    renderSubtitle(art.currentTime);
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
