@@ -1,5 +1,6 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/master.html" }
+  "routes": [
+    { "src": "^/$", "dest": "/index.html" },
+    { "src": "^/watch/(.*)", "dest": "/player.html" }
   ]
 }
