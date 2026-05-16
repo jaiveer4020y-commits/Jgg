@@ -11042,25 +11042,19 @@ async function playMovie(item, releaseYear) {
         const movieTitle = item.title;
         const movieId    = item.id;
 
-        // 1️⃣ Try GitHub (Primary)
-        const githubHlsUrl = `https://raw.githubusercontent.com/Watchout2025/api/refs/heads/main/hls/movie/${movieId}`;
-        try {
-            const githubRes = await fetch(githubHlsUrl);
-            if (githubRes.ok) {
-                const fileCode = (await githubRes.text()).trim();
-                if (fileCode) {
-                    playLink = `https://watchout-player.netlify.app/movie/${movieId}`;
-                    source   = 'github';
-                    console.log(`✅ GitHub HLS for "${movieTitle}": ${fileCode}`);
-                } else {
-                    console.warn(`⚠️ GitHub file for "${movieTitle}" is empty or invalid.`);
-                }
-            } else {
-                console.warn(`❌ No GitHub entry found for movie ID ${movieId}.`);
-            }
-        } catch (err) {
-            console.error(`⚠️ GitHub fetch error for movie ID ${movieId}:`, err);
-        }
+// 1️⃣ Try primary JJ API server
+try {
+    const testUrl = `https://jj-seven-gray.vercel.app/movie/${movieId}`;
+    const testRes = await fetch(testUrl, { method: 'HEAD' });
+    if (testRes.ok) {
+        playLink = testUrl;
+        source   = 'jj-api';
+        console.log(`✅ JJ API movie link: ${playLink}`);
+    }
+} catch (err) {
+    console.error(`⚠️ JJ API fetch error for movie ID ${movieId}:`, err);
+}
+
 
         // 2️⃣ Try RPM Worker — only if GitHub didn't work
         if (!playLink && movieTitle && releaseYear) {
@@ -11143,9 +11137,9 @@ async function playMovie(item, releaseYear) {
     } else {
         // Desktop: inject iframe into iframe-holder
         const iframeHolder = document.getElementById('iframe-holder');
-        if (iframeHolder) {
-            iframeHolder.innerHTML = `<iframe ${iframeAttributes}></iframe>${closeButtonDesktop}`;
-        } else {
+iframeHolder.style.display = 'block';
+iframeHolder.innerHTML = `<iframe ${iframeAttributes}></iframe>`;
+
             console.error('playMovie: iframe-holder not found after link resolution');
             playerWrap.innerHTML = `
                 <div style="display:flex;justify-content:center;align-items:center;height:100%;color:white;font-size:1.2em;">
@@ -12425,31 +12419,19 @@ async function playEpisode(seriesName, seasonNumber, episodeNumber, seriesId, un
         // ---------------------------------------
         // 🆕 1️⃣ Try GitHub Direct HLS Link First
         // ---------------------------------------
-        const githubJsonUrl = `https://raw.githubusercontent.com/Watchout2025/api/refs/heads/main/hls/tv/${seriesId}/S${seasonNumber}.json`;
-
-        try {
-            const res = await fetch(githubJsonUrl);
-            if (res.ok) {
-                const data = await res.json();
-                const fileId = data[episodeNumber];
-                if (fileId) {
-                    let directHlsLink;
-
-                    // ✅ If fileId ends with m3u8, use it directly
-                    if (fileId) {
-                        directHlsLink = fileId;
-                        episodeUrl = `https://watchout-player.netlify.app/tv/${seriesId}/S${seasonNumber}/E${episodeNumber}`;
-                    } else {
-                        
-                    }
-                    isHlsWorkerLink = true;
-                    isGitHubSource = true; // Mark as GitHub source
-                    console.log(`✅ Found episode ${episodeNumber}: ${episodeUrl}`);
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching HLS JSON:", error);
-        }
+        // 1️⃣ Try primary JJ API server
+try {
+    const testUrl = `https://jj-seven-gray.vercel.app/tv/${seriesId}/S${seasonNumber}/E${episodeNumber}`;
+    const testRes = await fetch(testUrl, { method: 'HEAD' });
+    if (testRes.ok) {
+        episodeUrl = testUrl;
+        isHlsWorkerLink = true;
+        isGitHubSource = true;
+        console.log(`✅ JJ API TV link: ${episodeUrl}`);
+    }
+} catch (error) {
+    console.error("Error checking JJ API:", error);
+}
 
         // -----------------------------------
         // 2️⃣ Fallback to RPM Worker if needed
