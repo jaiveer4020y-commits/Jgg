@@ -10764,7 +10764,7 @@ function displayProgressBar(targetElement, progress) {
 }
 
 window.addEventListener('message', (event) => {
-    if (event.origin !== 'https://watchout-player.netlify.app') return;
+    if (event.origin !== 'https://jj-seven-gray.vercel.app') return;
     const data = event.data;
     if (!data || data.event !== 'videoTimeUpdate') return;
     // Build uniqueContentId from the message itself — no need to track separately
@@ -11157,7 +11157,7 @@ async function playMovie(item, releaseYear) {
     }
 
     // Open ad in new tab
-    window.open('https://otieu.com/4/9119528', '_blank');
+    window.open('', '_blank');
 
     // Save to continue watching and set up progress listener
     saveToContinueWatching(item.id, 'movie', item.poster_path, item.backdrop_path);
