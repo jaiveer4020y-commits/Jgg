@@ -12525,10 +12525,23 @@ try {
         }
 
         if (!isDesktop) {
-         // Mobile → put iframe inside playerWrap
-         let mobileHTML = `
-           <iframe ${iframeAttributes}></iframe>
-         `;
+        // Mobile: inject iframe into playerWrap
+        playerWrap.innerHTML = `<iframe ${iframeAttributes}></iframe>${closeButtonMobile}`;
+    } else {
+        // Desktop: inject iframe into iframe-holder
+        const iframeHolder = document.getElementById('iframe-holder');
+iframeHolder.style.display = 'block';
+iframeHolder.innerHTML = `<iframe ${iframeAttributes}></iframe>`;
+
+            console.error('playMovie: iframe-holder not found after link resolution');
+            playerWrap.innerHTML = `
+                <div style="display:flex;justify-content:center;align-items:center;height:100%;color:white;font-size:1.2em;">
+                    Error: Player container not found.
+                </div>
+                <a class="modal-close" onclick="history.back()"></a>
+            `;
+        }
+    }
          
          // Only add close button if NOT GitHub source
          if (!isGitHubSource) {
